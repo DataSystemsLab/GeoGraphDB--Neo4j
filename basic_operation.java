@@ -71,7 +71,7 @@ public class basic_operation {
 	//return all vertices' id
 	public static ArrayList<Integer> GetAllVertices()
 	{
-		String query = "match (a) return id(a)";
+		String query = "match (a:Graph_node) return id(a)";
 		String result = Execute(query);
 
 		JSONObject jsonObject = JSONObject.fromObject(result);
@@ -97,7 +97,7 @@ public class basic_operation {
 	//return all spatial vertices' id
 	public static ArrayList<Integer> GetSpatialVertices()
 	{
-		String query = "match (a) where has (a.latitude) return id(a)";
+		String query = "match (a:Graph_node) where has (a.latitude) return id(a)";
 		String result = Execute(query);
 
 		JSONObject jsonObject = JSONObject.fromObject(result);
