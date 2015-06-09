@@ -6,6 +6,7 @@ import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
+import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.sun.jersey.api.client.Client;
@@ -14,17 +15,33 @@ import com.sun.jersey.api.client.WebResource;
 
 public class Index {
 	
-	public String RangeQuery()
+	HashSet<Integer> VisitedNodes;
+	
+	public HashSet<Integer> RangeQuery(String layername, Rectangle rect)
 	{
+		HashSet<Integer> hs = new HashSet();
+		
 		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
 		final String range_query = SERVER_ROOT_URI + "ext/SpatialPlugin/graphdb/findGeometriesInBBox";
 		
 		WebResource resource = Client.create().resource(range_query);
-		String entity = "{ \"layer\": \"geom\", \"minx\": 0, \"maxx\":90, \"miny\": 0, \"maxy\": 90 }";
+		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.min_y+" }";
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
 		String result = response.getEntity(String.class);
 		response.close();
-		return result;
+		
+		JSONArray arr = JSONArray.fromObject(result);
+		for(int i = 0;i<arr.size();i++)
+		{
+			JSONObject jsonObject = arr.getJSONObject(i);
+			result = jsonObject.getString("data");
+			
+			jsonObject = JSONObject.fromObject(result);
+			result = jsonObject.getString("id");
+			Integer id = Integer.parseInt(result);
+			hs.add(id);
+		}
+		return hs;
 	}
 	
 	public void ConstructWKTRTree()
@@ -59,23 +76,23 @@ public class Index {
 		
 	}
 	
-	public void CreatePointLayer()
+	public void CreatePointLayer(String layername)
 	{
 		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
 		final String create = SERVER_ROOT_URI + "ext/SpatialPlugin/graphdb/addSimplePointLayer";
 		WebResource resource = Client.create().resource(create);
-		String entity = "{\"layer\" : \"simplepointlayer\", \"lat\" : \"lat\", \"lon\" : \"lon\" }";
+		String entity = "{\"layer\" : \""+layername+"\", \"lat\" : \"lat\", \"lon\" : \"lon\" }";
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).get(ClientResponse.class);
 		String result = response.getEntity(String.class);
 		System.out.println(result);
 	}
 	
-	public void CreateSpatialIndex()
+	public void CreateSpatialIndex(String layername)
 	{
 		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
 		final String create = SERVER_ROOT_URI + "index/node/";
 		WebResource resource = Client.create().resource(create);
-		String entity = "{\"name\" : \"simplepointlayer\", \"config\" : { \"provider\" : \"spatial\",\"geometry_type\" : \"point\",\"lat\" : \"lat\", \"lon\" : \"lon\"}}";
+		String entity = "{\"name\" : \""+layername+"\", \"config\" : { \"provider\" : \"spatial\",\"geometry_type\" : \"point\",\"lat\" : \"lat\", \"lon\" : \"lon\"}}";
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).get(ClientResponse.class);
 		String result = response.getEntity(String.class);
 		System.out.println(result);
@@ -105,7 +122,7 @@ public class Index {
 				System.out.println(longitude);*/
 				
 				WebResource resource = Client.create().resource(spatial_create_node);
-				String entity = "{ \n \"lat\": "+latitude+", \n \"long\" : "+longitude+", \n \"id\": "+ id + " \n} ";
+				String entity = "{ \n \"lat\": "+latitude+", \n \"lon\" : "+longitude+", \n \"id\": "+ id + " \n} ";
 				
 				ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
 				result = response.getEntity(String.class);
@@ -126,8 +143,105 @@ public class Index {
 		
 	}
 	
-	public void AddPointsToLayer()
+	public void AddPointsToIndex()
 	{
+		String SERVER_ROOT_URI="http://localhost:7474/db/data";
+		final String spatial_addto_index = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
 		
+		ArrayList<String> ids = new ArrayList<String>();
+		File file = new File("/home/yuhansun/data/SetLabel/newlocation.txt");
+		BufferedReader reader = null;
+		try
+		{
+			reader = new BufferedReader(new FileReader(file));
+			String tempString = null;
+			int line = 1;
+			
+			while ((tempString = reader.readLine()) != null) 
+			{
+				ids.add(tempString);
+	            // 显示行号	            
+	        }
+	        reader.close();
+	        for(int i = 0;i<ids.size();i++)
+	        {
+	        	String id = ids.get(i);
+	        	String entity = "{\"layer\" : \"simplepointlayer\", \"node\" : \"http://localhost:7474/db/data/node/"+id+"\"}";
+	        	WebResource resource = Client.create().resource(spatial_addto_index);
+	        	ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
+	        	String result = response.getEntity(String.class);
+	        	System.out.println(result);
+	        }
+		}
+		
+		catch (IOException e) 
+		{
+            e.printStackTrace();
+        }
+		
+		finally 
+		{
+            if (reader != null) 
+            {
+                try 
+                {
+                    reader.close();
+                } 
+                catch (IOException e1) 
+                {
+                }
+            }
+		}
+	}
+	
+	private void TraversalInEdgeNodes(int start_id)
+	{
+		basic_operation bo = new basic_operation();
+		ArrayList<Integer> in_neighbors = bo.GetInNeighbors(start_id);
+		for(int i = 0;i<in_neighbors.size();i++)
+		{
+			int in_neighbor = in_neighbors.get(i);
+			if(VisitedNodes.add(in_neighbor))
+			{
+				TraversalInEdgeNodes(in_neighbor);
+			}
+		}
+	}
+	
+	public void CreateTransitiveClosure()
+	{
+		basic_operation bo = new basic_operation();
+		ArrayList<Integer> spatial_nodes = bo.GetSpatialVertices();
+		for(int i = 0;i<spatial_nodes.size();i++)
+		{
+			int id = spatial_nodes.get(i);
+			System.out.println(id);
+			VisitedNodes = new HashSet();
+			TraversalInEdgeNodes(id);
+			Iterator iter = VisitedNodes.iterator();
+			while(iter.hasNext())
+			{
+				String query = "match (a) where id(a) = "+iter.next()+" set a.reach_nodes = a.reach_nodes + "+id;
+				String result = bo.Execute(query);
+				System.out.println(result);
+			}
+		}
+	}
+	
+	public boolean ReachabilityQuery(int start_id, Rectangle rect)
+	{
+		HashSet<Integer> hs = new HashSet();
+		
+		basic_operation bo = new basic_operation();
+		String reach_nodes = bo.GetVertexAttributeValue(start_id, "reach_nodes");
+		reach_nodes = reach_nodes.substring(1, reach_nodes.length()-1);
+		String[] l = reach_nodes.split(",");
+		for(int i = 0;i<l.length;i++)
+		{
+			int id = Integer.parseInt(l[i]);
+			if(hs.contains(id))
+				return true;
+		}
+		return false;
 	}
 }

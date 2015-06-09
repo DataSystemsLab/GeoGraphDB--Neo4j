@@ -34,11 +34,13 @@ public class Index_test	{
 		response.close();*/
 		
 		Index index = new Index();
-		//System.out.println(index.RangeQuery());
+		//System.out.println(index.RangeQuery("simplepointlayer"));
 		//index.ConstructWKTRTree();
 		//index.CreatePointLayer();
 		//index.CreateSpatialIndex();
-		index.CreatePoints();
+		//index.CreatePoints();
+		//index.AddPointsToIndex();
+		index.CreateTransitiveClosure();
 	}
 	
 }

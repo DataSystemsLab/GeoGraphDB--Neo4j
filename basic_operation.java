@@ -167,7 +167,7 @@ public class basic_operation {
 	}
 	
 	//get all in neighbors of a vertex with its given id
-	public static ArrayList<Integer> GetInNeighbors(int id)
+	public ArrayList<Integer> GetInNeighbors(int id)
 	{
 		String query = "match (a)-[]->(b) where id(b) = " +Integer.toString(id) +" return id(a)";
 
