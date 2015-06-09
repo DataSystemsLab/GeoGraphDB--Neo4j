@@ -13,9 +13,11 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class Index {
+public class Index implements ReachabilityQuerySolver{
 	
 	HashSet<Integer> VisitedNodes;
+	
+	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	
 	public HashSet<Integer> RangeQuery(String layername, Rectangle rect)
 	{
@@ -49,11 +51,10 @@ public class Index {
 		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
 		final String spatial_add_node = SERVER_ROOT_URI + "ext/SpatialPlugin/graphdb/addGeometryWKTToLayer";
 		
-		basic_operation bo = new basic_operation();
-		String result = bo.Execute("match (a) where has(a.latitude) return id(a) as id, a.latitude as latitude, a.longitude as longitude");
+		String result = p_neo4j_graph_store.Execute("match (a) where has(a.latitude) return id(a) as id, a.latitude as latitude, a.longitude as longitude");
 		//System.out.println(result);
 		
-		ArrayList<String> l = bo.GetExecuteResultData(result);
+		ArrayList<String> l = p_neo4j_graph_store.GetExecuteResultData(result);
 		for(int i = 0;i<l.size();i++)
 		{
 			String record = l.get(i);
@@ -103,13 +104,12 @@ public class Index {
 		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
 		final String spatial_create_node = SERVER_ROOT_URI + "node";
 		
-		basic_operation bo = new basic_operation();
-		String result = bo.Execute("match (a) where has(a.latitude) return id(a) as id, a.latitude as latitude, a.longitude as longitude");
+		String result = p_neo4j_graph_store.Execute("match (a) where has(a.latitude) return id(a) as id, a.latitude as latitude, a.longitude as longitude");
 		//System.out.println(result);
 		
 		try {
 			PrintWriter writer = new PrintWriter("/home/yuhansun/data/SetLabel/location.txt","UTF-8");
-			ArrayList<String> l = bo.GetExecuteResultData(result);
+			ArrayList<String> l = p_neo4j_graph_store.GetExecuteResultData(result);
 			for(int i = 0;i<l.size();i++)
 			{
 				String record = l.get(i);
@@ -159,8 +159,7 @@ public class Index {
 			
 			while ((tempString = reader.readLine()) != null) 
 			{
-				ids.add(tempString);
-	            // 显示行号	            
+				ids.add(tempString);	                
 	        }
 	        reader.close();
 	        for(int i = 0;i<ids.size();i++)
@@ -196,8 +195,7 @@ public class Index {
 	
 	private void TraversalInEdgeNodes(int start_id)
 	{
-		basic_operation bo = new basic_operation();
-		ArrayList<Integer> in_neighbors = bo.GetInNeighbors(start_id);
+		ArrayList<Integer> in_neighbors = p_neo4j_graph_store.GetInNeighbors(start_id);
 		for(int i = 0;i<in_neighbors.size();i++)
 		{
 			int in_neighbor = in_neighbors.get(i);
@@ -210,8 +208,7 @@ public class Index {
 	
 	public void CreateTransitiveClosure()
 	{
-		basic_operation bo = new basic_operation();
-		ArrayList<Integer> spatial_nodes = bo.GetSpatialVertices();
+		ArrayList<Integer> spatial_nodes = p_neo4j_graph_store.GetSpatialVertices();
 		for(int i = 0;i<spatial_nodes.size();i++)
 		{
 			int id = spatial_nodes.get(i);
@@ -222,18 +219,19 @@ public class Index {
 			while(iter.hasNext())
 			{
 				String query = "match (a) where id(a) = "+iter.next()+" set a.reach_nodes = a.reach_nodes + "+id;
-				String result = bo.Execute(query);
+				String result = p_neo4j_graph_store.Execute(query);
 				System.out.println(result);
 			}
 		}
 	}
 	
+	void Preprocess
+	
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		HashSet<Integer> hs = new HashSet();
 		
-		basic_operation bo = new basic_operation();
-		String reach_nodes = bo.GetVertexAttributeValue(start_id, "reach_nodes");
+		String reach_nodes = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "reach_nodes");
 		reach_nodes = reach_nodes.substring(1, reach_nodes.length()-1);
 		String[] l = reach_nodes.split(",");
 		for(int i = 0;i<l.length;i++)

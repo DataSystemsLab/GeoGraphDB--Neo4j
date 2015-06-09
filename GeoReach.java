@@ -15,16 +15,89 @@ import java.net.URI;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
-public class GeoReach	{
+public class GeoReach implements ReachabilityQuerySolver	{
 	
 	//used in query procedure in order to record visited vertices
 	public static Set<Integer> VisitedVertices = new HashSet();
 	
-	static basic_operation p_basic_operation = new basic_operation();
+	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	
-	public static void Construct_RMBR()
+	// give a vertex id return a boolean value indicating whether it has RMBR
+	public static boolean HasRMBR(int id)
+	{
+		String RMBR_minx=null; 
+		RMBR_minx = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_minx");
+		
+		if(RMBR_minx.equals("null"))
+			return false;
+		else 
+			return true;
+	}	
+	
+	//MBR operation of a given id vertex's current RMBR and another rectangle return a new rectangle, if no change happens it will return null
+	public static Rectangle MBR(int id,String minx2_s, String miny2_s, String maxx2_s, String maxy2_s)
 	{	
-		ArrayList<Integer> spatial_vertices = p_basic_operation.GetSpatialVertices();
+		Rectangle rec = new Rectangle();				
+			
+		if(!HasRMBR(id))
+		{			
+			rec.min_x = Double.parseDouble(minx2_s);
+			rec.min_y = Double.parseDouble(miny2_s);
+			rec.max_x = Double.parseDouble(maxx2_s);
+			rec.max_y = Double.parseDouble(maxy2_s);
+			return rec;
+		}
+		
+		String minx1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_minx");
+		String miny1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_miny");
+		String maxx1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_maxx");
+		String maxy1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_maxy");
+		
+		rec.min_x = Double.parseDouble(minx1_s);
+		rec.min_y = Double.parseDouble(miny1_s);
+		rec.max_x = Double.parseDouble(maxx1_s);
+		rec.max_y = Double.parseDouble(maxy1_s);
+		
+		
+		double minx2 = Double.parseDouble(minx2_s);
+		double miny2 = Double.parseDouble(miny2_s);
+		double maxx2 = Double.parseDouble(maxx2_s);
+		double maxy2 = Double.parseDouble(maxy2_s);
+		
+		boolean flag = false;
+		if(minx2 < rec.min_x)
+		{
+			rec.min_x = minx2;
+			flag = true;
+		}
+		
+		if(miny2 < rec.min_y)
+		{
+			rec.min_y = miny2;
+			flag = true;
+		}
+		
+		if(maxx2 > rec.max_x)
+		{
+			rec.max_x = maxx2;
+			flag = true;
+		}
+		
+		if(maxy2 > rec.max_y)
+		{
+			rec.max_y = maxy2;
+			flag = true;
+		}
+		
+		if(flag)
+			return rec;
+		else
+			return null;
+	}	
+	
+	public void Preprocess()
+	{	
+		ArrayList<Integer> spatial_vertices = p_neo4j_graph_store.GetSpatialVertices();
 		ArrayList<Integer> queue = new ArrayList<Integer>();
 		for(int i = 0;i<spatial_vertices.size();i++)
 			queue.add(spatial_vertices.get(i));
@@ -35,7 +108,7 @@ public class GeoReach	{
 			int current_id = queue.get(0);
 			queue.remove(0);
 			
-			ArrayList<Integer> neighbors = p_basic_operation.GetInNeighbors(current_id);
+			ArrayList<Integer> neighbors = p_neo4j_graph_store.GetInNeighbors(current_id);
 			
 			String latitude = null, longitude = null;
 			
@@ -43,24 +116,24 @@ public class GeoReach	{
 			
 			boolean isspatial = false;
 			
-			if(p_basic_operation.IsSpatial(current_id))
+			if(p_neo4j_graph_store.IsSpatial(current_id))
 			{
 				isspatial = true;
 				
-				latitude = p_basic_operation.GetVertexAttributeValue(current_id, "latitude");
-				longitude = p_basic_operation.GetVertexAttributeValue(current_id, "longitude");
+				latitude = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "latitude");
+				longitude = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "longitude");
 			}
 			
 			boolean hasRMBR = false;
 			
-			if(p_basic_operation.HasRMBR(current_id))
+			if(HasRMBR(current_id))
 			{
 				hasRMBR = true;
 				
-				minx_s = p_basic_operation.GetVertexAttributeValue(current_id, "RMBR_minx");
-				miny_s = p_basic_operation.GetVertexAttributeValue(current_id, "RMBR_miny");
-				maxx_s = p_basic_operation.GetVertexAttributeValue(current_id, "RMBR_maxx");
-				maxy_s = p_basic_operation.GetVertexAttributeValue(current_id, "RMBR_maxy");
+				minx_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_minx");
+				miny_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_miny");
+				maxx_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_maxx");
+				maxy_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_maxy");
 			}
 			
 			for(int i = 0;i<neighbors.size();i++)
@@ -70,7 +143,7 @@ public class GeoReach	{
 				
 				if(isspatial)
 				{
-					Rectangle new_RMBR = p_basic_operation.MBR(neighbor, longitude, latitude, longitude, latitude);
+					Rectangle new_RMBR = MBR(neighbor, longitude, latitude, longitude, latitude);
 					if(new_RMBR != null)
 					{
 						changed = true;
@@ -80,16 +153,16 @@ public class GeoReach	{
 						String maxx = Double.toString(new_RMBR.max_x);
 						String maxy = Double.toString(new_RMBR.max_y);
 						 
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_minx", minx);
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_miny", miny);
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_minx", minx);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_miny", miny);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
 					}
 				}
 				
 				if(hasRMBR)
 				{
-					Rectangle new_RMBR = p_basic_operation.MBR(neighbor, minx_s, miny_s, maxx_s, maxy_s);
+					Rectangle new_RMBR = MBR(neighbor, minx_s, miny_s, maxx_s, maxy_s);
 					if(new_RMBR != null)
 					{
 						changed = true;
@@ -99,10 +172,10 @@ public class GeoReach	{
 						String maxx = Double.toString(new_RMBR.max_x);
 						String maxy = Double.toString(new_RMBR.max_y);
 						 
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_minx", minx);
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_miny", miny);
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
-						p_basic_operation.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_minx", minx);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_miny", miny);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
+						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
 					}
 				}
 					
@@ -120,14 +193,14 @@ public class GeoReach	{
 	{
 		VisitedVertices.add(start_id);
 		
-		if(!p_basic_operation.HasRMBR(start_id))
+		if(!HasRMBR(start_id))
 			return false;
 		
 		Rectangle RMBR = new Rectangle();
-		String minx_s = p_basic_operation.GetVertexAttributeValue(start_id, "RMBR_minx");
-		String miny_s = p_basic_operation.GetVertexAttributeValue(start_id, "RMBR_miny");
-		String maxx_s = p_basic_operation.GetVertexAttributeValue(start_id, "RMBR_maxx");
-		String maxy_s = p_basic_operation.GetVertexAttributeValue(start_id, "RMBR_maxy");
+		String minx_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_minx");
+		String miny_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_miny");
+		String maxx_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_maxx");
+		String maxy_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_maxy");
 		
 		RMBR.min_x = Double.parseDouble(minx_s);
 		RMBR.min_y = Double.parseDouble(miny_s);
@@ -140,17 +213,17 @@ public class GeoReach	{
 		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_x && RMBR.max_y < rect.max_y)
 			return true;
 		
-		ArrayList<Integer> outneighbors = p_basic_operation.GetOutNeighbors(start_id);
+		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
 		
 		for(int i = 0;i<outneighbors.size();i++)
 		{
 			int outneighbor = outneighbors.get(i);
 			
-			if(p_basic_operation.IsSpatial(outneighbor))
+			if(p_neo4j_graph_store.IsSpatial(outneighbor))
 			{
-				double lat = Double.parseDouble(p_basic_operation.GetVertexAttributeValue(outneighbor, "latitude"));
-				double lon = Double.parseDouble(p_basic_operation.GetVertexAttributeValue(outneighbor, "longitude"));
-				if(p_basic_operation.Location_In_Rect(lat, lon, rect))
+				double lat = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, "latitude"));
+				double lon = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, "longitude"));
+				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
 					return true;
 			}
 			

@@ -12,28 +12,28 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
-public class Traversal {
+public class Traversal implements ReachabilityQuerySolver	{
 	
 	//used in query procedure in order to record visited vertices
 	public static Set<Integer> VisitedVertices = new HashSet();
 	
-	static basic_operation p_basic_operation = new basic_operation();
+	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		VisitedVertices.add(start_id);
 		
-		ArrayList<Integer> outneighbors = p_basic_operation.GetOutNeighbors(start_id);
+		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
 		
 		for(int i = 0;i<outneighbors.size();i++)
 		{
 			int outneighbor = outneighbors.get(i);
 			
-			if(p_basic_operation.IsSpatial(outneighbor))
+			if(p_neo4j_graph_store.IsSpatial(outneighbor))
 			{
-				double lat = Double.parseDouble(p_basic_operation.GetVertexAttributeValue(outneighbor, "latitude"));
-				double lon = Double.parseDouble(p_basic_operation.GetVertexAttributeValue(outneighbor, "longitude"));
-				if(p_basic_operation.Location_In_Rect(lat, lon, rect))
+				double lat = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, "latitude"));
+				double lon = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, "longitude"));
+				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
 					return true;
 			}
 			
