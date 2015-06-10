@@ -18,12 +18,22 @@ import net.sf.json.JSONObject;
 
 public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	
+	public Neo4j_Graph_Store()
+	{
+		Config config = new Config();
+		SERVER_ROOT_URI = config.GetServerRoot();
+		longitude_property_name = config.GetLongitudePropertyName();
+		latitude_property_name = config.GetLatitudePropertyName();
+	}
+	
+	private static String SERVER_ROOT_URI;
+	private String longitude_property_name;
+	private String latitude_property_name;
+	
 	//execute a cypher query return a json format string
 	public static String Execute(String query)
-	{
-		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
-		
-		final String txUri = SERVER_ROOT_URI + "transaction/commit";
+	{		
+		final String txUri = SERVER_ROOT_URI + "/transaction/commit";
 		WebResource resource = Client.create().resource( txUri );
 		
 		String payload = "{\"statements\" : [ {\"statement\" : \"" +query + "\"} ]}";
@@ -90,7 +100,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	//return all spatial vertices' id
 	public ArrayList<Integer> GetSpatialVertices()
 	{
-		String query = "match (a:Graph_node) where has (a.latitude) return id(a)";
+		String query = "match (a:Graph_node) where has (a."+ longitude_property_name +") return id(a)";
 		String result = Execute(query);
 
 		JSONObject jsonObject = JSONObject.fromObject(result);
@@ -226,7 +236,6 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		else
 			result = str;
 		
-		System.out.println(result);
 		return result;
 	}
 	
@@ -246,12 +255,12 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	//given vertex label and attribute name and value return id of this node(this function requires that this attribute has unique constraint)
 	public int GetVertexID(String label, String attribute, String value)
 	{
-		String query = "match (a:"+ label +") where a." + attribute + " = \\\"" + value + "\\\" return id(a)";System.out.println(query);
+		String query = "match (a:"+ label +") where a." + attribute + " = \\\"" + value + "\\\" return id(a)";
 		
-		String result = Execute(query);System.out.println(result);
+		String result = Execute(query);
 		
 		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");System.out.println(str);
+		String str = jsonObject.getString("results");
 		str = str.substring(1, str.length()-1);
 
 		jsonObject = JSONObject.fromObject(str);

@@ -98,15 +98,21 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	public void Preprocess()
 	{	
 		ArrayList<Integer> spatial_vertices = p_neo4j_graph_store.GetSpatialVertices();
-		ArrayList<Integer> queue = new ArrayList<Integer>();
+		Queue<Integer> queue = new LinkedList<Integer>();
+		HashSet<Integer> hs = new HashSet();
 		for(int i = 0;i<spatial_vertices.size();i++)
-			queue.add(spatial_vertices.get(i));
+		{
+			int id = spatial_vertices.get(i);
+			queue.add(id);
+			hs.add(id);
+		}
 		
 		while(!queue.isEmpty())
 		{
-			System.out.println(queue.size());
-			int current_id = queue.get(0);
-			queue.remove(0);
+			System.out.println(hs.size());
+			//System.out.println(queue);
+			int current_id = queue.poll();
+			hs.remove(current_id);
 			
 			ArrayList<Integer> neighbors = p_neo4j_graph_store.GetInNeighbors(current_id);
 			
@@ -136,6 +142,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				maxy_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_maxy");
 			}
 			
+			
 			for(int i = 0;i<neighbors.size();i++)
 			{
 				int neighbor = neighbors.get(i);
@@ -143,6 +150,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				
 				if(isspatial)
 				{
+				
 					Rectangle new_RMBR = MBR(neighbor, longitude, latitude, longitude, latitude);
 					if(new_RMBR != null)
 					{
@@ -158,10 +166,18 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
 						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
 					}
+					if(current_id == 40917)
+					{
+						System.out.println(new_RMBR.max_x);
+						System.out.println(new_RMBR.min_y);
+						System.out.println(new_RMBR.max_x);
+						System.out.println(new_RMBR.max_y);
+					}
 				}
 				
 				if(hasRMBR)
 				{
+					//new_RMBR = null;
 					Rectangle new_RMBR = MBR(neighbor, minx_s, miny_s, maxx_s, maxy_s);
 					if(new_RMBR != null)
 					{
@@ -177,19 +193,31 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
 						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
 					}
+					/*if(current_id == 40917)
+					{
+						System.out.println(new_RMBR.max_x);
+						System.out.println(new_RMBR.min_y);
+						System.out.println(new_RMBR.max_x);
+						System.out.println(new_RMBR.max_y);
+					}*/
 				}
 					
-				if(changed&&!queue.contains(neighbor))
+				if(changed&&!hs.contains(neighbor))
 				{
 					queue.add(neighbor);
-					System.out.println(queue.size());
-					System.out.println("Added");
+					hs.add(neighbor);
 				}
-			}		
+				
+			}	
+			/*if(current_id == 40917)
+			{
+				System.out.println(neighbors);
+				break;
+			}*/
 		}
 	}
 	
-	public static boolean ReachabilityQuery(int start_id, Rectangle rect)
+	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		VisitedVertices.add(start_id);
 		

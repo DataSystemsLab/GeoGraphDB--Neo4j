@@ -40,7 +40,10 @@ public class Index_test	{
 		//index.CreateSpatialIndex();
 		//index.CreatePoints();
 		//index.AddPointsToIndex();
-		index.CreateTransitiveClosure();
+		//index.CreateTransitiveClosure();
+		index.VisitedNodes = new HashSet();
+		index.TraversalInEdgeNodes(41311);
+		System.out.println(index.VisitedNodes);
 	}
 	
 }

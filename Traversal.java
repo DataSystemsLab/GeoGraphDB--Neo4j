@@ -19,6 +19,21 @@ public class Traversal implements ReachabilityQuerySolver	{
 	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	
+	private String longitude_property_name;
+	private String latitude_property_name;
+	
+	
+	public Traversal()
+	{
+		Config config = new Config();
+		longitude_property_name = config.GetLongitudePropertyName();
+	}
+	
+	public void Preprocess()
+	{
+		
+	}
+	
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		VisitedVertices.add(start_id);
@@ -31,8 +46,8 @@ public class Traversal implements ReachabilityQuerySolver	{
 			
 			if(p_neo4j_graph_store.IsSpatial(outneighbor))
 			{
-				double lat = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, "latitude"));
-				double lon = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, "longitude"));
+				double lat = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, latitude_property_name));
+				double lon = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(outneighbor, longitude_property_name));
 				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
 					return true;
 			}
@@ -48,4 +63,5 @@ public class Traversal implements ReachabilityQuerySolver	{
 		return false;
 		
 	}
+
 }

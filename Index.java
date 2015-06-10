@@ -17,14 +17,23 @@ public class Index implements ReachabilityQuerySolver{
 	
 	HashSet<Integer> VisitedNodes;
 	
+	private String SERVER_ROOT_URI;
+	private String longitude_property_name;
+	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
+	
+	public Index()
+	{
+		Config config = new Config();
+		SERVER_ROOT_URI = config.GetServerRoot();
+		longitude_property_name = config.GetLongitudePropertyName();
+	}
 	
 	public HashSet<Integer> RangeQuery(String layername, Rectangle rect)
 	{
 		HashSet<Integer> hs = new HashSet();
 		
-		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
-		final String range_query = SERVER_ROOT_URI + "ext/SpatialPlugin/graphdb/findGeometriesInBBox";
+		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
 		
 		WebResource resource = Client.create().resource(range_query);
 		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.min_y+" }";
@@ -48,10 +57,9 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void ConstructWKTRTree()
 	{
-		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
-		final String spatial_add_node = SERVER_ROOT_URI + "ext/SpatialPlugin/graphdb/addGeometryWKTToLayer";
+		final String spatial_add_node = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addGeometryWKTToLayer";
 		
-		String result = p_neo4j_graph_store.Execute("match (a) where has(a.latitude) return id(a) as id, a.latitude as latitude, a.longitude as longitude");
+		String result = p_neo4j_graph_store.Execute("match (a) where has(a."+ longitude_property_name +") return id(a) as id, a.latitude as latitude, a.longitude as longitude");
 		//System.out.println(result);
 		
 		ArrayList<String> l = p_neo4j_graph_store.GetExecuteResultData(result);
@@ -79,8 +87,7 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void CreatePointLayer(String layername)
 	{
-		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
-		final String create = SERVER_ROOT_URI + "ext/SpatialPlugin/graphdb/addSimplePointLayer";
+		final String create = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addSimplePointLayer";
 		WebResource resource = Client.create().resource(create);
 		String entity = "{\"layer\" : \""+layername+"\", \"lat\" : \"lat\", \"lon\" : \"lon\" }";
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).get(ClientResponse.class);
@@ -90,8 +97,7 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void CreateSpatialIndex(String layername)
 	{
-		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
-		final String create = SERVER_ROOT_URI + "index/node/";
+		final String create = SERVER_ROOT_URI + "/index/node/";
 		WebResource resource = Client.create().resource(create);
 		String entity = "{\"name\" : \""+layername+"\", \"config\" : { \"provider\" : \"spatial\",\"geometry_type\" : \"point\",\"lat\" : \"lat\", \"lon\" : \"lon\"}}";
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).get(ClientResponse.class);
@@ -101,10 +107,9 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void CreatePoints()
 	{
-		String SERVER_ROOT_URI="http://localhost:7474/db/data/";
-		final String spatial_create_node = SERVER_ROOT_URI + "node";
+		final String spatial_create_node = SERVER_ROOT_URI + "/node";
 		
-		String result = p_neo4j_graph_store.Execute("match (a) where has(a.latitude) return id(a) as id, a.latitude as latitude, a.longitude as longitude");
+		String result = p_neo4j_graph_store.Execute("match (a) where has(a." + longitude_property_name + ") return id(a) as id, a.latitude as latitude, a.longitude as longitude");
 		//System.out.println(result);
 		
 		try {
@@ -117,9 +122,6 @@ public class Index implements ReachabilityQuerySolver{
 				int id = Integer.parseInt(ll[0]);
 				double latitude = Double.parseDouble(ll[1]);
 				double longitude = Double.parseDouble(ll[2]);
-				/*System.out.println(id);
-				System.out.println(latitude);
-				System.out.println(longitude);*/
 				
 				WebResource resource = Client.create().resource(spatial_create_node);
 				String entity = "{ \n \"lat\": "+latitude+", \n \"lon\" : "+longitude+", \n \"id\": "+ id + " \n} ";
@@ -145,7 +147,6 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void AddPointsToIndex()
 	{
-		String SERVER_ROOT_URI="http://localhost:7474/db/data";
 		final String spatial_addto_index = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
 		
 		ArrayList<String> ids = new ArrayList<String>();
@@ -193,7 +194,7 @@ public class Index implements ReachabilityQuerySolver{
 		}
 	}
 	
-	private void TraversalInEdgeNodes(int start_id)
+	public void TraversalInEdgeNodes(int start_id)
 	{
 		ArrayList<Integer> in_neighbors = p_neo4j_graph_store.GetInNeighbors(start_id);
 		for(int i = 0;i<in_neighbors.size();i++)
@@ -225,11 +226,14 @@ public class Index implements ReachabilityQuerySolver{
 		}
 	}
 	
-	void Preprocess
+	public void Preprocess()
+	{
+		
+	}
 	
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
-		HashSet<Integer> hs = new HashSet();
+		/*//HashSet<Integer> hs = RangeQuery(rect);
 		
 		String reach_nodes = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "reach_nodes");
 		reach_nodes = reach_nodes.substring(1, reach_nodes.length()-1);
@@ -239,7 +243,7 @@ public class Index implements ReachabilityQuerySolver{
 			int id = Integer.parseInt(l[i]);
 			if(hs.contains(id))
 				return true;
-		}
+		}*/
 		return false;
 	}
 }

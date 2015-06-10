@@ -2,5 +2,5 @@ package def;
 
 public interface ReachabilityQuerySolver {
 	void Preprocess();
-	void ReachabilityQuery();
+	boolean ReachabilityQuery(int start_id, Rectangle rect);
 }

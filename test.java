@@ -51,8 +51,8 @@ public class test {
 			System.out.println(str);
 		}*/
 		
-		//GeoReach gr = new GeoReach();
-		//gr.Construct_RMBR();
+		GeoReach gr = new GeoReach();
+		gr.Preprocess();
 		
 		/*ArrayList<String> mfc_result = new ArrayList<String>();
 		File file = new File("C:/Users/ysun138/Google Drive/Graph_05_13/graph_2015_1_24_mfc/data/RMBR/query_result.txt");
