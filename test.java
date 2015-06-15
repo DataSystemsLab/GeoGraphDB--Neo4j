@@ -18,6 +18,8 @@ import net.sf.json.JSONObject;
 public class test {
 	
 	public static Set<Integer> VisitedVertices = new HashSet();
+	
+	public static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 
 	public static void main(String[] args) {
 
@@ -50,9 +52,6 @@ public class test {
 			String str = String.valueOf(l.get(i));
 			System.out.println(str);
 		}*/
-		
-		GeoReach gr = new GeoReach();
-		gr.Preprocess();
 		
 		/*ArrayList<String> mfc_result = new ArrayList<String>();
 		File file = new File("C:/Users/ysun138/Google Drive/Graph_05_13/graph_2015_1_24_mfc/data/RMBR/query_result.txt");
@@ -126,9 +125,9 @@ public class test {
 				System.out.println("You are right!!!!!");
 		}*/
 		
-		/*int id = GetVertexID("Author", "name", "Mohamed Sarwat");
-		System.out.println(id);
-		
+		//int id = p_neo4j_graph_store.GetVertexID("Author", "name", "\\\"Mohamed Sarwat\\\"");
+		//System.out.println(id);
+		/*
 		Rectangle rect = new Rectangle();
 		rect.min_x = -100;
 		rect.max_x = 0;
@@ -137,6 +136,9 @@ public class test {
 		
 		boolean result = ReachabilityQuery(id, rect);
 		System.out.println(result);*/
+		
+		//double[] location = p_neo4j_graph_store.GetVerticeLocation(26242);
+		//System.out.println(location[0]);
 		
 	}
 	

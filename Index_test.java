@@ -41,9 +41,14 @@ public class Index_test	{
 		//index.CreatePoints();
 		//index.AddPointsToIndex();
 		//index.CreateTransitiveClosure();
-		index.VisitedNodes = new HashSet();
-		index.TraversalInEdgeNodes(41311);
-		System.out.println(index.VisitedNodes);
+		//index.VisitedNodes = new HashSet();
+		//index.TraversalInReachNodes(41311);
+		//System.out.println(index.VisitedNodes);
+		/*long start = System.currentTimeMillis();
+		index.CreateTransitiveClosureFromInNeighbor();
+		long end = System.currentTimeMillis();
+		System.out.println((end-start)/1000.0);*/
+		index.CreateTransitiveClosureFromInNeighbor();
 	}
 	
 }

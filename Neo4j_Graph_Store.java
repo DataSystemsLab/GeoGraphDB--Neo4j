@@ -26,12 +26,12 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		latitude_property_name = config.GetLatitudePropertyName();
 	}
 	
-	private static String SERVER_ROOT_URI;
+	private String SERVER_ROOT_URI;
 	private String longitude_property_name;
 	private String latitude_property_name;
 	
 	//execute a cypher query return a json format string
-	public static String Execute(String query)
+	public String Execute(String query)
 	{		
 		final String txUri = SERVER_ROOT_URI + "/transaction/commit";
 		WebResource resource = Client.create().resource( txUri );
@@ -220,6 +220,20 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		return str;
 	}
 	
+	public double[] GetVerticeLocation(int id)
+	{
+		double[] location = new double[2];
+		String query = "match (a) where id(a) = " + id + " return a.longitude, a.latitude";
+		ArrayList<String> result = GetExecuteResultData(Execute(query));
+		
+		String data = result.get(0);
+		String[] l = data.split(",");
+		location[0] = Double.parseDouble(l[0]);
+		location[1] = Double.parseDouble(l[1]);
+		
+		return location;
+	}
+	
 	//add one attribute to a given id vertex
 	public String AddVertexAttribute(int id, String attributename, String value)
 	{
@@ -239,23 +253,28 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		return result;
 	}
 	
+	public boolean HasProperty(int id, String propertyname)
+	{
+		String value = GetVertexAttributeValue(id, propertyname);
+		if(value.equals("null"))
+			return false;
+		else
+			return true;
+	}
+	
 	//given a vertex id return a boolean value indicating whether it is a spatial vertex
 	public boolean IsSpatial(int id)
 	{
-		String lat=null; 
-		lat=GetVertexAttributeValue(id, "latitude");
+		boolean has = HasProperty(id, "latitude");
 		
-		if(lat.equals("null"))
-			return false;
-		else 
-			return true;
+		return has;
 	}
 	
 	
 	//given vertex label and attribute name and value return id of this node(this function requires that this attribute has unique constraint)
 	public int GetVertexID(String label, String attribute, String value)
 	{
-		String query = "match (a:"+ label +") where a." + attribute + " = \\\"" + value + "\\\" return id(a)";
+		String query = "match (a:"+ label +") where a." + attribute + " = " + value + " return id(a)";
 		
 		String result = Execute(query);
 		
@@ -274,8 +293,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		int id = Integer.parseInt(str);
 		return id;
 	}
-	
-	
+		
 	
 	public static boolean Location_In_Rect(double lat, double lon, Rectangle rect)
 	{
