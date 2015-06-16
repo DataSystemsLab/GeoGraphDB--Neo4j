@@ -27,6 +27,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 	{
 		Config config = new Config();
 		longitude_property_name = config.GetLongitudePropertyName();
+		latitude_property_name = config.GetLatitudePropertyName();
 	}
 	
 	public void Preprocess()

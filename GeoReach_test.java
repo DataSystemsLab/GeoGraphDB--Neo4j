@@ -8,11 +8,15 @@ public class GeoReach_test
 	
 	public static void main(String[] args)
 	{
-		Rectangle rect = p_georeach.GetRMBR(17585);
+		/*Rectangle rect = p_georeach.GetRMBR(17585);
 		System.out.println(rect.min_x);
 		System.out.println(rect.min_y);
 		System.out.println(rect.max_x);
-		System.out.println(rect.max_y);
+		System.out.println(rect.max_y);*/
 		
+		long start = System.currentTimeMillis();
+		p_georeach.Preprocess();
+		long end = System.currentTimeMillis();
+		System.out.println((end-start)/1000.0);
 	}
 }

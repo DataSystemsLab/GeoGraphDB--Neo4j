@@ -37,16 +37,21 @@ public class Index implements ReachabilityQuerySolver{
 		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
 		
 		WebResource resource = Client.create().resource(range_query);
-		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.min_y+" }";
+		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.max_y+" }";
+		//System.out.println(entity);
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
 		String result = response.getEntity(String.class);
+		int status = response.getStatus();
 		response.close();
+		//System.out.println(result);
+		//System.out.println(status);
 		
 		JSONArray arr = JSONArray.fromObject(result);
 		for(int i = 0;i<arr.size();i++)
 		{
 			JSONObject jsonObject = arr.getJSONObject(i);
 			result = jsonObject.getString("data");
+			//System.out.println(result);
 			
 			jsonObject = JSONObject.fromObject(result);
 			result = jsonObject.getString("id");
@@ -140,6 +145,17 @@ public class Index implements ReachabilityQuerySolver{
 		}	
 	}
 	
+	public String FindSpatialLayer(String layername)
+	{
+		final String find_ayer = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/getLayer";
+		WebResource resource = Client.create().resource(find_ayer);
+		String entity = "{\"layer\" : \"" + layername + "\"}";
+		
+		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
+		String result = response.getEntity(String.class);
+		return result;
+	}
+	
 	public void TraversalInReachNodes(int start_id)
 	{
 		ArrayList<Integer> in_neighbors = p_neo4j_graph_store.GetInNeighbors(start_id);
@@ -200,7 +216,7 @@ public class Index implements ReachabilityQuerySolver{
 		ArrayList<String> rows = p_neo4j_graph_store.GetExecuteResultData(result);
 
 		String s_a_reach_nodes = rows.get(0);
-		System.out.println(s_a_reach_nodes);
+		//System.out.println(s_a_reach_nodes);
 		result = s_a_reach_nodes.substring(1, s_a_reach_nodes.length()-1);
 		String[] l_a_reach_nodes = result.split(",");
 		
@@ -212,13 +228,13 @@ public class Index implements ReachabilityQuerySolver{
 		for(int i = 0;i<rows.size();i++)
 		{
 			String row = rows.get(i);
-			System.out.println(row);
+			//System.out.println(row);
 			if(row.contains("null"))
 			{
 				String[] line = row.split(",");
 				String s_id = line[0];
 				query = "match (b) where id(b) = " + s_id + " set b.reach_nodes = " + s_a_reach_nodes;
-				System.out.println(query); 
+				//System.out.println(query); 
 				result = p_neo4j_graph_store.Execute(query);
 				
 				int i_id = Integer.parseInt(s_id);
@@ -240,7 +256,7 @@ public class Index implements ReachabilityQuerySolver{
 				while(st.hasMoreTokens())
 					hs_b_reach_nodes.add(st.nextToken());
 				
-				System.out.println(hs_b_reach_nodes);
+				//System.out.println(hs_b_reach_nodes);
 				
 				query = "match (b) where id(b) = " + s_id + " set b.reach_nodes = b.reach_nodes + [";
 				boolean changed = false;
@@ -257,7 +273,7 @@ public class Index implements ReachabilityQuerySolver{
 				{
 					query = query.substring(0, query.length()-1);
 					query += "]";
-					System.out.println(query);
+					//System.out.println(query);
 					result = p_neo4j_graph_store.Execute(query);
 					
 					int i_id = Integer.parseInt(s_id);
@@ -279,11 +295,11 @@ public class Index implements ReachabilityQuerySolver{
 		String result = p_neo4j_graph_store.Execute(query);
 		
 		ArrayList<String> spatial_nodes = p_neo4j_graph_store.GetExecuteResultData(result);
-		System.out.println(spatial_nodes);
+		//System.out.println(spatial_nodes);
 		for(int i = 0;i<spatial_nodes.size();i++)
 		{
 			String id = spatial_nodes.get(i);
-			System.out.println(id);
+			//System.out.println(id);
 			
 			query = "match (b) - [] -> (a)  where id(a) = " + id + " return id(b)";
 			result = p_neo4j_graph_store.Execute(query);
@@ -291,7 +307,7 @@ public class Index implements ReachabilityQuerySolver{
 			for(int j = 0;j<in_nodes.size();j++)
 			{
 				String in_node_id = in_nodes.get(j);
-				System.out.println(in_node_id);
+				//System.out.println(in_node_id);
 				
 				int i_node_id = Integer.parseInt(in_node_id);
 				if(!VisitedNodes.contains(i_node_id))
@@ -302,16 +318,16 @@ public class Index implements ReachabilityQuerySolver{
 				if(!p_neo4j_graph_store.HasProperty(Integer.parseInt(in_node_id), "reach_nodes"))
 				{
 					query = "match (b) where id(b) = " + in_node_id + " set b.reach_nodes = [" + id + "]";
-					System.out.println(query);
+					//System.out.println(query);
 					result = p_neo4j_graph_store.Execute(query);
-					System.out.println(result);
+					//System.out.println(result);
 				}
 				else
 				{
 					query = "match (b) where id(b) = " + in_node_id + " set b.reach_nodes = b.reach_nodes + " + id;
-					System.out.println(query);
+					//System.out.println(query);
 					result = p_neo4j_graph_store.Execute(query);
-					System.out.println(result);
+					//System.out.println(result);
 				}
 			}
 		}
@@ -354,6 +370,7 @@ public class Index implements ReachabilityQuerySolver{
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		HashSet<Integer> hs = RangeQuery("simplepointlayer",rect);
+		//System.out.println(hs);
 		
 		String reach_nodes = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "reach_nodes");
 		reach_nodes = reach_nodes.substring(1, reach_nodes.length()-1);

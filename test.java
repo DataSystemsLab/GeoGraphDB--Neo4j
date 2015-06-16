@@ -140,6 +140,9 @@ public class test {
 		//double[] location = p_neo4j_graph_store.GetVerticeLocation(26242);
 		//System.out.println(location[0]);
 		
+		String query = "start node = node:simplepointlayer('bbox:[0.0,180.0,0.0,90.0]') return node";
+		System.out.println(p_neo4j_graph_store.Execute(query));
+		
 	}
 	
 }
