@@ -15,6 +15,10 @@ import java.net.URI;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 
 public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	
@@ -59,7 +63,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		str = jsonObject.getString("data");
 		
 		JSONArray arr = JSONArray.fromObject(str);
-		ArrayList l  = new ArrayList<Integer>();
+		ArrayList<String> l  = new ArrayList<String>();
 		
 		for(int i = 0;i<arr.size();i++)
 		{
@@ -70,6 +74,29 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		}
 		return l;
 	}
+	
+	//decode return value of function Execute(String query) to get "data" section
+	public static HashSet<Integer> GetExecuteResultDataInSet(String result)
+	{		
+		HashSet<Integer> hs  = new HashSet<Integer>();
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+		
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		
+		jsonObject = (JsonObject) jsonArr.get(0);
+		
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		for(int i = 0;i<jsonArr.size();i++)
+		{
+			JsonObject jsonOb = (JsonObject) jsonArr.get(i);
+			String row = jsonOb.get("row").toString();
+			row = row.substring(1, row.length()-1);
+			hs.add(Integer.parseInt(row));
+		}
+		return hs;
+	}	
 	
 	//return all vertices' id
 	public ArrayList<Integer> GetAllVertices()

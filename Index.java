@@ -21,6 +21,14 @@ public class Index implements ReachabilityQuerySolver{
 	private String SERVER_ROOT_URI;
 	private String longitude_property_name;
 	
+	public long GetTranTime;
+	
+	public long GetRTreeTime;
+	public long QueryTime;
+	public long BuildListTime;
+	
+	public long JudgeTime;
+	
 	Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	
 	public Index()
@@ -28,36 +36,29 @@ public class Index implements ReachabilityQuerySolver{
 		Config config = new Config();
 		SERVER_ROOT_URI = config.GetServerRoot();
 		longitude_property_name = config.GetLongitudePropertyName();
+		
+		GetTranTime = 0;
+		GetRTreeTime = 0;
+		QueryTime = 0;
+		BuildListTime = 0;
+		
+		JudgeTime = 0;
 	}
 	
 	public HashSet<Integer> RangeQuery(String layername, Rectangle rect)
 	{
 		HashSet<Integer> hs = new HashSet();
 		
-		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
+		String query = "start node = node:" + layername + "('bbox:["+ rect.min_x + ", " + rect.max_x + ", " + rect.min_y + ", " + rect.max_y + "]') return id(node)";
 		
-		WebResource resource = Client.create().resource(range_query);
-		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.max_y+" }";
-		//System.out.println(entity);
-		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
-		String result = response.getEntity(String.class);
-		int status = response.getStatus();
-		response.close();
-		//System.out.println(result);
-		//System.out.println(status);
+		long start = System.currentTimeMillis();
+		String result = p_neo4j_graph_store.Execute(query);
+		QueryTime += System.currentTimeMillis() - start;
 		
-		JSONArray arr = JSONArray.fromObject(result);
-		for(int i = 0;i<arr.size();i++)
-		{
-			JSONObject jsonObject = arr.getJSONObject(i);
-			result = jsonObject.getString("data");
-			//System.out.println(result);
-			
-			jsonObject = JSONObject.fromObject(result);
-			result = jsonObject.getString("id");
-			Integer id = Integer.parseInt(result);
-			hs.add(id);
-		}
+		start = System.currentTimeMillis();
+		hs = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		BuildListTime += System.currentTimeMillis() - start;
+		
 		return hs;
 	}
 	
@@ -369,18 +370,27 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
+		long start = System.currentTimeMillis();
 		HashSet<Integer> hs = RangeQuery("simplepointlayer",rect);
-		//System.out.println(hs);
+		GetRTreeTime+=System.currentTimeMillis() - start;
 		
+		start = System.currentTimeMillis();
 		String reach_nodes = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "reach_nodes");
 		reach_nodes = reach_nodes.substring(1, reach_nodes.length()-1);
 		String[] l = reach_nodes.split(",");
+		GetTranTime += System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
 		for(int i = 0;i<l.length;i++)
 		{
 			int id = Integer.parseInt(l[i]);
 			if(hs.contains(id))
+			{
+				JudgeTime += System.currentTimeMillis() - start;
 				return true;
+			}
 		}
+		JudgeTime += System.currentTimeMillis() - start;
 		return false;
 	}
 }

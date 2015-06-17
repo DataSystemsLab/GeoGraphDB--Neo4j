@@ -68,7 +68,7 @@ public class Index_test	{
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).get(ClientResponse.class);
 		System.out.println(response.getEntity(String.class));*/
 		//System.out.println(response.getStatus());
-		//System.out.println(index.FindSpatialLayer("geom"));
+		//System.out.println(index.FindSpatialLayer("simplepointlayer"));
 		
 		Rectangle query_rect = new Rectangle();
 		query_rect.min_x = -180;

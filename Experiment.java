@@ -13,9 +13,8 @@ public class Experiment {
 		Traversal traversal = new Traversal();
 		
 		Rectangle query_rect = new Rectangle(-130, 20, -60, 50);
-		//Rectangle query_rect = new Rectangle(0.0, 90.0, 0.0, 90.0);
 		
-		String query = "match (a) where has(a.RMBR_minx) return id(a) limit 100";
+		String query = "match (a) where has(a.RMBR_minx) return id(a) limit 10";
 		String result = p_neo4j_graph_store.Execute(query);
 		System.out.println(result);
 		ArrayList<String> ids = p_neo4j_graph_store.GetExecuteResultData(result);
@@ -24,15 +23,17 @@ public class Experiment {
 		
 		for(int i = 0;i<ids.size();i++)
 		{
-
+			System.out.println(i);
 			int id = Integer.parseInt(ids.get(i));
 
 			long start = System.currentTimeMillis();
 			boolean result1 = traversal.ReachabilityQuery(id, query_rect);
 			time1+=System.currentTimeMillis() - start;
+			
 			start = System.currentTimeMillis();
 			boolean result2 = index.ReachabilityQuery(id, query_rect);
 			time2+=System.currentTimeMillis() - start;
+			
 			start = System.currentTimeMillis();
 			boolean result3 = georeach.ReachabilityQuery(id, query_rect);
 			time3+=System.currentTimeMillis() - start;
@@ -46,7 +47,9 @@ public class Experiment {
 			}
 		}
 		
-		System.out.printf("%s, %s, %s", time1, time2, time3);
+		System.out.printf("%s, %s, %s\n", time1, time2, time3);
+		System.out.printf("%s, %s, %s\n", index.GetTranTime, index.GetRTreeTime, index.JudgeTime);
+		System.out.printf("%s, %s",index.QueryTime, index.BuildListTime);
 	}
 
 }
