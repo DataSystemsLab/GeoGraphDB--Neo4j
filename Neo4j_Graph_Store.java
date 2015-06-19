@@ -16,6 +16,7 @@ import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -55,20 +56,20 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	//decode return value of function Execute(String query) to get "data" section
 	public static ArrayList<String> GetExecuteResultData(String result)
 	{
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
 		
-		JSONArray arr = JSONArray.fromObject(str);
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		
+		jsonObject = (JsonObject) jsonArr.get(0);
+		
+		jsonArr = (JsonArray) jsonObject.get("data");
 		ArrayList<String> l  = new ArrayList<String>();
 		
-		for(int i = 0;i<arr.size();i++)
+		for(int i = 0;i<jsonArr.size();i++)
 		{
-			jsonObject=arr.getJSONObject(i);
-			str = jsonObject.getString("row");
+			jsonObject=(JsonObject) jsonArr.get(i);
+			String str = jsonObject.get("row").toString();
 			str = str.substring(1, str.length()-1);
 			l.add(str);
 		}
@@ -173,25 +174,26 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	//get all out neighbors of a vertex with its given id
 	public ArrayList<Integer> GetOutNeighbors(int id)
 	{
+		ArrayList<Integer> l = new ArrayList<Integer>();
+		
 		String query = "match (a)-[]->(b) where id(a) = " +Integer.toString(id) +" return id(b)";
 
 		String result = Execute(query);
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
 		
-		JSONArray arr = JSONArray.fromObject(str);
-		ArrayList l  = new ArrayList<Integer>();
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
 		
-		for(int i = 0;i<arr.size();i++)
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		for(int i = 0;i<jsonArr.size();i++)
 		{
-			jsonObject=arr.getJSONObject(i);
-			str = jsonObject.getString("row");
-			str = str.substring(1, str.length()-1);
-			l.add(Integer.parseInt(str));
+			jsonObject = (JsonObject) jsonArr.get(i);
+			JsonElement jsonElement = (JsonElement) jsonObject.get("row");
+			String  row = jsonElement.toString();
+			row = row.substring(1, row.length()-1);
+			l.add(Integer.parseInt(row));		
 		}
 		return l;
 	}
@@ -199,25 +201,26 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	//get all in neighbors of a vertex with its given id
 	public ArrayList<Integer> GetInNeighbors(int id)
 	{
+		ArrayList<Integer> l = new ArrayList<Integer>();
+		
 		String query = "match (a)-[]->(b) where id(b) = " +Integer.toString(id) +" return id(a)";
 
 		String result = Execute(query);
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
 		
-		JSONArray arr = JSONArray.fromObject(str);
-		ArrayList l  = new ArrayList<Integer>();
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
 		
-		for(int i = 0;i<arr.size();i++)
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		for(int i = 0;i<jsonArr.size();i++)
 		{
-			jsonObject=arr.getJSONObject(i);
-			str = jsonObject.getString("row");
-			str = str.substring(1, str.length()-1);
-			l.add(Integer.parseInt(str));
+			jsonObject = (JsonObject) jsonArr.get(i);
+			JsonElement jsonElement = (JsonElement) jsonObject.get("row");
+			String row = jsonElement.toString();
+			row = row.substring(1, row.length()-1);
+			l.add(Integer.parseInt(row));		
 		}
 		return l;
 	}
@@ -229,22 +232,26 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		
 		String result = Execute(query);
 		
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
-		str = str.substring(1, str.length()-1);
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
 		
-		if(str.equals(""))
+		JsonArray errors = (JsonArray) jsonObject.get("errors");
+		if(!errors.toString().equals("[]"))
 			return null;
 		
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("row");
-		str = str.substring(1, str.length()-1);
+		JsonArray jsonArray = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArray.get(0);
+		jsonArray = (JsonArray) jsonObject.get("data");
+		jsonObject = (JsonObject) jsonArray.get(0);
+		String data = jsonObject.toString();
 		
-		return str;
+		String row = jsonObject.get("row").toString();
+		row = row.substring(1, row.length()-1);
+		
+		if(row.equals("null"))
+			return null;
+		
+		return row;
 	}
 	
 	public double[] GetVerticeLocation(int id)
@@ -283,7 +290,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	public boolean HasProperty(int id, String propertyname)
 	{
 		String value = GetVertexAttributeValue(id, propertyname);
-		if(value.equals("null"))
+		if(value == null)
 			return false;
 		else
 			return true;

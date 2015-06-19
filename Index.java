@@ -9,6 +9,9 @@ import javax.ws.rs.core.MediaType;
 import net.sf.json.JSONArray;
 import net.sf.json.JSONObject;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
@@ -20,6 +23,7 @@ public class Index implements ReachabilityQuerySolver{
 	
 	private String SERVER_ROOT_URI;
 	private String longitude_property_name;
+	private String latitude_property_name;
 	
 	public long GetTranTime;
 	
@@ -36,6 +40,7 @@ public class Index implements ReachabilityQuerySolver{
 		Config config = new Config();
 		SERVER_ROOT_URI = config.GetServerRoot();
 		longitude_property_name = config.GetLongitudePropertyName();
+		latitude_property_name = config.GetLatitudePropertyName();
 		
 		GetTranTime = 0;
 		GetRTreeTime = 0;
@@ -53,13 +58,49 @@ public class Index implements ReachabilityQuerySolver{
 		
 		long start = System.currentTimeMillis();
 		String result = p_neo4j_graph_store.Execute(query);
+		System.out.println(result);
 		QueryTime += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		hs = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
 		BuildListTime += System.currentTimeMillis() - start;
 		
+		System.out.println(hs);
 		return hs;
+	}
+	
+	public HashSet<Integer> RangeQueryByRTree(String layername, Rectangle rect)
+	{
+		HashSet<Integer> hs = new HashSet();
+		
+		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
+		
+		WebResource resource = Client.create().resource(range_query);
+		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.max_y+" }";
+		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
+		String result = response.getEntity(String.class);
+		response.close();
+		
+		JsonParser jsonParser = new JsonParser();
+		JsonArray jsonArr = (JsonArray) jsonParser.parse(result);
+
+		for(int i = 0;i<jsonArr.size();i++)
+		{
+			JsonObject jsonOb = (JsonObject) jsonArr.get(i);
+			JsonObject json_data = (JsonObject) jsonOb.get("data");
+			String id = json_data.get("id").toString();
+			hs.add(Integer.parseInt(id));
+		}
+		return hs;
+	}
+	
+	public String GetSpatialPlugin()
+	{
+		final String spatial_add_node = SERVER_ROOT_URI + "/ext/SpatialPlugin";
+		WebResource resource = Client.create().resource(spatial_add_node);
+		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).get(ClientResponse.class);
+		String result = response.getEntity(String.class);
+		return result;
 	}
 	
 	public void ConstructWKTRTree()
@@ -109,8 +150,40 @@ public class Index implements ReachabilityQuerySolver{
 		System.out.println(result);
 	}
 	
+	public String AddOneNodeToPointLayer(String layername, int id)
+	{
+		String result = "";
+		
+		final String add_one_to_layer = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
+		WebResource resource = Client.create().resource(add_one_to_layer);
+		String entity = "{\n \"layer\" : \""+layername+"\",  \"node\" : \"http://localhost:7474/db/data/node/" + id + "\"\n}";
+		
+		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class); 
+		result = response.getEntity(String.class);
+		return result;
+	}
 	
 	public void AddSpatialNodesToPointLayer(String layername)
+	{
+		final String spatial_addto_index = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
+		
+		String result = p_neo4j_graph_store.Execute("match (a:RTree_node) return id(a)");
+
+		HashSet<Integer> spatial_vertices = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		
+		Iterator<Integer> iter = spatial_vertices.iterator();
+		while(iter.hasNext())
+		{
+			int id = iter.next();
+			WebResource resource = Client.create().resource(spatial_addto_index);
+			String entity = "{\"layer\" : \""+layername+"\", \"node\" : \""+SERVER_ROOT_URI+"/node/"+id+"\"}";
+			ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
+        	result = response.getEntity(String.class);
+		}
+		System.out.println(result);
+	}
+	
+	/*public void AddSpatialNodesToPointLayer(String layername)
 	{
 		final String spatial_create_node = SERVER_ROOT_URI + "/node";
 		final String spatial_addto_index = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
@@ -144,7 +217,7 @@ public class Index implements ReachabilityQuerySolver{
 			response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
         	result = response.getEntity(String.class);
 		}	
-	}
+	}*/
 	
 	public String FindSpatialLayer(String layername)
 	{
@@ -292,7 +365,7 @@ public class Index implements ReachabilityQuerySolver{
 	{	
 		VisitedNodes = new HashSet();
 		queue = new LinkedList();
-		String query = "match (a) where has(a.longitude) return id(a)";
+		String query = "match (a) where has(a." + longitude_property_name + ") return id(a)";
 		String result = p_neo4j_graph_store.Execute(query);
 		
 		ArrayList<String> spatial_nodes = p_neo4j_graph_store.GetExecuteResultData(result);
@@ -371,7 +444,8 @@ public class Index implements ReachabilityQuerySolver{
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		long start = System.currentTimeMillis();
-		HashSet<Integer> hs = RangeQuery("simplepointlayer",rect);
+		//HashSet<Integer> hs = RangeQuery("simplepointlayer",rect);
+		HashSet<Integer> hs = RangeQueryByRTree("simplepointlayer",rect);
 		GetRTreeTime+=System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();

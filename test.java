@@ -140,9 +140,15 @@ public class test {
 		//double[] location = p_neo4j_graph_store.GetVerticeLocation(26242);
 		//System.out.println(location[0]);
 		
-		String query = "start node = node:simplepointlayer('bbox:[0.0,180.0,0.0,90.0]') return node";
-		System.out.println(p_neo4j_graph_store.Execute(query));
+		//String query = "start node = node:simplepointlayer('bbox:[0.0,180.0,0.0,90.0]') return node";
+		//System.out.println(p_neo4j_graph_store.Execute(query));
+		//System.out.println(p_neo4j_graph_store.GetInNeighbors(273774));
+		//System.out.println(p_neo4j_graph_store.GetVertexAttributeValue(0, "name"));
+		//System.out.println(p_neo4j_graph_store.HasProperty(0, "k111k"));
 		
+		/*double location[] = p_neo4j_graph_store.GetVerticeLocation(280975);
+		System.out.println(location[0]);
+		System.out.println(location[1]);*/
 	}
 	
 }

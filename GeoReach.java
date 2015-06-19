@@ -59,16 +59,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			rec.max_y = Double.parseDouble(maxy2_s);
 			return rec;
 		}
-		/*
-		String minx1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_minx");
-		String miny1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_miny");
-		String maxx1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_maxx");
-		String maxy1_s = p_neo4j_graph_store.GetVertexAttributeValue(id, "RMBR_maxy");
-		
-		rec.min_x = Double.parseDouble(minx1_s);
-		rec.min_y = Double.parseDouble(miny1_s);
-		rec.max_x = Double.parseDouble(maxx1_s);
-		rec.max_y = Double.parseDouble(maxy1_s);*/
+
 		rec = GetRMBR(id);
 		
 		
@@ -244,12 +235,6 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		String maxx_s = String.valueOf(p_rec.max_x);
 		String maxy_s = String.valueOf(p_rec.max_y);
 		
-		/*
-		String minx_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_minx");
-		String miny_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_miny");
-		String maxx_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_maxx");
-		String maxy_s = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "RMBR_maxy");
-		*/
 		
 		RMBR.min_x = Double.parseDouble(minx_s);
 		RMBR.min_y = Double.parseDouble(miny_s);

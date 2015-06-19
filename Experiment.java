@@ -12,9 +12,9 @@ public class Experiment {
 		Index index = new Index();
 		Traversal traversal = new Traversal();
 		
-		Rectangle query_rect = new Rectangle(-130, 20, -60, 50);
+		Rectangle query_rect = new Rectangle(0, 0, 20, 10);
 		
-		String query = "match (a) where has(a.RMBR_minx) return id(a) limit 10";
+		String query = "match (a) where has(a.RMBR_minx) return id(a) limit 100";
 		String result = p_neo4j_graph_store.Execute(query);
 		System.out.println(result);
 		ArrayList<String> ids = p_neo4j_graph_store.GetExecuteResultData(result);
