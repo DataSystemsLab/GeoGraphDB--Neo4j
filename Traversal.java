@@ -37,6 +37,41 @@ public class Traversal implements ReachabilityQuerySolver	{
 	
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
+		Queue<Integer> queue = new LinkedList();
+		VisitedVertices.clear();
+		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
+		
+		for(int i = 0;i<outneighbors.size();i++)
+		{
+			queue.add(outneighbors.get(i));
+		}
+		
+		while(!queue.isEmpty())
+		{
+			int id = queue.poll();
+			if(p_neo4j_graph_store.IsSpatial(id))
+			{
+				double lat = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(id, latitude_property_name));
+				double lon = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(id, longitude_property_name));
+				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+					return true;
+			}
+			VisitedVertices.add(id);
+			
+			outneighbors = p_neo4j_graph_store.GetOutNeighbors(id);
+			for(int i = 0;i<outneighbors.size();i++)
+			{
+				int outneighbor = outneighbors.get(i);
+				if(!VisitedVertices.contains(outneighbor))
+				{
+					queue.add(outneighbor);
+				}
+			}
+		}		
+		return false;
+	}
+	/*public boolean ReachabilityQuery(int start_id, Rectangle rect)
+	{
 		VisitedVertices.add(start_id);
 		
 		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
@@ -59,10 +94,8 @@ public class Traversal implements ReachabilityQuerySolver	{
 			boolean result = ReachabilityQuery(outneighbor, rect);
 			if(result)
 				return true;
-		}
-		
-		return false;
-		
-	}
+		}		
+		return false;		
+	}*/
 
 }

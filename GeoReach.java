@@ -60,8 +60,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			return rec;
 		}
 
-		rec = GetRMBR(id);
-		
+		rec = GetRMBR(id);	
 		
 		double minx2 = Double.parseDouble(minx2_s);
 		double miny2 = Double.parseDouble(miny2_s);
@@ -146,11 +145,6 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				miny_s = String.valueOf(p_rec.min_y);
 				maxx_s = String.valueOf(p_rec.max_x);
 				maxy_s = String.valueOf(p_rec.max_y);
-				/*
-				minx_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_minx");
-				miny_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_miny");
-				maxx_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_maxx");
-				maxy_s = p_neo4j_graph_store.GetVertexAttributeValue(current_id, "RMBR_maxy");*/
 			}
 			
 			
@@ -174,19 +168,11 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						
 						String query = "match (a) where id(a) = " + neighbor + " set a.RMBR_minx = " + minx + ", a.RMBR_miny = " + miny + ", a.RMBR_maxx = " + maxx + ", a.RMBR_maxy = " + maxy;
 						p_neo4j_graph_store.Execute(query);
-						
-						/*
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_minx", minx);
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_miny", miny);
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
-						*/
 					}
 				}
 				
 				if(hasRMBR)
 				{
-					//new_RMBR = null;
 					Rectangle new_RMBR = MBR(neighbor, minx_s, miny_s, maxx_s, maxy_s);
 					if(new_RMBR != null)
 					{
@@ -199,15 +185,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						
 						String query = "match (a) where id(a) = " + neighbor + " set a.RMBR_minx = " + minx + ", a.RMBR_miny = " + miny + ", a.RMBR_maxx = " + maxx + ", a.RMBR_maxy = " + maxy;
 						p_neo4j_graph_store.Execute(query);
-						
-						/*
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_minx", minx);
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_miny", miny);
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxx", maxx);
-						p_neo4j_graph_store.AddVertexAttribute(neighbor, "RMBR_maxy", maxy);
-						*/
 					}
-					
 				}
 					
 				if(changed&&!hs.contains(neighbor))
@@ -220,6 +198,41 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		}
 	}
 	
+	/*public boolean ReachabilityQuery(int start_id, Rectangle rect)
+	{
+		if(!HasRMBR(start_id))
+			return false;
+		
+		Rectangle RMBR = GetRMBR(start_id);
+		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+			return false;
+		
+		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_x && RMBR.max_y < rect.max_y)
+			return true;
+		
+		Queue<Integer> queue = new LinkedList();
+		VisitedVertices.clear();
+		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
+		
+		for(int i = 0;i<outneighbors.size();i++)
+		{
+			int outneighbor = outneighbors.get(i);
+			
+			if(p_neo4j_graph_store.IsSpatial(outneighbor))
+			{
+				double[] location = p_neo4j_graph_store.GetVerticeLocation(outneighbor);
+				
+				double lat = location[1];
+				double lon = location[0];
+				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+					return true;
+			}
+			
+			boolean result = ReachabilityQuery(outneighbor, rect);
+			if(result)
+				return true;
+	}*/
+	
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		VisitedVertices.add(start_id);
@@ -228,6 +241,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			return false;
 		
 		Rectangle RMBR = new Rectangle();
+		
 		
 		Rectangle p_rec = GetRMBR(start_id);
 		String minx_s = String.valueOf(p_rec.min_x);

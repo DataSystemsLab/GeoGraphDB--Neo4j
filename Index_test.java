@@ -33,15 +33,22 @@ public class Index_test	{
 		System.out.println((end-start)/1000.0);*/
 		
 		
-		Rectangle query_rect = new Rectangle();
+		/*Rectangle query_rect = new Rectangle();
 		query_rect.min_x = 200;
 		query_rect.min_y = 200;
 		query_rect.max_x = 300;
 		query_rect.max_y = 300;
-		System.out.println(index.RangeQueryByRTree("simplepointlayer", query_rect));
+		System.out.println(index.RangeQueryByRTree("simplepointlayer", query_rect));*/
 		//System.out.println(index.FindSpatialLayer("simplepointlayer"));
 		//System.out.println(index.GetSpatialPlugin());
 		//index.AddSpatialNodesToPointLayer("simplepointlayer");
+		
+		String layername = "RTree_65536_16_1";
+		//index.CreatePointLayer(layername);
+		index.AddSpatialNodesToPointLayer(layername);
+		
+		//Rectangle query_rect = new Rectangle(0,0,300,300);
+		//System.out.println(index.ReachabilityQuery(283392, query_rect));
 	}
 	
 }
