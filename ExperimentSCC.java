@@ -1,18 +1,18 @@
 package def;
 
-import java.util.*;
+import java.util.ArrayList;
 
-public class Experiment {
+public class ExperimentSCC {
 
 	public static void main(String[] args) {
-		
+
 		Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 		
 		GeoReach georeach = new GeoReach();
 		Index index = new Index();
 		Traversal traversal = new Traversal();
 		
-		Rectangle query_rect = new Rectangle(0, 0, 300, 300);
+		Rectangle query_rect = new Rectangle(300, 300, 900, 900);
 
 		OwnMethods p_ownmethods = new OwnMethods();
 		String root = "/home/yuhansun/Documents/Synthetic_data";
@@ -20,15 +20,13 @@ public class Experiment {
 		//String filename = root + "/16000_1/test_graph_ids.txt";
 		//String filename = root + "/65536_16_1/test_graph_ids.txt";
 		//String filename = root + "/262144_18_1/test_graph_ids.txt";
-		String filename = root + "/DAG/18_1/test_graph_ids.txt";
-		
+		String filename = root + "/18_16/test_graph_ids.txt";
 		
 		ArrayList<String> graph_ids = p_ownmethods.ReadFile(filename);
-		
-		
+				
 		long time1 = 0,time2 = 0,time3 = 0;
 		
-		for(int i = 0;i<10;i++)
+		for(int i = 0;i<50;i++)
 		{
 			System.out.println(i);
 			int id = Integer.parseInt(graph_ids.get(i));
@@ -41,10 +39,7 @@ public class Experiment {
 			System.out.println(result1);
 			
 			start = System.currentTimeMillis();
-			//boolean result2 = index.ReachabilityQuery(id, query_rect,"RTree_262144_18_1","Transitive_closure_262144_18_1");
-			//boolean result2 = index.ReachabilityQuery(id, query_rect);
-			boolean result2 = index.ReachabilityQuery(id, query_rect,"DAGRTree_18_1","DAGTransitive_closure_18_1");
-			
+			boolean result2 = index.ReachabilityQuerySCC(id, query_rect,"RTree_18_16","SCCTransitive_closure_18_16");
 			time2+=System.currentTimeMillis() - start;
 			System.out.println(result2);
 			

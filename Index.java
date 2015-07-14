@@ -6,9 +6,6 @@ import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -98,6 +95,37 @@ public class Index implements ReachabilityQuerySolver{
 		return hs;
 	}
 	
+	public HashSet<Integer> RangeQueryByRTreeSCC(String layername, Rectangle rect)
+	{
+		HashSet<Integer> hs = new HashSet();
+		
+		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
+		
+		long start = System.currentTimeMillis();
+		WebResource resource = Client.create().resource(range_query);
+		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.max_y+" }";
+		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
+		String result = response.getEntity(String.class);
+		response.close();
+		QueryTime+=System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		JsonParser jsonParser = new JsonParser();
+		JsonArray jsonArr = (JsonArray) jsonParser.parse(result);
+
+		for(int i = 0;i<jsonArr.size();i++)
+		{
+			JsonObject jsonOb = (JsonObject) jsonArr.get(i);
+			JsonObject json_data = (JsonObject) jsonOb.get("data");
+			String id = json_data.get("scc_id").toString();
+			if(hs.contains(Integer.parseInt(id)))
+				continue;
+			hs.add(Integer.parseInt(id));
+		}
+		BuildListTime+=System.currentTimeMillis() - start;
+		return hs;
+	}
+	
 	public String GetSpatialPlugin()
 	{
 		final String spatial_add_node = SERVER_ROOT_URI + "/ext/SpatialPlugin";
@@ -169,14 +197,15 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void AddSpatialNodesToPointLayer(String layername)
 	{
-		String RTree_label = "RTree_65536_16_1";
+		String RTree_label = layername;
 		
 		final String spatial_addto_index = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
 		
 		String result = p_neo4j_graph_store.Execute("match (a:" + RTree_label + ") return id(a)");
 
 		HashSet<Integer> spatial_vertices = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
-				
+		
+		
 		Iterator<Integer> iter = spatial_vertices.iterator();
 		while(iter.hasNext())
 		{
@@ -188,42 +217,6 @@ public class Index implements ReachabilityQuerySolver{
         	System.out.println(result);
 		}
 	}
-	
-	/*public void AddSpatialNodesToPointLayer(String layername)
-	{
-		final String spatial_create_node = SERVER_ROOT_URI + "/node";
-		final String spatial_addto_index = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
-		
-		String result = p_neo4j_graph_store.Execute("match (a) where has(a." + longitude_property_name + ") return id(a) as id, a.latitude as latitude, a.longitude as longitude");
-		
-		ArrayList<String> spatial_vertices = p_neo4j_graph_store.GetExecuteResultData(result);
-		for(int i = 0;i<spatial_vertices.size();i++)
-		{
-			String record = spatial_vertices.get(i);
-			String[] l = record.split(",");
-			String id = l[0];
-			double latitude = Double.parseDouble(l[1]);
-			double longitude = Double.parseDouble(l[2]);
-			
-			WebResource resource = Client.create().resource(spatial_create_node);
-			String entity = "{ \n \"lat\": "+latitude+", \n \"lon\" : "+longitude+", \n \"id\": "+ id + " \n} ";
-			
-			ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
-			result = response.getEntity(String.class);
-			JSONObject jsonObject = JSONObject.fromObject(result);
-			String location = jsonObject.getString("self");
-			response.close();
-			
-			
-			l = location.split("/");
-			id = l[6];
-				
-			resource = Client.create().resource(spatial_addto_index);
-			entity = "{\"layer\" : \""+layername+"\", \"node\" : \""+SERVER_ROOT_URI+"/node/"+id+"\"}";
-			response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
-        	result = response.getEntity(String.class);
-		}	
-	}*/
 	
 	public String FindSpatialLayer(String layername)
 	{
@@ -275,13 +268,6 @@ public class Index implements ReachabilityQuerySolver{
 			VisitedNodes = new HashSet();
 			TraversalOutReachNodes(id);
 			System.out.println(VisitedNodes);
-			/*Iterator iter = VisitedNodes.iterator();
-			while(iter.hasNext())
-			{
-				query = "match (a) where id(a) = "+iter.next()+" set a.reach_nodes = a.reach_nodes + "+id;
-				result = p_neo4j_graph_store.Execute(query);
-				System.out.println(result);
-			}*/
 		}
 	}
 	
@@ -450,7 +436,7 @@ public class Index implements ReachabilityQuerySolver{
 	public boolean ReachabilityQuery(int start_id, Rectangle rect)
 	{
 		long start = System.currentTimeMillis();
-		//HashSet<Integer> hs = RangeQuery("simplepointlayer",rect);
+		//HashSet<Integer> hs = RangeQueryByRTree("simplepointlayer",rect);
 		HashSet<Integer> hs = RangeQueryByRTree("RTree_65536_16_1",rect);
 		GetRTreeTime+=System.currentTimeMillis() - start;
 		
@@ -470,6 +456,98 @@ public class Index implements ReachabilityQuerySolver{
 			{
 				JudgeTime += System.currentTimeMillis() - start;
 				return true;
+			}
+		}
+		JudgeTime += System.currentTimeMillis() - start;
+		return false;
+	}
+	
+	public boolean ReachabilityQuery(int start_id, Rectangle rect, String RTreeLabel, String TransitiveClosureLabel)
+	{
+		long start = System.currentTimeMillis();
+		HashSet<Integer> hs = RangeQueryByRTree(RTreeLabel,rect);
+		GetRTreeTime+=System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		String attribute_id = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "id");
+		String query = "match (a:" + TransitiveClosureLabel + ") -->(b) where a.id = " + attribute_id + " return b.id";
+		String result = p_neo4j_graph_store.Execute(query);
+		HashSet<Integer> reach_nodes = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		
+		GetTranTime += System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		if(hs.size()<reach_nodes.size())
+		{
+			Iterator<Integer> iter =  hs.iterator();
+			while(iter.hasNext())
+			{
+				if(reach_nodes.contains(iter.next()))
+				{
+					JudgeTime += System.currentTimeMillis() - start;
+					return true;
+				}
+			}
+		}
+		else
+		{
+			Iterator<Integer> iter = reach_nodes.iterator();
+			while(iter.hasNext())
+			{
+				if(hs.contains(iter.next()))
+				{
+					JudgeTime += System.currentTimeMillis() - start;
+					return true;
+				}
+			}
+		}
+		JudgeTime += System.currentTimeMillis() - start;
+		return false;
+	}
+	
+	public boolean ReachabilityQuerySCC(int start_id, Rectangle rect, String RTreeLabel, String TransitiveClosureLabel)
+	{
+		long start = System.currentTimeMillis();
+		HashSet<Integer> hs = RangeQueryByRTreeSCC(RTreeLabel,rect);
+		GetRTreeTime+=System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		String start_scc_id = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "scc_id");
+		String query = "match (a:" + TransitiveClosureLabel + ") -->(b) where a.id = " + start_scc_id + " return b.id";
+		String result = p_neo4j_graph_store.Execute(query);
+		HashSet<Integer> reach_scc = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		
+		GetTranTime += System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		
+		if(hs.contains(Integer.parseInt(start_scc_id)))
+			return true;//in the same scc
+		
+		if(hs.size()<reach_scc.size())
+		{
+			Iterator<Integer> iter =  hs.iterator();
+			while(iter.hasNext())
+			{
+				int end_scc_id = iter.next();
+				if(reach_scc.contains(end_scc_id))
+				{
+					JudgeTime += System.currentTimeMillis() - start;
+					return true;
+				}
+			}
+		}
+		else
+		{
+			Iterator<Integer> iter = reach_scc.iterator();
+			while(iter.hasNext())
+			{
+				int end_scc_id = iter.next();
+				if(hs.contains(end_scc_id))
+				{
+					JudgeTime += System.currentTimeMillis() - start;
+					return true;
+				}
 			}
 		}
 		JudgeTime += System.currentTimeMillis() - start;

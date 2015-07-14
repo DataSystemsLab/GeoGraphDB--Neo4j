@@ -12,9 +12,6 @@ import com.sun.jersey.api.client.WebResource;
 import java.io.*;
 import java.net.URI;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 public class Index_test	{
 	
 	public static void main(String[] args) {
@@ -36,19 +33,27 @@ public class Index_test	{
 		/*Rectangle query_rect = new Rectangle();
 		query_rect.min_x = 200;
 		query_rect.min_y = 200;
-		query_rect.max_x = 300;
-		query_rect.max_y = 300;
-		System.out.println(index.RangeQueryByRTree("simplepointlayer", query_rect));*/
+		query_rect.max_x = 900;
+		query_rect.max_y = 900;
+		HashSet<Integer>ids = index.RangeQueryByRTree("RTree_262144_18_1", query_rect);
+		if(ids.contains(176347))
+			System.out.println(true);
+		*/
+		//System.out.println(index.ReachabilityQuery(327914, query_rect,"RTree_262144_18_1","Transitive_closure_262144_18_1"));
+		//System.out.println(index.RangeQuery("simplepointlayer", query_rect));
+		//System.out.println(index.RangeQueryByRTree("simplepointlayer", query_rect));
 		//System.out.println(index.FindSpatialLayer("simplepointlayer"));
 		//System.out.println(index.GetSpatialPlugin());
 		//index.AddSpatialNodesToPointLayer("simplepointlayer");
 		
-		String layername = "RTree_65536_16_1";
-		//index.CreatePointLayer(layername);
+		String layername = "DAGRTree_18_1";
+		//System.out.println(index.CreatePointLayer(layername));
 		index.AddSpatialNodesToPointLayer(layername);
 		
-		//Rectangle query_rect = new Rectangle(0,0,300,300);
+		//Rectangle query_rect = new Rectangle(800,800,900,900);
 		//System.out.println(index.ReachabilityQuery(283392, query_rect));
+		//System.out.println(index.ReachabilityQuery(125340, query_rect, "RTree_262144_18_1", "Transitive_closure_262144_18_1"));
+		//System.out.println(index.ReachabilityQuerySCC(2317412, query_rect, "RTree_18_16", "SCCTransitive_closure_18_16"));
 	}
 	
 }

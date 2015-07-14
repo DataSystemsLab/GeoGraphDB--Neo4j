@@ -2,19 +2,6 @@ package def;
 
 import java.util.*;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-
-import java.io.*;
-import java.net.URI;
-
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 public class GeoReach implements ReachabilityQuerySolver	{
 	
 	//used in query procedure in order to record visited vertices

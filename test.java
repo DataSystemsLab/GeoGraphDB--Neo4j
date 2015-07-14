@@ -12,9 +12,6 @@ import com.sun.jersey.api.client.WebResource;
 import java.io.*;
 import java.net.URI;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 public class test {
 	
 	public static Set<Integer> VisitedVertices = new HashSet();

@@ -12,9 +12,6 @@ import com.sun.jersey.api.client.WebResource;
 import java.io.*;
 import java.net.URI;
 
-import net.sf.json.JSONArray;
-import net.sf.json.JSONObject;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -105,23 +102,8 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		String query = "match (a:Graph_node) return id(a)";
 		String result = Execute(query);
 
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
-
-		JSONArray arr = JSONArray.fromObject(str);
 		ArrayList l  = new ArrayList<Integer>();
 		
-		for(int i = 0;i<arr.size();i++)
-		{
-			jsonObject=arr.getJSONObject(i);
-			str = jsonObject.getString("row");
-			str = str.substring(1, str.length()-1);
-			l.add(Integer.parseInt(str));
-		}
 		return l;
 	}
 	
@@ -130,24 +112,17 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	{
 		String query = "match (a:Graph_node) where has (a."+ longitude_property_name +") return id(a)";
 		String result = Execute(query);
-
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
-
-		JSONArray arr = JSONArray.fromObject(str);
+		
+		HashSet<Integer> hs = GetExecuteResultDataInSet(result);
+		
 		ArrayList l  = new ArrayList<Integer>();
 		
-		for(int i = 0;i<arr.size();i++)
+		Iterator<Integer> iter = hs.iterator();
+		while(iter.hasNext())
 		{
-			jsonObject=arr.getJSONObject(i);
-			str = jsonObject.getString("row");
-			str = str.substring(1, str.length()-1);
-			l.add(Integer.parseInt(str));
-		}
+			l.add(iter.next());
+		}		
+		
 		return l;
 	}
 	
@@ -157,17 +132,9 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		String query = "match (a) where id(a) = " +Integer.toString(id) +" return a";
 		
 		String result = Execute(query);
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
 		
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("row");
-		str = str.substring(1, str.length()-1);
+		String str = null;
+		
 		return str;
 	}
 	
@@ -274,16 +241,6 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		String query = "match (a) where id(a) = " +Integer.toString(id) +" set a."+attributename+"="+value;
 		String result = Execute(query);
 		
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("errors");
-				
-		str = str.substring(1, str.length()-1);
-		
-		if(str.equals(""))
-			result = "Succeed!";
-		else
-			result = str;
-		
 		return result;
 	}
 	
@@ -312,19 +269,11 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		
 		String result = Execute(query);
 		
-		JSONObject jsonObject = JSONObject.fromObject(result);
-		String str = jsonObject.getString("results");
-		str = str.substring(1, str.length()-1);
-
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("data");
-		str = str.substring(1, str.length()-1);
+		HashSet<Integer> hs = GetExecuteResultDataInSet(result);
 		
-		jsonObject = JSONObject.fromObject(str);
-		str = jsonObject.getString("row");
-		str = str.substring(1, str.length()-1);
+		Iterator<Integer> iter = hs.iterator();
 		
-		int id = Integer.parseInt(str);
+		int id = iter.next();
 		return id;
 	}
 		
