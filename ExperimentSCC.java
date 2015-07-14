@@ -12,7 +12,7 @@ public class ExperimentSCC {
 		Index index = new Index();
 		Traversal traversal = new Traversal();
 		
-		Rectangle query_rect = new Rectangle(300, 300, 900, 900);
+		Rectangle query_rect = new Rectangle(0, 0, 400, 400);
 
 		OwnMethods p_ownmethods = new OwnMethods();
 		String root = "/home/yuhansun/Documents/Synthetic_data";
@@ -26,7 +26,7 @@ public class ExperimentSCC {
 				
 		long time1 = 0,time2 = 0,time3 = 0;
 		
-		for(int i = 0;i<50;i++)
+		for(int i = 0;i<500;i++)
 		{
 			System.out.println(i);
 			int id = Integer.parseInt(graph_ids.get(i));

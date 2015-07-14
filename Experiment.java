@@ -20,7 +20,7 @@ public class Experiment {
 		//String filename = root + "/16000_1/test_graph_ids.txt";
 		//String filename = root + "/65536_16_1/test_graph_ids.txt";
 		//String filename = root + "/262144_18_1/test_graph_ids.txt";
-		String filename = root + "/DAG/18_1/test_graph_ids.txt";
+		String filename = root + "/DAG/18_4/test_graph_ids.txt";
 		
 		
 		ArrayList<String> graph_ids = p_ownmethods.ReadFile(filename);
@@ -28,7 +28,7 @@ public class Experiment {
 		
 		long time1 = 0,time2 = 0,time3 = 0;
 		
-		for(int i = 0;i<10;i++)
+		for(int i = 0;i<500;i++)
 		{
 			System.out.println(i);
 			int id = Integer.parseInt(graph_ids.get(i));
@@ -43,10 +43,10 @@ public class Experiment {
 			start = System.currentTimeMillis();
 			//boolean result2 = index.ReachabilityQuery(id, query_rect,"RTree_262144_18_1","Transitive_closure_262144_18_1");
 			//boolean result2 = index.ReachabilityQuery(id, query_rect);
-			boolean result2 = index.ReachabilityQuery(id, query_rect,"DAGRTree_18_1","DAGTransitive_closure_18_1");
+			//boolean result2 = index.ReachabilityQuery(id, query_rect,"DAGRTree_18_1","DAGTransitive_closure_18_1");
 			
 			time2+=System.currentTimeMillis() - start;
-			System.out.println(result2);
+			//System.out.println(result2);
 			
 			georeach.VisitedVertices.clear();
 			start = System.currentTimeMillis();
@@ -54,7 +54,8 @@ public class Experiment {
 			time3+=System.currentTimeMillis() - start;
 			System.out.println(result3);
 						
-			if(result1!=result2 || result1!=result3)
+			//if(result1!=result2 || result1!=result3)
+			if(result1!=result3)
 			{
 				System.out.println(id);
 				break;

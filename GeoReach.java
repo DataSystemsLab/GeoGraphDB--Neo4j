@@ -2,6 +2,11 @@ package def;
 
 import java.util.*;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 public class GeoReach implements ReachabilityQuerySolver	{
 	
 	//used in query procedure in order to record visited vertices
@@ -185,58 +190,97 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		}
 	}
 	
-	/*public boolean ReachabilityQuery(int start_id, Rectangle rect)
-	{
-		if(!HasRMBR(start_id))
-			return false;
+	static boolean TraversalQuery(int start_id, Rectangle rect)
+	{		
+		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
-		Rectangle RMBR = GetRMBR(start_id);
-		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-			return false;
+		String result = p_neo4j_graph_store.Execute(query);
 		
-		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_x && RMBR.max_y < rect.max_y)
-			return true;
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
 		
-		Queue<Integer> queue = new LinkedList();
-		VisitedVertices.clear();
-		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
-		
-		for(int i = 0;i<outneighbors.size();i++)
-		{
-			int outneighbor = outneighbors.get(i);
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+
+		int false_count = 0;
+		for(int i = 0;i<jsonArr.size();i++)
+		{			
+			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonArray row = (JsonArray)jsonObject.get("row");
 			
-			if(p_neo4j_graph_store.IsSpatial(outneighbor))
+			int id = row.get(0).getAsInt();
+			if(VisitedVertices.contains(id))
 			{
-				double[] location = p_neo4j_graph_store.GetVerticeLocation(outneighbor);
-				
-				double lat = location[1];
-				double lon = location[0];
-				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
-					return true;
+				false_count+=1;
+				continue;
 			}
 			
-			boolean result = ReachabilityQuery(outneighbor, rect);
-			if(result)
-				return true;
-	}*/
+			jsonObject = (JsonObject)row.get(1);
+			if(jsonObject.has("longitude"))
+			{
+				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
+				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
+				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+				{
+					System.out.println(id);
+					return true;
+				}
+			}
+			if(jsonObject.has("RMBR_minx"))
+			{
+				Rectangle RMBR = new Rectangle();
+				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
+				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
+				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
+				RMBR.max_y = jsonObject.get("RMBR_maxy").getAsDouble();
+				
+				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_x && RMBR.max_y < rect.max_y)
+					return true;
+				
+				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+					false_count+=1;
+			}
+			else
+				false_count+=1;
+
+		}
 	
-	public boolean ReachabilityQuery(int start_id, Rectangle rect)
-	{
-		VisitedVertices.add(start_id);
-		
-		if(!HasRMBR(start_id))
+		if(false_count == jsonArr.size())
 			return false;
 		
+		for(int i = 0;i<jsonArr.size();i++)
+		{
+			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonArray row = (JsonArray)jsonObject.get("row");
+			
+			int id = row.get(0).getAsInt();
+			if(VisitedVertices.contains(id))
+				continue;
+			VisitedVertices.add(id);
+			boolean reachable = TraversalQuery(id, rect);
+			
+			if(reachable)
+				return true;		
+		}
+		
+		return false;	
+	}
+	
+	public boolean ReachabilityQuery(int start_id, Rectangle rect)
+	{		
+		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
+		
+		if(!all_attributes.has("RMBR_minx"))
+			return false;
+		
+		String minx_s = String.valueOf(all_attributes.get("RMBR_minx"));
+		String miny_s = String.valueOf(all_attributes.get("RMBR_miny"));
+		String maxx_s = String.valueOf(all_attributes.get("RMBR_maxx"));
+		String maxy_s = String.valueOf(all_attributes.get("RMBR_maxy"));
+		
 		Rectangle RMBR = new Rectangle();
-		
-		
-		Rectangle p_rec = GetRMBR(start_id);
-		String minx_s = String.valueOf(p_rec.min_x);
-		String miny_s = String.valueOf(p_rec.min_y);
-		String maxx_s = String.valueOf(p_rec.max_x);
-		String maxy_s = String.valueOf(p_rec.max_y);
-		
-		
+										
 		RMBR.min_x = Double.parseDouble(minx_s);
 		RMBR.min_y = Double.parseDouble(miny_s);
 		RMBR.max_x = Double.parseDouble(maxx_s);
@@ -248,31 +292,79 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_x && RMBR.max_y < rect.max_y)
 			return true;
 		
-		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
+		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
-		for(int i = 0;i<outneighbors.size();i++)
-		{
-			int outneighbor = outneighbors.get(i);
+		String result = p_neo4j_graph_store.Execute(query);
+		
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+		
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+		int count = jsonArr.size();
+
+		int false_count = 0;
+		for(int i = 0;i<jsonArr.size();i++)
+		{			
+			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonArray row = (JsonArray)jsonObject.get("row");
 			
-			if(p_neo4j_graph_store.IsSpatial(outneighbor))
+			int id = row.get(0).getAsInt();
+			if(VisitedVertices.contains(id))
 			{
-				double[] location = p_neo4j_graph_store.GetVerticeLocation(outneighbor);
-				
-				double lat = location[1];
-				double lon = location[0];
-				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
-					return true;
-			}
-			
-			if(VisitedVertices.contains(outneighbor))
+				false_count+=1;
 				continue;
+			}
+		
+			jsonObject = (JsonObject)row.get(1);
+			if(jsonObject.has("longitude"))
+			{
+				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
+				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
+				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+				{
+					System.out.println(id);
+					return true;
+				}
+			}
+			if(jsonObject.has("RMBR_minx"))
+			{
+				RMBR = new Rectangle();
+				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
+				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
+				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
+				RMBR.max_y = jsonObject.get("RMBR_maxy").getAsDouble();
+				
+				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_x && RMBR.max_y < rect.max_y)
+					return true;
+				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+					false_count+=1;
+			}
+			else
+				false_count+=1;
+
+		}
+		
+		if(false_count == jsonArr.size())
+			return false;
+		
+		for(int i = 0;i<jsonArr.size();i++)
+		{
+			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonArray row = (JsonArray)jsonObject.get("row");
 			
-			boolean result = ReachabilityQuery(outneighbor, rect);
-			if(result)
+			int id = row.get(0).getAsInt();
+			if(VisitedVertices.contains(id))
+				continue;
+			VisitedVertices.add(id);
+			boolean reachable = TraversalQuery(id, rect);
+			
+			if(reachable)
 				return true;
+			
 		}
 		
 		return false;
-		
 	}
 }

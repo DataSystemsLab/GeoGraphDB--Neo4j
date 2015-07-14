@@ -1,14 +1,10 @@
 package def;
 
 import java.util.*;
-import java.io.*;
-import java.net.URI;
 
-import javax.ws.rs.core.MediaType;
-
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class Traversal implements ReachabilityQuerySolver	{
 	
@@ -37,39 +33,169 @@ public class Traversal implements ReachabilityQuerySolver	{
 	{
 		Queue<Integer> queue = new LinkedList();
 		VisitedVertices.clear();
-		ArrayList<Integer> outneighbors = p_neo4j_graph_store.GetOutNeighbors(start_id);
 		
-		for(int i = 0;i<outneighbors.size();i++)
-		{
-			queue.add(outneighbors.get(i));
-		}
+		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
-		while(!queue.isEmpty())
-		{
-			int id = queue.poll();
-			if(p_neo4j_graph_store.IsSpatial(id))
+		String result = p_neo4j_graph_store.Execute(query);
+		
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+		
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+
+		for(int i = 0;i<jsonArr.size();i++)
+		{			
+			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonArray row = (JsonArray)jsonObject.get("row");
+			
+			int id = row.get(0).getAsInt();
+			
+			jsonObject = (JsonObject)row.get(1);
+			if(jsonObject.has("longitude"))
 			{
-				double lat = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(id, latitude_property_name));
-				double lon = Double.parseDouble(p_neo4j_graph_store.GetVertexAttributeValue(id, longitude_property_name));
+				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
+				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
 				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
 				{
 					System.out.println(id);
 					return true;
 				}
 			}
-			VisitedVertices.add(id);
-			
-			outneighbors = p_neo4j_graph_store.GetOutNeighbors(id);
-			for(int i = 0;i<outneighbors.size();i++)
+			if(!VisitedVertices.contains(id))
 			{
-				int outneighbor = outneighbors.get(i);
-				if(!VisitedVertices.contains(outneighbor))
+				VisitedVertices.add(id);
+				queue.add(id);
+			}
+		}
+		
+		while(!queue.isEmpty())
+		{
+			int id = queue.poll();
+			
+			query = "match (a)-->(b) where id(a) = " +Integer.toString(id) +" return id(b), b";
+			
+			result = p_neo4j_graph_store.Execute(query);
+			
+			jsonParser = new JsonParser();
+			jsonObject = (JsonObject) jsonParser.parse(result);
+			
+			jsonArr = (JsonArray) jsonObject.get("results");
+			jsonObject = (JsonObject) jsonArr.get(0);
+			jsonArr = (JsonArray) jsonObject.get("data");
+			
+			for(int i = 0;i<jsonArr.size();i++)
+			{			
+				jsonObject = (JsonObject)jsonArr.get(i);
+				JsonArray row = (JsonArray)jsonObject.get("row");
+				
+				int neighbor_id = row.get(0).getAsInt();
+				
+				jsonObject = (JsonObject)row.get(1);
+				if(jsonObject.has("longitude"))
 				{
-					queue.add(outneighbor);
+					double lat = Double.parseDouble(jsonObject.get("latitude").toString());
+					double lon = Double.parseDouble(jsonObject.get("longitude").toString());
+					if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+					{
+						System.out.println(neighbor_id);
+						return true;
+					}
+				}				
+				if(!VisitedVertices.contains(neighbor_id))
+				{
+					VisitedVertices.add(neighbor_id);
+					queue.add(neighbor_id);
 				}
 			}
-		}		
+		}	
 		return false;
 	}
 
+	public boolean ReachabilityQueryImprove(int start_id, Rectangle rect)
+	{
+		Queue<Integer> queue = new LinkedList();
+		VisitedVertices.clear();
+		
+		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b, a";
+		
+		String result = p_neo4j_graph_store.Execute(query);
+		
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+		
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		
+
+		for(int i = 0;i<jsonArr.size();i++)
+		{			
+			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonArray row = (JsonArray)jsonObject.get("row");
+			
+			int id = row.get(0).getAsInt();
+			
+			jsonObject = (JsonObject)row.get(1);
+			if(jsonObject.has("longitude"))
+			{
+				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
+				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
+				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+				{
+					System.out.println(id);
+					return true;
+				}
+			}
+			if(!VisitedVertices.contains(id))
+			{
+				VisitedVertices.add(id);
+				queue.add(id);
+			}
+		}
+		
+		while(!queue.isEmpty())
+		{
+			int id = queue.poll();
+			
+			query = "match (a)-->(b) where id(a) = " +Integer.toString(id) +" return id(b), b";
+			
+			result = p_neo4j_graph_store.Execute(query);
+			
+			jsonParser = new JsonParser();
+			jsonObject = (JsonObject) jsonParser.parse(result);
+			
+			jsonArr = (JsonArray) jsonObject.get("results");
+			jsonObject = (JsonObject) jsonArr.get(0);
+			jsonArr = (JsonArray) jsonObject.get("data");
+			
+			for(int i = 0;i<jsonArr.size();i++)
+			{			
+				jsonObject = (JsonObject)jsonArr.get(i);
+				JsonArray row = (JsonArray)jsonObject.get("row");
+				
+				int neighbor_id = row.get(0).getAsInt();
+				
+				jsonObject = (JsonObject)row.get(1);
+				if(jsonObject.has("longitude"))
+				{
+					double lat = Double.parseDouble(jsonObject.get("latitude").toString());
+					double lon = Double.parseDouble(jsonObject.get("longitude").toString());
+					if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+					{
+						System.out.println(neighbor_id);
+						return true;
+					}
+				}				
+				if(!VisitedVertices.contains(neighbor_id))
+				{
+					VisitedVertices.add(neighbor_id);
+					queue.add(neighbor_id);
+				}
+			}
+		}	
+		return false;
+	}
 }

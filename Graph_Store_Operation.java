@@ -2,11 +2,13 @@ package def;
 
 import java.util.*;
 
+import com.google.gson.JsonObject;
+
 public interface Graph_Store_Operation {
 	
 	ArrayList<Integer> GetAllVertices();
 	ArrayList<Integer> GetSpatialVertices();
-	String GetVertexAllAttributes(int id);	
+	JsonObject GetVertexAllAttributes(int id);	
 	String GetVertexAttributeValue(int id, String attributename);//given a vertex id and name of its attribute, return the attribute value
 	ArrayList<Integer> GetOutNeighbors(int id);	
 	ArrayList<Integer> GetInNeighbors(int id);//get all in neighbors of a vertex with its given id	

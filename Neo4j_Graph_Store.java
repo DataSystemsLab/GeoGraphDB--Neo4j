@@ -127,15 +127,44 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 	
 	//get all attributes as json format string by a given id
-	public String GetVertexAllAttributes(int id)
-	{
+	public JsonObject GetVertexAllAttributes(int id)
+	{		
 		String query = "match (a) where id(a) = " +Integer.toString(id) +" return a";
 		
 		String result = Execute(query);
 		
-		String str = null;
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
 		
-		return str;
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		jsonObject = (JsonObject)jsonArr.get(0);
+		jsonArr = (JsonArray)jsonObject.get("row");
+		
+		jsonObject = (JsonObject)jsonArr.get(0);
+		
+		return jsonObject;
+	}
+	
+	public JsonArray GetVertexIDandAllAttributes(int id)
+	{
+		String query = "match (a) where id(a) = " +Integer.toString(id) +" return id(a), a";
+		
+		String result = Execute(query);
+		
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+		
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		jsonObject = (JsonObject)jsonArr.get(0);
+		jsonArr = (JsonArray)jsonObject.get("row");	
+		
+		return jsonArr;
 	}
 	
 	//get all out neighbors of a vertex with its given id
