@@ -12,7 +12,7 @@ public class ExperimentSCC {
 		Index index = new Index();
 		Traversal traversal = new Traversal();
 		
-		Rectangle query_rect = new Rectangle(0, 0, 400, 400);
+		Rectangle query_rect = new Rectangle(0, 0, 1, 1);
 
 		OwnMethods p_ownmethods = new OwnMethods();
 		String root = "/home/yuhansun/Documents/Synthetic_data";
@@ -20,7 +20,7 @@ public class ExperimentSCC {
 		//String filename = root + "/16000_1/test_graph_ids.txt";
 		//String filename = root + "/65536_16_1/test_graph_ids.txt";
 		//String filename = root + "/262144_18_1/test_graph_ids.txt";
-		String filename = root + "/18_16/test_graph_ids.txt";
+		String filename = root + "/18_4/test_graph_ids.txt";
 		
 		ArrayList<String> graph_ids = p_ownmethods.ReadFile(filename);
 				
@@ -34,26 +34,26 @@ public class ExperimentSCC {
 
 			traversal.VisitedVertices.clear();
 			long start = System.currentTimeMillis();
-			boolean result1 = traversal.ReachabilityQuery(id, query_rect);
+			//boolean result1 = traversal.ReachabilityQuery(id, query_rect);
 			time1+=System.currentTimeMillis() - start;
-			System.out.println(result1);
+			//System.out.println(result1);
 			
 			start = System.currentTimeMillis();
-			boolean result2 = index.ReachabilityQuerySCC(id, query_rect,"RTree_18_16","SCCTransitive_closure_18_16");
+			boolean result2 = index.ReachabilityQuerySCC(id, query_rect,"RTree_18_4","SCCTransitive_closure_18_4");
 			time2+=System.currentTimeMillis() - start;
 			System.out.println(result2);
 			
 			georeach.VisitedVertices.clear();
 			start = System.currentTimeMillis();
-			boolean result3 = georeach.ReachabilityQuery(id, query_rect);
+			//boolean result3 = georeach.ReachabilityQuery(id, query_rect);
 			time3+=System.currentTimeMillis() - start;
-			System.out.println(result3);
+			//System.out.println(result3);
 						
-			if(result1!=result2 || result1!=result3)
-			{
-				System.out.println(id);
-				break;
-			}
+//			if(result1!=result2 || result1!=result3)
+//			{
+//				System.out.println(id);
+//				break;
+//			}
 		}
 		
 		System.out.printf("%s, %s, %s\n", time1, time2, time3);
