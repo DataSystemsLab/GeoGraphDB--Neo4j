@@ -16,14 +16,24 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 public class Batch_Inserter {
 	
+	public static void LoadTransitiveClosureNodeLocation()
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "6g");
+		
+		
+	}
+	
 	public static void CreateUniqueConstraint()
 	{
 		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 		p_neo.Execute("create unique constraint on (n:Transitive_Closure) assert n.id is unique");
 		for(int i = 0;i<100;i+=20)
 		{
-			p_neo.Execute("create unique constraint on (n:Graph_Random_" + Integer.toString(i) + ") assert n.id is unique");
-			p_neo.Execute("create unique constraint on (n:RTree_Random_" + Integer.toString(i) + ") assert n.id is unique");
+			p_neo.Execute("create constraint on (n:Graph_Random_" + Integer.toString(i) + ") assert n.id is unique");
+			p_neo.Execute("create constraint on (n:RTree_Random_" + Integer.toString(i) + ") assert n.id is unique");
 		}
 	}
 	
@@ -126,81 +136,21 @@ public class Batch_Inserter {
 		}
 	}
 	
-	public static void LoadRTreeNodes()
-	{
-		BatchInserter inserter = null;
-		BufferedReader reader = null;
-		Map<String, String> config = new HashMap<String, String>();
-		config.put("dbms.pagecache.memory", "6g");
-		
-		try
-		{
-			inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db").getAbsolutePath(),config);
-			
-			File file = null;
-			
-			for(int i = 20;i<100;i+=20)
-			{
-				String filepath = "/home/yuhansun/Documents/Real_data/Patents/Random_spatial_distributed/" + Integer.toString(i);
-				Label RTree_label = DynamicLabel.label("RTree_Random_"+Integer.toString(i));
-
-				file = new File(filepath + "/spatial_entity.txt");
-				reader = new BufferedReader(new FileReader(file));
-				String tempString = null;
-				tempString = reader.readLine();
-				System.out.println(tempString);
-				while((tempString = reader.readLine())!=null)
-				{
-					String[] l = tempString.split(" ");
-					double lon = Double.parseDouble(l[2]);
-					double lat = Double.parseDouble(l[3]);					
-					int id = Integer.parseInt(l[0]);
-					
-					Map<String, Object> properties = new HashMap();
-					properties.put("id", id);
-					properties.put("lon", lon);
-					properties.put("lat", lat);
-					
-					inserter.createNode(properties, RTree_label);
-				}
-				reader.close();
-			}
-
-		}
-		catch(IOException e)
-		{
-			e.printStackTrace();
-		}
-		finally
-		{
-			if(inserter!=null)
-				inserter.shutdown();
-			if(reader!=null)
-			{
-				try
-				{
-					reader.close();
-				}
-				catch(IOException e)
-				{					
-				}
-			}
-		}
-	}
 
 	public static void main(String[] args) {
 		
-		LoadRTreeNodes();
+		//CreateUniqueConstraint();
+		//LoadRTreeNodes();
 		//SetRMBR();
 		// TODO Auto-generated method stub
-		//BatchInserter inserter = null;
-		//Map<String, String> config = new HashMap<String, String>();
-		//config.put("dbms.pagecache.memory", "6g");
-		//Label transitive_node_label = DynamicLabel.label("Transitive_Closure");
-		//RelationshipType transitive_relationship_lebal = DynamicRelationshipType.withName("REACH");
+		BatchInserter inserter = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "6g");
+		Label transitive_node_label = DynamicLabel.label("Transitive_Closure");
+		RelationshipType transitive_relationship_lebal = DynamicRelationshipType.withName("REACH");
 		
-		/*try
-		{
+		try
+		{/*
 			//transitive closure nodes and relationships
 			inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db").getAbsolutePath(),config);
 			for(int i = 0;i<3774768;i++)
@@ -246,16 +196,17 @@ public class Batch_Inserter {
 				}
 			}
 			
-		}*/
+		}
 		
 		/*try
 		{
-			inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db").getAbsolutePath(), config);
+//			inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db").getAbsolutePath(), config);
+			inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/test/neo4j-community-2.2.3/data/test.db").getAbsolutePath(), config);
 			
 			long offset = 3774768 * 4;
-			Label graph_label = DynamicLabel.label("Graph_Random_80");
+			Label graph_label = DynamicLabel.label("Graph_Random_20");
 			RelationshipType graph_rel = DynamicRelationshipType.withName("LINK");
-			String filepath = "/home/yuhansun/Documents/Real_data/Patents/Random_spatial_distributed/80";
+			String filepath = "/home/yuhansun/Documents/Real_data/Patents/Random_spatial_distributed/20";
 			BufferedReader reader = null;
 			File file = null;
 			
@@ -272,7 +223,9 @@ public class Batch_Inserter {
 					String[] l = tempString.split(" ");
 					int id = Integer.parseInt(l[0]);
 					properties.put("id", id);
-					inserter.createNode(id + offset, properties, graph_label);
+					//inserter.createNode(id + offset, properties, graph_label);
+					inserter.createNode(properties, graph_label);
+					
 				}
 				reader.close();
 			}
@@ -311,7 +264,9 @@ public class Batch_Inserter {
 					properties.put("id", id);
 					properties.put("longitude", lon);
 					properties.put("latitude", lat);
-					inserter.createNode(id + offset, properties, graph_label);
+//					inserter.createNode(id + offset, properties, graph_label);
+					inserter.createNode(properties, graph_label);
+					
 				}
 				reader.close();
 			}
@@ -331,47 +286,47 @@ public class Batch_Inserter {
 					{					
 					}
 				}
-			}
+			}*/
 			
-			//graph relationships
-			file = new File("/home/yuhansun/Documents/Real_data/Patents/graph_relationships.txt");			
-			try
-			{				
-				reader = new BufferedReader(new FileReader(file));
-				String tempString = null;
-				while((tempString = reader.readLine())!=null)
-				{				
-					String[] l = tempString.split(" ");
-					long start = Long.parseLong(l[0]);
-					long end = Long.parseLong(l[1]);
-					//System.out.println(start);
-					inserter.createRelationship(start + offset, end + offset, graph_rel, null);
-				}
-				reader.close();
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
-			finally
-			{
-				if(reader!=null)
-				{
-					try
-					{
-						reader.close();
-					}
-					catch(IOException e)
-					{					 
-					}
-				}
-			}
+//			//graph relationships
+//			file = new File("/home/yuhansun/Documents/Real_data/Patents/graph_relationships.txt");			
+//			try
+//			{				
+//				reader = new BufferedReader(new FileReader(file));
+//				String tempString = null;
+//				while((tempString = reader.readLine())!=null)
+//				{				
+//					String[] l = tempString.split(" ");
+//					long start = Long.parseLong(l[0]);
+//					long end = Long.parseLong(l[1]);
+//					//System.out.println(start);
+//					inserter.createRelationship(start + offset, end + offset, graph_rel, null);
+//				}
+//				reader.close();
+//			}
+//			catch(IOException e)
+//			{
+//				e.printStackTrace();
+//			}
+//			finally
+//			{
+//				if(reader!=null)
+//				{
+//					try
+//					{
+//						reader.close();
+//					}
+//					catch(IOException e)
+//					{					 
+//					}
+//				}
+//			}
 		}
 		finally
 		{
 			if(inserter!=null)
 				inserter.shutdown();
-		}*/
+		}
 		
 	}
 

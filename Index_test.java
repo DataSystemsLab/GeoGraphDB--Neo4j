@@ -17,7 +17,15 @@ public class Index_test	{
 	public static void main(String[] args) {
 		
 		Index index = new Index();
-
+		int a = 1/2;
+		System.out.println(a);
+		//System.out.println(index.GetSpatialPlugin());
+		/*Rectangle query_rect = new Rectangle();
+		query_rect.min_x = 0;
+		query_rect.min_y = 0;
+		query_rect.max_x = 5;
+		query_rect.max_y = 5;
+		System.out.println(index.RangeQueryByRTree("aa", query_rect));*/
 		
 		/*long start = System.currentTimeMillis();
 		index.CreateTransitiveClosureFromInNeighbor();
@@ -46,9 +54,9 @@ public class Index_test	{
 		//System.out.println(index.GetSpatialPlugin());
 		//index.AddSpatialNodesToPointLayer("simplepointlayer");
 		
-		String layername = "DAGRTree_18_1";
+//		String layername = "DAGRTree_18_1";
 		//System.out.println(index.CreatePointLayer(layername));
-		index.AddSpatialNodesToPointLayer(layername);
+//		index.AddSpatialNodesToPointLayer(layername);
 		
 		//Rectangle query_rect = new Rectangle(800,800,900,900);
 		//System.out.println(index.ReachabilityQuery(283392, query_rect));

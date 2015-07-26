@@ -74,6 +74,25 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 	
 	//decode return value of function Execute(String query) to get "data" section
+	public static JsonArray GetExecuteResultDataASJsonArray(String result)
+	{		
+		HashSet<Integer> hs  = new HashSet<Integer>();
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+		
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		
+		if(jsonArr.size() == 0)
+			return null;
+
+		jsonObject = (JsonObject) jsonArr.get(0);
+		
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		return jsonArr;
+	}	
+	
+	//decode return value of function Execute(String query) to get "data" section
 	public static HashSet<Integer> GetExecuteResultDataInSet(String result)
 	{		
 		HashSet<Integer> hs  = new HashSet<Integer>();
@@ -82,6 +101,9 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		
 		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
 		
+		if(jsonArr.size() == 0)
+			return null;
+
 		jsonObject = (JsonObject) jsonArr.get(0);
 		
 		jsonArr = (JsonArray) jsonObject.get("data");

@@ -62,7 +62,6 @@ public class Index implements ReachabilityQuerySolver{
 		hs = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
 		BuildListTime += System.currentTimeMillis() - start;
 		
-		System.out.println(hs);
 		return hs;
 	}
 	
@@ -76,14 +75,24 @@ public class Index implements ReachabilityQuerySolver{
 		WebResource resource = Client.create().resource(range_query);
 		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.max_y+" }";
 		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
-		String result = response.getEntity(String.class);
+		String result = response.getEntity(String.class);System.out.println(result);
 		response.close();
 		QueryTime+=System.currentTimeMillis() - start;
 		
+		
+		
 		start = System.currentTimeMillis();
 		JsonParser jsonParser = new JsonParser();
-		JsonArray jsonArr = (JsonArray) jsonParser.parse(result);
-
+		JsonArray jsonArr = null;
+		try
+		{
+			jsonArr = (JsonArray) jsonParser.parse(result);
+		}
+		catch(ClassCastException e)
+		{
+			return null;
+		}
+		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			JsonObject jsonOb = (JsonObject) jsonArr.get(i);
