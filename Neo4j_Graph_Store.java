@@ -329,7 +329,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 		
 	
-	public static boolean Location_In_Rect(double lat, double lon, Rectangle rect)
+	public static boolean Location_In_Rect(double lat, double lon, MyRectangle rect)
 	{
 		if(lat < rect.min_y || lat > rect.max_y || lon < rect.min_x || lon > rect.max_x)
 			return false;

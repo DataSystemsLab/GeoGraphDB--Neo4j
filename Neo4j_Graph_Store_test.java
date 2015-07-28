@@ -23,15 +23,16 @@ public class Neo4j_Graph_Store_test {
 		JsonObject jsonObject = (JsonObject)jsonArr.get(1);
 		System.out.println(jsonObject.toString());*/
 		
-		String query = "match (a:Graph_Random_20) where a.id in [0,1,2,3,4,5] return a";
+		String query = "match (a:Graph_Random_20) where a.id in [0,1,2,3,4,5] return id(a)";
 		
 		JsonArray jsonArr = p_neo4j_graph_store.GetExecuteResultDataASJsonArray(p_neo4j_graph_store.Execute(query));
+		System.out.println(jsonArr.toString());
 		for(int j = 0;j<jsonArr.size();j++)
 		{
 			JsonObject jsonOb = (JsonObject) jsonArr.get(j);
 			JsonArray arr = jsonOb.get("row").getAsJsonArray();
-			jsonOb = arr.get(0).getAsJsonObject();
-			System.out.println(jsonOb.toString());
+			long id = arr.get(0).getAsLong();
+			System.out.println(id);
 		}
 //		if(jsonObject.has("RMBR_minx"))
 //			System.out.println("has RMBR");

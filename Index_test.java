@@ -15,10 +15,8 @@ import java.net.URI;
 public class Index_test	{
 	
 	public static void main(String[] args) {
-		
-		Index index = new Index();
-		int a = 1/2;
-		System.out.println(a);
+
+		//Index index = new Index();
 		//System.out.println(index.GetSpatialPlugin());
 		/*Rectangle query_rect = new Rectangle();
 		query_rect.min_x = 0;

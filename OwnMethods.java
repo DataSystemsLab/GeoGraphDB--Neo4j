@@ -82,4 +82,21 @@ public class OwnMethods {
 		}
 	}
 
+	public static long getDirSize(File file) {     
+        if (file.exists()) {     
+            if (file.isDirectory()) {     
+                File[] children = file.listFiles();     
+                long size = 0;     
+                for (File f : children)     
+                    size += getDirSize(f);     
+                return size;     
+            } else {
+            	long size = file.length(); 
+                return size;     
+            }     
+        } else {     
+            System.out.println("File not exists!");     
+            return 0;     
+        }     
+    }
 }

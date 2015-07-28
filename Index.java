@@ -47,7 +47,7 @@ public class Index implements ReachabilityQuerySolver{
 		JudgeTime = 0;
 	}
 	
-	public HashSet<Integer> RangeQuery(String layername, Rectangle rect)
+	public HashSet<Integer> RangeQuery(String layername, MyRectangle rect)
 	{
 		HashSet<Integer> hs = new HashSet();
 		
@@ -65,7 +65,7 @@ public class Index implements ReachabilityQuerySolver{
 		return hs;
 	}
 	
-	public HashSet<Integer> RangeQueryByRTree(String layername, Rectangle rect)
+	public HashSet<Integer> RangeQueryByRTree(String layername, MyRectangle rect)
 	{
 		HashSet<Integer> hs = new HashSet();
 		
@@ -104,7 +104,7 @@ public class Index implements ReachabilityQuerySolver{
 		return hs;
 	}
 	
-	public HashSet<Integer> RangeQueryByRTreeSCC(String layername, Rectangle rect)
+	public HashSet<Integer> RangeQueryByRTreeSCC(String layername, MyRectangle rect)
 	{
 		HashSet<Integer> hs = new HashSet();
 		
@@ -191,7 +191,7 @@ public class Index implements ReachabilityQuerySolver{
 		System.out.println(result);
 	}
 	
-	public String AddOneNodeToPointLayer(String layername, int id)
+	public String AddOneNodeToPointLayer(String layername, long id)
 	{
 		String result = "";
 		
@@ -442,7 +442,7 @@ public class Index implements ReachabilityQuerySolver{
 		AddSpatialNodesToPointLayer("simplepointlayer");
 	}
 	
-	public boolean ReachabilityQuery(int start_id, Rectangle rect)
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
 	{
 		long start = System.currentTimeMillis();
 		//HashSet<Integer> hs = RangeQueryByRTree("simplepointlayer",rect);
@@ -471,7 +471,7 @@ public class Index implements ReachabilityQuerySolver{
 		return false;
 	}
 	
-	public boolean ReachabilityQuery(int start_id, Rectangle rect, String RTreeLabel, String TransitiveClosureLabel)
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect, String RTreeLabel, String TransitiveClosureLabel)
 	{
 		long start = System.currentTimeMillis();
 		HashSet<Integer> hs = RangeQueryByRTree(RTreeLabel,rect);
@@ -514,7 +514,7 @@ public class Index implements ReachabilityQuerySolver{
 		return false;
 	}
 	
-	public boolean ReachabilityQuerySCC(int start_id, Rectangle rect, String RTreeLabel, String TransitiveClosureLabel)
+	public boolean ReachabilityQuerySCC(int start_id, MyRectangle rect, String RTreeLabel, String TransitiveClosureLabel)
 	{
 		long start = System.currentTimeMillis();
 		HashSet<Integer> hs = RangeQueryByRTreeSCC(RTreeLabel,rect);

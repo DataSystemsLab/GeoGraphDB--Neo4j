@@ -8,25 +8,24 @@ import com.google.gson.JsonObject;
 
 public class ReachabilityIndex {
 	
-	private String SERVER_ROOT_URI;
-	private static String longitude_property_name = "longitude";
-	private static String latitude_property_name = "latitude";
+	private String longitude_property_name = "longitude";
+	private String latitude_property_name = "latitude";
 	
-	public static long GetTranTime;
+	public long GetTranTime;
 	
 	public long GetRTreeTime;
 	public long QueryTime;
 	public long BuildListTime;
 	
-	public static long JudgeTime;
-	static Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+	public long JudgeTime;
+	Neo4j_Graph_Store p_neo;
 	
 	public ReachabilityIndex()
 	{
 		Config config = new Config();
-		SERVER_ROOT_URI = config.GetServerRoot();
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
+		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 		
 		GetTranTime = 0;
 		GetRTreeTime = 0;
@@ -36,7 +35,7 @@ public class ReachabilityIndex {
 		JudgeTime = 0;
 	}
 
-	public static boolean ReachabilityQuery(int start_id, Rectangle rect, String TransitiveClosureLabel, String GraphLabel)
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect, String TransitiveClosureLabel, String GraphLabel)
 	{
 		if(TransitiveClosureLabel == "")
 			TransitiveClosureLabel = "Transitive_Closure";
@@ -113,10 +112,5 @@ public class ReachabilityIndex {
 		return false;
 	}
 
-
-	public static void main(String[] args) {
-		Rectangle rect = new Rectangle(0,0,700,700);
-		System.out.println(ReachabilityQuery(3774768 * 2+1,rect, "", "Graph_Random_20"));
-	}
-
 }
+

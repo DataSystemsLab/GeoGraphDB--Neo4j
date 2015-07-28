@@ -29,7 +29,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 		
 	}
 	
-	public boolean ReachabilityQuery(int start_id, Rectangle rect)
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
 	{
 		Queue<Integer> queue = new LinkedList();
 		VisitedVertices.clear();
@@ -113,7 +113,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 		return false;
 	}
 
-	public boolean ReachabilityQueryImprove(int start_id, Rectangle rect)
+	public boolean ReachabilityQueryImprove(int start_id, MyRectangle rect)
 	{
 		Queue<Integer> queue = new LinkedList();
 		VisitedVertices.clear();

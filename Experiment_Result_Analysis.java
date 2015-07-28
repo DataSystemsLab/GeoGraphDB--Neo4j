@@ -11,7 +11,7 @@ public class Experiment_Result_Analysis {
 		Index index = new Index();
 		Traversal traversal = new Traversal();
 		
-		Rectangle query_rect = new Rectangle(0, 0, 600, 600);
+		MyRectangle query_rect = new MyRectangle(0, 0, 600, 600);
 
 		OwnMethods p_ownmethods = new OwnMethods();
 		String root = "/home/yuhansun/Documents/Synthetic_data";

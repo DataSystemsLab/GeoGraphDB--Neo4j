@@ -14,9 +14,8 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-public class ReachabilityRTree {
+public class ReachabilityRTree implements ReachabilityQuerySolver{
 	
-	private String SERVER_ROOT_URI;
 	private String longitude_property_name;
 	private String latitude_property_name;
 	private Neo4j_Graph_Store p_neo;
@@ -25,7 +24,6 @@ public class ReachabilityRTree {
 	public ReachabilityRTree()
 	{
 		Config config = new Config();
-		SERVER_ROOT_URI = config.GetServerRoot();
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
 		p_neo = new Neo4j_Graph_Store();
@@ -184,5 +182,15 @@ public class ReachabilityRTree {
 				}
 			}
 		}
+	}
+
+	public void Preprocess() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect) {
+		// TODO Auto-generated method stub
+		return false;
 	}
 }

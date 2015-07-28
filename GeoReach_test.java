@@ -19,7 +19,7 @@ public class GeoReach_test
 		long end = System.currentTimeMillis();
 		System.out.println((end-start)/1000.0);*/
 		
-		Rectangle rect = new Rectangle(0,0,300,300);
+		MyRectangle rect = new MyRectangle(0,0,300,300);
 		System.out.println(p_georeach.ReachabilityQuery(4022514, rect));
 	}
 }

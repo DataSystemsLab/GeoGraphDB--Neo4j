@@ -20,9 +20,9 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		return p_neo4j_graph_store.HasProperty(id, "RMBR_minx");
 	}
 	
-	public static Rectangle GetRMBR(int id)
+	public static MyRectangle GetRMBR(int id)
 	{
-		Rectangle RMBR = new Rectangle();
+		MyRectangle RMBR = new MyRectangle();
 		
 		String query = "match (a) where id(a) = " + id + " return a.RMBR_minx, a.RMBR_miny, a.RMBR_maxx, a.RMBR_maxy";		
 		ArrayList<String> result = p_neo4j_graph_store.GetExecuteResultData(p_neo4j_graph_store.Execute(query));
@@ -38,13 +38,13 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	}
 	
 	//MBR operation of a given id vertex's current RMBR and another rectangle return a new rectangle, if no change happens it will return null
-	public static Rectangle MBR(int id,String minx2_s, String miny2_s, String maxx2_s, String maxy2_s)
+	public static MyRectangle MBR(int id,String minx2_s, String miny2_s, String maxx2_s, String maxy2_s)
 	{	
-		Rectangle rec;				
+		MyRectangle rec;				
 			
 		if(!HasRMBR(id))
 		{	
-			rec = new Rectangle();
+			rec = new MyRectangle();
 			rec.min_x = Double.parseDouble(minx2_s);
 			rec.min_y = Double.parseDouble(miny2_s);
 			rec.max_x = Double.parseDouble(maxx2_s);
@@ -132,7 +132,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			{
 				hasRMBR = true;
 				
-				Rectangle p_rec = GetRMBR(current_id);
+				MyRectangle p_rec = GetRMBR(current_id);
 				minx_s = String.valueOf(p_rec.min_x);
 				miny_s = String.valueOf(p_rec.min_y);
 				maxx_s = String.valueOf(p_rec.max_x);
@@ -148,7 +148,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				if(isspatial)
 				{
 				
-					Rectangle new_RMBR = MBR(neighbor, longitude, latitude, longitude, latitude);
+					MyRectangle new_RMBR = MBR(neighbor, longitude, latitude, longitude, latitude);
 					if(new_RMBR != null)
 					{
 						changed = true;
@@ -165,7 +165,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				
 				if(hasRMBR)
 				{
-					Rectangle new_RMBR = MBR(neighbor, minx_s, miny_s, maxx_s, maxy_s);
+					MyRectangle new_RMBR = MBR(neighbor, minx_s, miny_s, maxx_s, maxy_s);
 					if(new_RMBR != null)
 					{
 						changed = true;
@@ -190,7 +190,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		}
 	}
 	
-	static boolean TraversalQuery(int start_id, Rectangle rect)
+	static boolean TraversalQuery(int start_id, MyRectangle rect)
 	{		
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
@@ -229,7 +229,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			}
 			if(jsonObject.has("RMBR_minx"))
 			{
-				Rectangle RMBR = new Rectangle();
+				MyRectangle RMBR = new MyRectangle();
 				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
 				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
 				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
@@ -267,7 +267,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		return false;	
 	}
 	
-	public boolean ReachabilityQuery(int start_id, Rectangle rect)
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
 	{		
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
 		
@@ -279,7 +279,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		String maxx_s = String.valueOf(all_attributes.get("RMBR_maxx"));
 		String maxy_s = String.valueOf(all_attributes.get("RMBR_maxy"));
 		
-		Rectangle RMBR = new Rectangle();
+		MyRectangle RMBR = new MyRectangle();
 										
 		RMBR.min_x = Double.parseDouble(minx_s);
 		RMBR.min_y = Double.parseDouble(miny_s);
@@ -330,7 +330,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			}
 			if(jsonObject.has("RMBR_minx"))
 			{
-				RMBR = new Rectangle();
+				RMBR = new MyRectangle();
 				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
 				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
 				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();

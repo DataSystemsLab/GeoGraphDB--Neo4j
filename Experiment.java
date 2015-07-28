@@ -12,7 +12,7 @@ public class Experiment {
 		Index index = new Index();
 		Traversal traversal = new Traversal();
 		
-		Rectangle query_rect = new Rectangle(0, 0, 500, 500);
+		MyRectangle query_rect = new MyRectangle(0, 0, 500, 500);
 
 		OwnMethods p_ownmethods = new OwnMethods();
 		String root = "/home/yuhansun/Documents/Synthetic_data";
