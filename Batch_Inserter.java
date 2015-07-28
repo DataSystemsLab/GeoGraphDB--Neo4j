@@ -16,16 +16,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 public class Batch_Inserter {
 	
-	public static void LoadTransitiveClosureNodeLocation()
-	{
-		BatchInserter inserter = null;
-		BufferedReader reader = null;
-		Map<String, String> config = new HashMap<String, String>();
-		config.put("dbms.pagecache.memory", "6g");
-		
-		
-	}
-	
 	public static void CreateUniqueConstraint()
 	{
 		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
@@ -144,15 +134,20 @@ public class Batch_Inserter {
 		//SetRMBR();
 		// TODO Auto-generated method stub
 		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
 		Map<String, String> config = new HashMap<String, String>();
-		config.put("dbms.pagecache.memory", "6g");
+		config.put("dbms.pagecache.memory", "16g");
 		Label transitive_node_label = DynamicLabel.label("Transitive_Closure");
 		RelationshipType transitive_relationship_lebal = DynamicRelationshipType.withName("REACH");
+		String db_path = "/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db";
 		
 		try
-		{/*
+		{
+			OwnMethods p_own = new OwnMethods();
+			long size = p_own.getDirSize(new File(db_path));
 			//transitive closure nodes and relationships
-			inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db").getAbsolutePath(),config);
+			inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
 			for(int i = 0;i<3774768;i++)
 			{
 				Map<String, Object> properties = new HashMap();
@@ -160,42 +155,28 @@ public class Batch_Inserter {
 				inserter.createNode(i, properties, transitive_node_label);
 			}
 			
-			BufferedReader reader = null;
-			File file = null;
 			
-			file = new File("/home/yuhansun/Documents/Real_data/Patents/transitive_relationships.csv");
-			try
+			file = new File("/home/yuhansun/Documents/Real_data/Patents/transitive_closure.txt");
+
+			reader = new BufferedReader(new FileReader(file));
+			String tempString = null;
+			while((tempString = reader.readLine())!=null)
 			{
-				reader = new BufferedReader(new FileReader(file));
-				String tempString = null;
-				reader.readLine();
-				while((tempString = reader.readLine())!=null)
+				tempString = tempString.trim();
+				String[] l = tempString.split(" ");
+				long start = Long.parseLong(l[0]);
+				long count = Long.parseLong(l[1]);
+				if(count == 0)
+					continue;
+				for(int i = 2;i<l.length;i++)
 				{
-					String[] l = tempString.split("\t");
-					long start = Long.parseLong(l[0]);
-					long end = Long.parseLong(l[1]);
+					long end = Long.parseLong(l[i]);
 					inserter.createRelationship(start, end, transitive_relationship_lebal, null);
 				}
-				reader.close();
 			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
-			finally
-			{
-				if(reader!=null)
-				{
-					try
-					{
-						reader.close();
-					}
-					catch(IOException e)
-					{					
-					}
-				}
-			}
-			
+			reader.close();
+			size = p_own.getDirSize(new File(db_path)) - size;
+			p_own.WriteFile("/home/yuhansun/Documents/Real_data/Patents/size.txt", true, ""+size);
 		}
 		
 		/*try
@@ -321,11 +302,25 @@ public class Batch_Inserter {
 //					}
 //				}
 //			}
+//		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
 		}
 		finally
 		{
 			if(inserter!=null)
 				inserter.shutdown();
+			if(reader!=null)
+			{
+				try
+				{
+					reader.close();
+				}
+				catch(IOException e)
+				{					
+				}
+			}
 		}
 		
 	}

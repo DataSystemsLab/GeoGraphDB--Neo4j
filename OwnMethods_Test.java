@@ -1,6 +1,10 @@
 package def;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -21,8 +25,25 @@ public class OwnMethods_Test {
 		ArrayList<String> lines = p_ownmethod.ReadFile(filename);
 		System.out.println(lines);*/
 		OwnMethods test = new OwnMethods();
-		File file = new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db");
-		System.out.println(test.getDirSize(file));
+//		File file = new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db");
+//		System.out.println(test.getDirSize(file));
+		BufferedReader reader = null;
+		File file = null;
+		try {
+		file = new File("/home/yuhansun/Documents/Real_data/Patents/transitive_closure.txt");
+		
+		
+			reader = new BufferedReader(new FileReader(file));
+			String tempString = null;
+			while((tempString = reader.readLine())!=null)
+			{
+				System.out.println(tempString);
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 	
 	//generate unique id(a) for experiment
