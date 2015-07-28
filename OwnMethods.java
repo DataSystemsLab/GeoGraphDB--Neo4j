@@ -5,7 +5,7 @@ import java.util.*;
 
 public class OwnMethods {
 	
-	public HashSet<String> GenerateRandomInteger(int graph_size, int node_count)
+	public HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
 	{
 		HashSet<String> ids = new HashSet();
 		
@@ -74,6 +74,20 @@ public class OwnMethods {
 			{
 				fw.write(lines.get(i)+"\n");
 			}
+			fw.close();
+		} 
+		catch (IOException e) 
+		{
+			e.printStackTrace();
+		}
+	}
+	
+	public void WriteFile(String filename, boolean app, String str)
+	{
+		try 
+		{
+			FileWriter fw = new FileWriter(filename,app);
+			fw.write(str);
 			fw.close();
 		} 
 		catch (IOException e) 

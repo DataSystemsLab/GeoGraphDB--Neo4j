@@ -11,33 +11,25 @@ public class ReachabilityIndex {
 	private String longitude_property_name = "longitude";
 	private String latitude_property_name = "latitude";
 	
-	public long GetTranTime;
-	
-	public long GetRTreeTime;
-	public long QueryTime;
-	public long BuildListTime;
-	
+	public long GetTranTime;	
 	public long JudgeTime;
-	Neo4j_Graph_Store p_neo;
+	
+	private Neo4j_Graph_Store p_neo;
 	
 	public ReachabilityIndex()
 	{
 		Config config = new Config();
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
-		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+		p_neo = new Neo4j_Graph_Store();
 		
-		GetTranTime = 0;
-		GetRTreeTime = 0;
-		QueryTime = 0;
-		BuildListTime = 0;
-		
+		GetTranTime = 0;		
 		JudgeTime = 0;
 	}
 
 	public boolean ReachabilityQuery(int start_id, MyRectangle rect, String TransitiveClosureLabel, String GraphLabel)
 	{
-		if(TransitiveClosureLabel == "")
+		if(TransitiveClosureLabel == null)
 			TransitiveClosureLabel = "Transitive_Closure";
 		long start = System.currentTimeMillis();
 		String attribute_id = p_neo.GetVertexAttributeValue(start_id, "id");
