@@ -16,12 +16,16 @@ public class Traversal implements ReachabilityQuerySolver	{
 	private String longitude_property_name;
 	private String latitude_property_name;
 	
+	public long Neo4jTime;
+	public long JudgeTime;
 	
 	public Traversal()
 	{
 		Config config = new Config();
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
+		Neo4jTime = 0;
+		JudgeTime = 0;
 	}
 	
 	public void Preprocess()
@@ -34,6 +38,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 		Queue<Integer> queue = new LinkedList();
 		VisitedVertices.clear();
 		
+		long start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
 		String result = p_neo4j_graph_store.Execute(query);
@@ -45,6 +50,9 @@ public class Traversal implements ReachabilityQuerySolver	{
 		jsonObject = (JsonObject) jsonArr.get(0);
 		jsonArr = (JsonArray) jsonObject.get("data");
 
+		Neo4jTime+=System.currentTimeMillis() - start;		
+		start = System.currentTimeMillis();
+		
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
 			jsonObject = (JsonObject)jsonArr.get(i);
@@ -59,6 +67,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
 				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
 				{
+					JudgeTime+=System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -70,8 +79,13 @@ public class Traversal implements ReachabilityQuerySolver	{
 			}
 		}
 		
+		JudgeTime += System.currentTimeMillis() - start;
+		start = System.currentTimeMillis();
+		
 		while(!queue.isEmpty())
 		{
+			start = System.currentTimeMillis();
+			
 			int id = queue.poll();
 			
 			query = "match (a)-->(b) where id(a) = " +Integer.toString(id) +" return id(b), b";
@@ -84,6 +98,9 @@ public class Traversal implements ReachabilityQuerySolver	{
 			jsonArr = (JsonArray) jsonObject.get("results");
 			jsonObject = (JsonObject) jsonArr.get(0);
 			jsonArr = (JsonArray) jsonObject.get("data");
+			
+			Neo4jTime += System.currentTimeMillis() - start;
+			start = System.currentTimeMillis();
 			
 			for(int i = 0;i<jsonArr.size();i++)
 			{			
@@ -99,6 +116,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 					double lon = Double.parseDouble(jsonObject.get("longitude").toString());
 					if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
 					{
+						JudgeTime+=System.currentTimeMillis() - start;
 						System.out.println(neighbor_id);
 						return true;
 					}
@@ -109,6 +127,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 					queue.add(neighbor_id);
 				}
 			}
+			JudgeTime += System.currentTimeMillis() - start;
 		}	
 		return false;
 	}

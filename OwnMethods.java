@@ -5,6 +5,7 @@ import java.util.*;
 
 public class OwnMethods {
 	
+	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
 	public HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
 	{
 		HashSet<String> ids = new HashSet();
@@ -19,6 +20,7 @@ public class OwnMethods {
 		return ids;
 	}
 	
+	//Generate absolute id in database depends on attribute_id and node label
 	public ArrayList<String> GenerateStartNode(HashSet<String> attribute_ids, String label)
 	{
 		Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();

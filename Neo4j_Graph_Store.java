@@ -74,7 +74,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 	
 	//decode return value of function Execute(String query) to get "data" section
-	public static JsonArray GetExecuteResultDataASJsonArray(String result)
+	public JsonArray GetExecuteResultDataASJsonArray(String result)
 	{		
 		HashSet<Integer> hs  = new HashSet<Integer>();
 		JsonParser jsonParser = new JsonParser();
