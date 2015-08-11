@@ -19,6 +19,35 @@ public class Batch_Inserter {
 	
 	public static int node_count = 0;
 	
+	public static int GetNodeCount(String datasource)
+	{
+		File file = null;
+		BufferedReader reader = null;
+		try
+		{
+			file = new File("/home/yuhansun/Documents/Real_data/"+datasource+"/graph.txt");
+			reader = new BufferedReader(new FileReader(file));
+			String str = reader.readLine();
+			String[] l = str.split(" ");
+			node_count = Integer.parseInt(l[0]);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try {
+				reader.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return node_count;
+				
+	}
+	
 	public static void CreateUniqueConstraint()
 	{
 		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
@@ -439,7 +468,7 @@ public class Batch_Inserter {
 				}
 				reader.close();
 				size = OwnMethods.getDirSize(new File(db_path)) - size;
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/RMBR_Index_Size.txt", true, ratio+"\t"+size);
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/RMBR_Index_Size.txt", true, ratio+"\t"+size+"\n");
 			}
 			catch(IOException e)
 			{
@@ -463,26 +492,18 @@ public class Batch_Inserter {
 		}
 			
 	}
-
-	public static void main(String[] args) 
-	{		
-		//CreateUniqueConstraint();
-		//LoadRTreeNodes();
-		//SetRMBR();
-		//UpdateError();
-		
-		String datasource = "citeseer";
-		
+	
+	public static void LoadReachabilityIndex(String datasource)
+	{
 		BatchInserter inserter = null;
 		BufferedReader reader = null;
 		BufferedReader reader_reachFrom = null;
 		BufferedReader reader_reachTo = null;
 		File file = null;
 		Map<String, String> config = new HashMap<String, String>();
-		config.put("dbms.pagecache.memory", "6g");
+		config.put("dbms.pagecache.memory", "5g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
 		
-		//ReachabilityIndex insert
 		try
 		{
 			Map<Integer,Integer> table = new HashMap<Integer, Integer>();
@@ -532,6 +553,7 @@ public class Batch_Inserter {
 				}
 				inserter.createNode(scc_id, properties, Reach_Index_Label);
 			}
+			System.out.println(node_count);
 		}
 		catch(IOException e)
 		{
@@ -572,18 +594,27 @@ public class Batch_Inserter {
 				}
 			}
 		}
-
-		//load graph nodes and relationships
+	}
+	
+	public static void LoadGraph(String datasource)
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "6g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
 		for(int ratio = 20;ratio<100;ratio+=20)
 		{
 			int offset = ratio / 20 * node_count;
+			RelationshipType graph_rel = DynamicRelationshipType.withName("LINK");
 			try
 			{
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(), config);
 				//inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/test/neo4j-community-2.2.3/data/test.db").getAbsolutePath(), config);
 				
 				Label graph_label = DynamicLabel.label("Graph_Random_" + ratio);
-				RelationshipType graph_rel = DynamicRelationshipType.withName("LINK");
+				
 				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio;
 				reader = null;
 				file = null;
@@ -612,26 +643,6 @@ public class Batch_Inserter {
 				}
 				reader.close();
 				
-
-				//graph relationships
-				file = new File("/home/yuhansun/Documents/Real_data/"+datasource+"/graph.txt");											
-				reader = new BufferedReader(new FileReader(file));
-				tempString = null;
-				reader.readLine();
-				while((tempString = reader.readLine())!=null)
-				{				
-					String[] l = tempString.split(" ");
-					long start = Long.parseLong(l[0]);
-					long count = Long.parseLong(l[1]);
-					if(count == 0)
-						continue;
-					for(int i = 2;i<l.length;i++)
-					{
-						long end = Long.parseLong(l[i]);
-						inserter.createRelationship(start + offset, end + offset, graph_rel, null);
-					}
-				}
-				reader.close();
 			}
 				
 			catch(IOException e)
@@ -664,9 +675,82 @@ public class Batch_Inserter {
 					{					
 					}
 				}
-			}		
+			}
+			
+			try
+			{
+				//graph relationships
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(), config);
+				file = new File("/home/yuhansun/Documents/Real_data/"+datasource+"/graph.txt");											
+				reader = new BufferedReader(new FileReader(file));
+				String tempString = null;
+				reader.readLine();
+				while((tempString = reader.readLine())!=null)
+				{	
+					String[] l = tempString.split(" ");
+					long start = Long.parseLong(l[0]);
+					long count = Long.parseLong(l[1]);
+					if(count == 0)
+						continue;
+					for(int i = 2;i<l.length ;i++)
+					{
+						long end = Long.parseLong(l[i]);
+						inserter.createRelationship(start + offset, end + offset, graph_rel, null);
+					}
+				}
+				reader.close();
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e1)
+					{					
+					}
+				}
+				if(inserter!=null)
+					inserter.shutdown();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+			
 		}
+	}
+
+	public static void main(String[] args) 
+	{		
+		//CreateUniqueConstraint();
+		//LoadRTreeNodes();
+		//SetRMBR();
+		//UpdateError();
 		
-		SetRMBR(datasource);
+		String datasource = "uniprotenc_100m";
+		GetNodeCount(datasource);
+			
+		//ReachabilityIndex insert
+//		Batch_Inserter.LoadReachabilityIndex(datasource);
+
+		//load graph nodes and relationships
+		Batch_Inserter.LoadGraph(datasource);
+		
+		//SetRMBR(datasource);
 	}
 }
