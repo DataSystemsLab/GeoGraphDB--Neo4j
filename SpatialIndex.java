@@ -18,7 +18,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	private Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 	private Index p_index = new Index();
 	private OwnMethods p_own = new OwnMethods();
-	private PostgresJDBC p_postgres = new PostgresJDBC();
+	private static PostgresJDBC p_postgres = new PostgresJDBC();
 	private String longitude_property_name;
 	private String latitude_property_name;
 	Config p_config;
@@ -74,55 +74,70 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 //		}
 //	}
 
-	public void Construct_RTree_Index()
+	public static void Construct_RTree_Index(String datasource)
 	{
 		File file = null;
 		BufferedReader reader = null;
+		Connection con = null;
 		try
 		{
-			Connection con = p_postgres.GetConnection();
+			con = PostgresJDBC.GetConnection();
 			
 			//create table
-//			for(int ratio = 20;ratio<60;ratio+=20)
-//			{
-//				Statement st = con.createStatement();
-//				String query = "create table Patents_Random_" + ratio + " (id bigint,";
-//				query+=("location point)");
-//				System.out.println(query);
-//				st.executeUpdate(query);
-//				
-//			}
+			for(int ratio = 20;ratio<100;ratio+=20)
+			{
+				Statement st = null;
+				try
+				{
+					st = con.createStatement();
+					String query = "create table "+datasource+"_Random_" + ratio + " (id bigint,";
+					query+=("location point)");
+					System.out.println(query);
+					st.executeUpdate(query);
+				}
+				catch(Exception e)
+				{
+					System.out.println(e.getMessage());
+				}
+				finally
+				{
+					PostgresJDBC.close(st);
+				}				
+			}
 			
 			//insert data
-//			for(int ratio = 20;ratio<100;ratio+=20)
-//			{
-//				String filename = "/home/yuhansun/Documents/Real_data/Patents/Random_spatial_distributed/" + ratio + "/spatial_entity.txt";
-//				file = new File(filename);
-//				reader = new BufferedReader(new FileReader(file));
-//				reader.readLine();
-//				String tempString = null;
-//				while((tempString = reader.readLine())!=null)
-//				{
-//					String[] l = tempString.split(" ");
-//					String tablename = "Patents_Random_" + ratio;
-//					String query = "insert into " + tablename + " values (" + l[0] + ", '" + l[2] + "," + l[3] + "')";
-//					System.out.println(query);
-//					Statement st = con.createStatement();
-//					st.executeUpdate(query);
-//					st.close();
-//				}
-//				reader.close();
-//			}
+			for(int ratio = 20;ratio<100;ratio+=20)
+			{
+				String filename = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio + "/entity.txt";
+				file = new File(filename);
+				reader = new BufferedReader(new FileReader(file));
+				reader.readLine();
+				String tempString = null;
+				while((tempString = reader.readLine())!=null)
+				{
+					String[] l = tempString.split(" ");
+					int isspatial = Integer.parseInt(l[1]);
+					if(isspatial == 0)
+						continue;
+					String tablename = datasource + "_Random_" + ratio;
+					String query = "insert into " + tablename + " values (" + l[0] + ", '" + l[2] + "," + l[3] + "')";
+					System.out.println(query);
+					Statement st = con.createStatement();
+					st.executeUpdate(query);
+					st.close();
+				}
+				reader.close();
+			}
 			
 			//create gist index
-//			for(int ratio = 20;ratio<100;ratio+=20)
-//			{
-//				String tablename = "Patents_Random_" + ratio;
-//				String query = "CREATE INDEX Patents_Random_"+ratio+"_Gist ON "+tablename+" USING gist(location)";
-//				Statement st = con.createStatement();
-//				st.executeUpdate(query);
-//				st.close();
-//			}
+			for(int ratio = 20;ratio<100;ratio+=20)
+			{
+				String tablename = datasource + "_Random_" + ratio;
+				String query = "CREATE INDEX "+datasource+"_Random_"+ratio+"_Gist ON "+tablename+" USING gist(location)";
+				Statement st = con.createStatement();
+				st.executeUpdate(query);
+				st.close();
+			}
 			
 			con.close();
 		}
@@ -130,13 +145,16 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		{
 			System.out.println(e.getMessage());
 		}
+		finally
+		{
+			PostgresJDBC.Close(con);
+		}
 
 	}
 	
 	public void Preprocess() 
-	{
-		
-		Construct_RTree_Index();
+	{		
+		//Construct_RTree_Index();
 	}
 
 	public boolean ReachabilityQuery(int start_id, MyRectangle rect) 

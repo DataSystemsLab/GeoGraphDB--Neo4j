@@ -67,7 +67,7 @@ public class OwnMethods {
 		return lines;
 	}
 	
-	public void WriteFile(String filename, boolean app, ArrayList<String> lines)
+	public static void WriteFile(String filename, boolean app, ArrayList<String> lines)
 	{
 		try 
 		{
@@ -84,7 +84,7 @@ public class OwnMethods {
 		}
 	}
 	
-	public void WriteFile(String filename, boolean app, String str)
+	public static void WriteFile(String filename, boolean app, String str)
 	{
 		try 
 		{
