@@ -6,6 +6,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.sun.jersey.api.client.WebResource;
 
 public class GeoReach implements ReachabilityQuerySolver	{
 	
@@ -13,6 +14,13 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	public static Set<Integer> VisitedVertices = new HashSet();
 	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
+	private static WebResource resource;
+	
+	GeoReach()
+	{
+		p_neo4j_graph_store = new Neo4j_Graph_Store();
+		resource = p_neo4j_graph_store.GetCypherResource();
+	}
 	
 	// give a vertex id return a boolean value indicating whether it has RMBR
 	public static boolean HasRMBR(int id)
@@ -25,7 +33,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		MyRectangle RMBR = new MyRectangle();
 		
 		String query = "match (a) where id(a) = " + id + " return a.RMBR_minx, a.RMBR_miny, a.RMBR_maxx, a.RMBR_maxy";		
-		ArrayList<String> result = p_neo4j_graph_store.GetExecuteResultData(p_neo4j_graph_store.Execute(query));
+		ArrayList<String> result = Neo4j_Graph_Store.GetExecuteResultData(Neo4j_Graph_Store.Execute(resource, query));
 		
 		String data = result.get(0);
 		String[] l = data.split(",");
@@ -159,7 +167,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						String maxy = Double.toString(new_RMBR.max_y);
 						
 						String query = "match (a) where id(a) = " + neighbor + " set a.RMBR_minx = " + minx + ", a.RMBR_miny = " + miny + ", a.RMBR_maxx = " + maxx + ", a.RMBR_maxy = " + maxy;
-						p_neo4j_graph_store.Execute(query);
+						Neo4j_Graph_Store.Execute(resource, query);
 					}
 				}
 				
@@ -176,7 +184,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						String maxy = Double.toString(new_RMBR.max_y);
 						
 						String query = "match (a) where id(a) = " + neighbor + " set a.RMBR_minx = " + minx + ", a.RMBR_miny = " + miny + ", a.RMBR_maxx = " + maxx + ", a.RMBR_maxy = " + maxy;
-						p_neo4j_graph_store.Execute(query);
+						Neo4j_Graph_Store.Execute(resource, query);
 					}
 				}
 					
@@ -194,7 +202,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	{		
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
-		String result = p_neo4j_graph_store.Execute(query);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
 		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -221,7 +229,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			{
 				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
 				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
-				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					System.out.println(id);
 					return true;
@@ -294,7 +302,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
-		String result = p_neo4j_graph_store.Execute(query);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
 		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -322,7 +330,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			{
 				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
 				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
-				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					System.out.println(id);
 					return true;

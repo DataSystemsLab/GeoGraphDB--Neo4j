@@ -26,18 +26,46 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		SERVER_ROOT_URI = config.GetServerRoot();
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
+		
+		final String txUri = SERVER_ROOT_URI + "/transaction/commit";
+		resource = Client.create().resource( txUri );
 	}
 	
 	private String SERVER_ROOT_URI;
 	private String longitude_property_name;
 	private String latitude_property_name;
+	private WebResource resource;
+	
+	//create web resource and this step is time consuming
+	public WebResource GetCypherResource()
+	{
+		return resource;
+	}
+	
+	public WebResource GetRangeQueryResource()
+	{
+		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
+		WebResource resource = Client.create().resource(range_query);
+		return resource;
+	}
 	
 	//execute a cypher query return a json format string
+	public static String Execute(WebResource resource, String query)
+	{				
+		String payload = "{\"statements\" : [ {\"statement\" : \"" +query + "\"} ]}";
+		ClientResponse response = resource
+		        .accept( MediaType.APPLICATION_JSON )
+		        .type( MediaType.APPLICATION_JSON )
+		        .entity( payload )
+		        .post( ClientResponse.class );
+
+		String result = response.getEntity(String.class);
+		response.close();
+		return result;
+	}
+	
 	public String Execute(String query)
 	{		
-		final String txUri = SERVER_ROOT_URI + "/transaction/commit";
-		WebResource resource = Client.create().resource( txUri );
-		
 		String payload = "{\"statements\" : [ {\"statement\" : \"" +query + "\"} ]}";
 		ClientResponse response = resource
 		        .accept( MediaType.APPLICATION_JSON )
@@ -74,7 +102,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 	
 	//decode return value of function Execute(String query) to get "data" section
-	public JsonArray GetExecuteResultDataASJsonArray(String result)
+	public static JsonArray GetExecuteResultDataASJsonArray(String result)
 	{		
 		HashSet<Integer> hs  = new HashSet<Integer>();
 		JsonParser jsonParser = new JsonParser();
@@ -122,7 +150,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	public ArrayList<Integer> GetAllVertices()
 	{
 		String query = "match (a:Graph_node) return id(a)";
-		String result = Execute(query);
+		String result = Execute(resource, query);
 
 		ArrayList l  = new ArrayList<Integer>();
 		
@@ -133,7 +161,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	public ArrayList<Integer> GetSpatialVertices()
 	{
 		String query = "match (a:Graph_node) where has (a."+ longitude_property_name +") return id(a)";
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		HashSet<Integer> hs = GetExecuteResultDataInSet(result);
 		
@@ -153,7 +181,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	{		
 		String query = "match (a) where id(a) = " +Integer.toString(id) +" return a";
 		
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
 		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -174,7 +202,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	{
 		String query = "match (a) where id(a) = " +Integer.toString(id) +" return id(a), a";
 		
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
 		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -196,7 +224,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		
 		String query = "match (a)-[]->(b) where id(a) = " +Integer.toString(id) +" return id(b)";
 
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
 		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -223,7 +251,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		
 		String query = "match (a)-[]->(b) where id(b) = " +Integer.toString(id) +" return id(a)";
 
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
 		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -248,7 +276,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	{
 		String query = "match (a) where id(a) = " +Integer.toString(id) +" return a."+attributename;
 		
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
 		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -276,7 +304,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	{
 		double[] location = new double[2];
 		String query = "match (a) where id(a) = " + id + " return a.longitude, a.latitude";
-		ArrayList<String> result = GetExecuteResultData(Execute(query));
+		ArrayList<String> result = GetExecuteResultData(Execute(resource, query));
 		
 		String data = result.get(0);
 		String[] l = data.split(",");
@@ -290,7 +318,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	public String AddVertexAttribute(int id, String attributename, String value)
 	{
 		String query = "match (a) where id(a) = " +Integer.toString(id) +" set a."+attributename+"="+value;
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		return result;
 	}
@@ -318,7 +346,7 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	{
 		String query = "match (a:"+ label +") where a." + attribute + " = " + value + " return id(a)";
 		
-		String result = Execute(query);
+		String result = Execute(resource, query);
 		
 		HashSet<Integer> hs = GetExecuteResultDataInSet(result);
 		

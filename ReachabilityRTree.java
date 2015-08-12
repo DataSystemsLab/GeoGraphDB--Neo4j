@@ -30,7 +30,7 @@ public class ReachabilityRTree implements ReachabilityQuerySolver{
 		index = new Index();
 	}
 	
-	public static void LoadRTreeNodes()
+	public void LoadRTreeNodes()
 	{
 		BatchInserter inserter = null;
 		BufferedReader reader = null;

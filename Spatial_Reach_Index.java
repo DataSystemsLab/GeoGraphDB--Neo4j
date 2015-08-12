@@ -10,6 +10,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
+import com.sun.jersey.api.client.WebResource;
 
 public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 
@@ -17,6 +18,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	private Connection con;
 	private Statement st;
 	private ResultSet rs;
+	private WebResource resource;
 	
 	Spatial_Reach_Index(String p_RTreeName)
 	{
@@ -52,18 +54,17 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	{
 		try
 		{
-			Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 			String query = "match (n) where id(n)="+start_id+" return n";
-			String result = p_neo.Execute(query);
-			JsonArray jsonArr = p_neo.GetExecuteResultDataASJsonArray(result);
+			String result = Neo4j_Graph_Store.Execute(resource, query);
+			JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 			JsonObject jsonOb = jsonArr.get(0).getAsJsonObject();
 			jsonArr = jsonOb.get("row").getAsJsonArray();
 			jsonOb = jsonArr.get(0).getAsJsonObject();
 			int id = jsonOb.get("id").getAsInt();
 			
 			query = "match (n:Reachability_Index) where n.id = " + id + " return n";
-			result = p_neo.Execute(query);
-			jsonArr = p_neo.GetExecuteResultDataASJsonArray(result);
+			result = Neo4j_Graph_Store.Execute(resource, query);
+			jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 			jsonOb = jsonArr.get(0).getAsJsonObject();
 			jsonArr = jsonOb.get("row").getAsJsonArray();
 			jsonOb = jsonArr.get(0).getAsJsonObject();
@@ -88,8 +89,8 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 				{
 					query += (","+rs.getString("id").toString()+"] return n");
 					i = 0;
-					result = p_neo.Execute(query);
-					jsonArr = p_neo.GetExecuteResultDataASJsonArray(result);
+					result = Neo4j_Graph_Store.Execute(resource, query);
+					jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 					for(int j = 0;j<jsonArr.size();j++)
 					{
 						jsonOb = jsonArr.get(j).getAsJsonObject();
@@ -133,8 +134,8 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 			if(i!=0)
 			{
 				query+="] return n";
-				result = p_neo.Execute(query);
-				jsonArr = p_neo.GetExecuteResultDataASJsonArray(result);
+				result = Neo4j_Graph_Store.Execute(resource, query);
+				jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 				for(int j = 0;j<jsonArr.size();j++)
 				{
 					jsonOb = jsonArr.get(j).getAsJsonObject();

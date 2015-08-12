@@ -12,15 +12,11 @@ import java.util.Set;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.sun.jersey.api.client.WebResource;
 
 public class SpatialIndex implements ReachabilityQuerySolver{
 	
 	private Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-	private Index p_index = new Index();
-	private OwnMethods p_own = new OwnMethods();
-	private static PostgresJDBC p_postgres = new PostgresJDBC();
-	private String longitude_property_name;
-	private String latitude_property_name;
 	Config p_config;
 	private String RTreeName;
 	
@@ -28,18 +24,21 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	public long Neo4jTime;
 	public long JudgeTime;
 	
+	private WebResource resource;
+	
 	//used in query procedure in order to record visited vertices
-	public static Set<Integer> VisitedVertices = new HashSet();
+	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
 	public SpatialIndex(String p_RTreeName)
 	{
 		p_neo = new Neo4j_Graph_Store();
-		p_index = new Index();
-		p_own = new OwnMethods();
-		p_postgres = new PostgresJDBC();
+		resource = p_neo.GetCypherResource();
+		new Index();
+		new OwnMethods();
+		new PostgresJDBC();
 		p_config = new Config();
-		longitude_property_name = p_config.GetLongitudePropertyName();
-		latitude_property_name = p_config.GetLatitudePropertyName();
+		p_config.GetLongitudePropertyName();
+		p_config.GetLatitudePropertyName();
 		RTreeName = p_RTreeName;
 		
 		Neo4jTime = 0;
@@ -161,13 +160,13 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	{
 		try
 		{
-			Queue<Integer> queue = new LinkedList();
+			Queue<Integer> queue = new LinkedList<Integer>();
 			VisitedVertices.clear();
 			
 			long start = System.currentTimeMillis();
 			
 			HashSet<Integer> hs = new HashSet<Integer>();
-			Connection con = p_postgres.GetConnection();
+			Connection con = PostgresJDBC.GetConnection();
 			Statement st = con.createStatement();
 			String query = "select id from " + RTreeName + " where location <@ box '((" + rect.min_x + "," + rect.min_y + ")," + "(" + rect.max_x + "," + rect.max_y + "))'";
 			ResultSet rs = st.executeQuery(query);
@@ -181,7 +180,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			
 			query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b),b";
 			
-			String result = p_neo.Execute(query);
+			String result = Neo4j_Graph_Store.Execute(resource, query);
 			
 			JsonParser jsonParser = new JsonParser();
 			JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
@@ -229,7 +228,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 				
 				query = "match (a)-->(b) where id(a) = " +Integer.toString(id) +" return id(b), b";
 				
-				result = p_neo.Execute(query);
+				result = Neo4j_Graph_Store.Execute(resource, query);
 				
 				jsonParser = new JsonParser();
 				jsonObject = (JsonObject) jsonParser.parse(result);

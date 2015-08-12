@@ -1,8 +1,6 @@
 package def;
 
 import java.util.*;
-import java.io.*;
-import java.net.URI;
 
 import javax.ws.rs.core.MediaType;
 
@@ -21,6 +19,8 @@ public class Index implements ReachabilityQuerySolver{
 	private String SERVER_ROOT_URI;
 	private String longitude_property_name;
 	private String latitude_property_name;
+	private WebResource rangequery_resource;//rangequery resource
+	private WebResource cypher_resource;//cypher query resource
 	
 	public long GetTranTime;
 	
@@ -29,6 +29,7 @@ public class Index implements ReachabilityQuerySolver{
 	public long BuildListTime;
 	
 	public long JudgeTime;
+	
 	
 	Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	
@@ -39,27 +40,31 @@ public class Index implements ReachabilityQuerySolver{
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
 		
+		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+		rangequery_resource = p_neo.GetRangeQueryResource();
+		cypher_resource = p_neo.GetCypherResource();
+		
 		GetTranTime = 0;
 		GetRTreeTime = 0;
 		QueryTime = 0;
-		BuildListTime = 0;
-		
+		BuildListTime = 0;		
 		JudgeTime = 0;
 	}
 	
+	//this is an method for latent index
 	public HashSet<Integer> RangeQuery(String layername, MyRectangle rect)
 	{
-		HashSet<Integer> hs = new HashSet();
+		HashSet<Integer> hs = new HashSet<Integer>();
 		
 		String query = "start node = node:" + layername + "('bbox:["+ rect.min_x + ", " + rect.max_x + ", " + rect.min_y + ", " + rect.max_y + "]') return id(node)";
 		
 		long start = System.currentTimeMillis();
-		String result = p_neo4j_graph_store.Execute(query);
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 		System.out.println(result);
 		QueryTime += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		hs = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		hs = Neo4j_Graph_Store.GetExecuteResultDataInSet(result);
 		BuildListTime += System.currentTimeMillis() - start;
 		
 		return hs;
@@ -67,20 +72,18 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public HashSet<Integer> RangeQueryByRTree(String layername, MyRectangle rect)
 	{
-		HashSet<Integer> hs = new HashSet();
+		HashSet<Integer> hs = new HashSet<Integer>();
 		
 		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
 		
 		long start = System.currentTimeMillis();
 		WebResource resource = Client.create().resource(range_query);
-		String entity = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.max_y+" }";
-		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
+		String payload = "{ \"layer\": \""+layername+"\", \"minx\": "+rect.min_x+", \"maxx\":"+rect.max_x+", \"miny\": "+rect.min_y+", \"maxy\": "+rect.max_y+" }";
+		ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(payload).post(ClientResponse.class);
 		String result = response.getEntity(String.class);System.out.println(result);
 		response.close();
 		QueryTime+=System.currentTimeMillis() - start;
-		
-		
-		
+						
 		start = System.currentTimeMillis();
 		JsonParser jsonParser = new JsonParser();
 		JsonArray jsonArr = null;
@@ -106,7 +109,7 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public HashSet<Integer> RangeQueryByRTreeSCC(String layername, MyRectangle rect)
 	{
-		HashSet<Integer> hs = new HashSet();
+		HashSet<Integer> hs = new HashSet<Integer>();
 		
 		final String range_query = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/findGeometriesInBBox";
 		
@@ -148,10 +151,10 @@ public class Index implements ReachabilityQuerySolver{
 	{
 		final String spatial_add_node = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addGeometryWKTToLayer";
 		
-		String result = p_neo4j_graph_store.Execute("match (a) where has(a."+ longitude_property_name +") return id(a) as id, a.latitude as latitude, a.longitude as longitude");
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, "match (a) where has(a."+ longitude_property_name +") return id(a) as id, a.latitude as latitude, a.longitude as longitude");
 		//System.out.println(result);
 		
-		ArrayList<String> l = p_neo4j_graph_store.GetExecuteResultData(result);
+		ArrayList<String> l = Neo4j_Graph_Store.GetExecuteResultData(result);
 		for(int i = 0;i<l.size();i++)
 		{
 			String record = l.get(i);
@@ -210,19 +213,20 @@ public class Index implements ReachabilityQuerySolver{
 		
 		final String spatial_addto_index = SERVER_ROOT_URI + "/ext/SpatialPlugin/graphdb/addNodeToLayer";
 		
-		String result = p_neo4j_graph_store.Execute("match (a:" + RTree_label + ") return id(a)");
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, "match (a:" + RTree_label + ") return id(a)");
 
-		HashSet<Integer> spatial_vertices = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		HashSet<Integer> spatial_vertices = Neo4j_Graph_Store.GetExecuteResultDataInSet(result);
 		
 		
 		Iterator<Integer> iter = spatial_vertices.iterator();
+		WebResource resource = Client.create().resource(spatial_addto_index);
 		while(iter.hasNext())
 		{
-			int id = iter.next();
-			WebResource resource = Client.create().resource(spatial_addto_index);
+			int id = iter.next();			
 			String entity = "{\"layer\" : \""+layername+"\", \"node\" : \""+SERVER_ROOT_URI+"/node/"+id+"\"}";
 			ClientResponse response = resource.accept(MediaType.APPLICATION_JSON).type(MediaType.APPLICATION_JSON).entity(entity).post(ClientResponse.class);
         	result = response.getEntity(String.class);
+        	response.close();
         	System.out.println(result);
 		}
 	}
@@ -267,14 +271,14 @@ public class Index implements ReachabilityQuerySolver{
 	public void CreateTransitiveClosureFromOutNeighbor()
 	{
 		String query = "match (a:Graph_node) where has(a.RMBR_minx) return id(a) limit 100";
-		String result = p_neo4j_graph_store.Execute(query);
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 		System.out.println(result);
 		
-		ArrayList<String> vertices_with_RMBR = p_neo4j_graph_store.GetExecuteResultData(result);
+		ArrayList<String> vertices_with_RMBR = Neo4j_Graph_Store.GetExecuteResultData(result);
 		for(int i = 0;i<vertices_with_RMBR.size();i++)
 		{
 			int id = Integer.parseInt(vertices_with_RMBR.get(i));
-			VisitedNodes = new HashSet();
+			VisitedNodes = new HashSet<Integer>();
 			TraversalOutReachNodes(id);
 			System.out.println(VisitedNodes);
 		}
@@ -282,13 +286,11 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void UnionReachNodes(int id)
 	{
-		boolean updated = false;
-		
 		String query = "match (a) where id(a) = " + id + " return a.reach_nodes";
 		
-		String result = p_neo4j_graph_store.Execute(query);
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 		
-		ArrayList<String> rows = p_neo4j_graph_store.GetExecuteResultData(result);
+		ArrayList<String> rows = Neo4j_Graph_Store.GetExecuteResultData(result);
 
 		String s_a_reach_nodes = rows.get(0);
 		//System.out.println(s_a_reach_nodes);
@@ -296,9 +298,9 @@ public class Index implements ReachabilityQuerySolver{
 		String[] l_a_reach_nodes = result.split(",");
 		
 		query = "match (b) - [] -> (a) where id(a) = " + id + " return id(b), b.reach_nodes";
-		result = p_neo4j_graph_store.Execute(query);
+		result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 		
-		rows = p_neo4j_graph_store.GetExecuteResultData(result);
+		rows = Neo4j_Graph_Store.GetExecuteResultData(result);
 		
 		for(int i = 0;i<rows.size();i++)
 		{
@@ -310,7 +312,7 @@ public class Index implements ReachabilityQuerySolver{
 				String s_id = line[0];
 				query = "match (b) where id(b) = " + s_id + " set b.reach_nodes = " + s_a_reach_nodes;
 				//System.out.println(query); 
-				result = p_neo4j_graph_store.Execute(query);
+				result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 				
 				int i_id = Integer.parseInt(s_id);
 				if(!VisitedNodes.contains(i_id))
@@ -321,7 +323,7 @@ public class Index implements ReachabilityQuerySolver{
 			}
 			else
 			{
-				HashSet<String> hs_b_reach_nodes = new HashSet();
+				HashSet<String> hs_b_reach_nodes = new HashSet<String>();
 				row = row.replaceFirst(",", "#");
 				String[] line = row.split("#");
 				String s_id = line[0];
@@ -330,8 +332,6 @@ public class Index implements ReachabilityQuerySolver{
 				StringTokenizer st = new StringTokenizer(s_b_reach_nodes,",");
 				while(st.hasMoreTokens())
 					hs_b_reach_nodes.add(st.nextToken());
-				
-				//System.out.println(hs_b_reach_nodes);
 				
 				query = "match (b) where id(b) = " + s_id + " set b.reach_nodes = b.reach_nodes + [";
 				boolean changed = false;
@@ -349,7 +349,7 @@ public class Index implements ReachabilityQuerySolver{
 					query = query.substring(0, query.length()-1);
 					query += "]";
 					//System.out.println(query);
-					result = p_neo4j_graph_store.Execute(query);
+					result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 					
 					int i_id = Integer.parseInt(s_id);
 					if(!VisitedNodes.contains(i_id))
@@ -364,21 +364,19 @@ public class Index implements ReachabilityQuerySolver{
 	
 	public void CreateTransitiveClosureFromInNeighbor()
 	{	
-		VisitedNodes = new HashSet();
-		queue = new LinkedList();
+		VisitedNodes = new HashSet<Integer>();
+		queue = new LinkedList<Integer>();
 		String query = "match (a) where has(a." + longitude_property_name + ") return id(a)";
-		String result = p_neo4j_graph_store.Execute(query);
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 		
-		ArrayList<String> spatial_nodes = p_neo4j_graph_store.GetExecuteResultData(result);
-		//System.out.println(spatial_nodes);
+		ArrayList<String> spatial_nodes = Neo4j_Graph_Store.GetExecuteResultData(result);
 		for(int i = 0;i<spatial_nodes.size();i++)
 		{
 			String id = spatial_nodes.get(i);
-			//System.out.println(id);
 			
 			query = "match (b) - [] -> (a)  where id(a) = " + id + " return id(b)";
-			result = p_neo4j_graph_store.Execute(query);
-			ArrayList<String> in_nodes = p_neo4j_graph_store.GetExecuteResultData(result);
+			result = Neo4j_Graph_Store.Execute(cypher_resource, query);
+			ArrayList<String> in_nodes = Neo4j_Graph_Store.GetExecuteResultData(result);
 			for(int j = 0;j<in_nodes.size();j++)
 			{
 				String in_node_id = in_nodes.get(j);
@@ -394,14 +392,14 @@ public class Index implements ReachabilityQuerySolver{
 				{
 					query = "match (b) where id(b) = " + in_node_id + " set b.reach_nodes = [" + id + "]";
 					//System.out.println(query);
-					result = p_neo4j_graph_store.Execute(query);
+					result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 					//System.out.println(result);
 				}
 				else
 				{
 					query = "match (b) where id(b) = " + in_node_id + " set b.reach_nodes = b.reach_nodes + " + id;
 					//System.out.println(query);
-					result = p_neo4j_graph_store.Execute(query);
+					result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 					//System.out.println(result);
 				}
 			}
@@ -423,13 +421,13 @@ public class Index implements ReachabilityQuerySolver{
 		for(int i = 0;i<spatial_nodes.size();i++)
 		{
 			int id = spatial_nodes.get(i);
-			VisitedNodes = new HashSet();
+			VisitedNodes = new HashSet<Integer>();
 			TraversalInReachNodes(id);
-			Iterator iter = VisitedNodes.iterator();
+			Iterator<Integer> iter = VisitedNodes.iterator();
 			while(iter.hasNext())
 			{
 				String query = "match (a) where id(a) = "+iter.next()+" set a.reach_nodes = a.reach_nodes + "+id;
-				String result = p_neo4j_graph_store.Execute(query);
+				String result = Neo4j_Graph_Store.Execute(cypher_resource, query);
 				System.out.println(result);
 			}
 		}
@@ -480,8 +478,8 @@ public class Index implements ReachabilityQuerySolver{
 		start = System.currentTimeMillis();
 		String attribute_id = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "id");
 		String query = "match (a:" + TransitiveClosureLabel + ") -->(b) where a.id = " + attribute_id + " return b.id";
-		String result = p_neo4j_graph_store.Execute(query);
-		HashSet<Integer> reach_nodes = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, query);
+		HashSet<Integer> reach_nodes = Neo4j_Graph_Store.GetExecuteResultDataInSet(result);
 		
 		GetTranTime += System.currentTimeMillis() - start;
 		
@@ -523,8 +521,8 @@ public class Index implements ReachabilityQuerySolver{
 		start = System.currentTimeMillis();
 		String start_scc_id = p_neo4j_graph_store.GetVertexAttributeValue(start_id, "scc_id");
 		String query = "match (a:" + TransitiveClosureLabel + ") -->(b) where a.id = " + start_scc_id + " return b.id";
-		String result = p_neo4j_graph_store.Execute(query);
-		HashSet<Integer> reach_scc = p_neo4j_graph_store.GetExecuteResultDataInSet(result);
+		String result = Neo4j_Graph_Store.Execute(cypher_resource, query);
+		HashSet<Integer> reach_scc = Neo4j_Graph_Store.GetExecuteResultDataInSet(result);
 		
 		GetTranTime += System.currentTimeMillis() - start;
 		

@@ -5,6 +5,7 @@ import java.util.Iterator;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.sun.jersey.api.client.WebResource;
 
 public class ReachabilityIndex {
 	
@@ -15,6 +16,7 @@ public class ReachabilityIndex {
 	public long JudgeTime;
 	
 	private Neo4j_Graph_Store p_neo;
+	private WebResource resource;
 	
 	public ReachabilityIndex()
 	{
@@ -22,6 +24,7 @@ public class ReachabilityIndex {
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
 		p_neo = new Neo4j_Graph_Store();
+		resource = p_neo.GetCypherResource();
 		
 		GetTranTime = 0;		
 		JudgeTime = 0;
@@ -34,8 +37,8 @@ public class ReachabilityIndex {
 		long start = System.currentTimeMillis();
 		String attribute_id = p_neo.GetVertexAttributeValue(start_id, "id");
 		String query = "match (a:" + TransitiveClosureLabel + ") -->(b) where a.id = " + attribute_id + " return b.id";
-		String result = p_neo.Execute(query);
-		HashSet<Integer> reach_nodes = p_neo.GetExecuteResultDataInSet(result);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		HashSet<Integer> reach_nodes = Neo4j_Graph_Store.GetExecuteResultDataInSet(result);
 		
 		GetTranTime += System.currentTimeMillis() - start;
 		if(reach_nodes.size() == 0)
@@ -55,7 +58,7 @@ public class ReachabilityIndex {
 				query += ("," + iter.next());
 			}
 			query+=("] return a");
-			result = p_neo.Execute(query);
+			result = Neo4j_Graph_Store.Execute(resource, query);
 			JsonArray jsonArr = p_neo.GetExecuteResultDataASJsonArray(result);
 			for(int j = 0;j<jsonArr.size();j++)
 			{
@@ -66,7 +69,7 @@ public class ReachabilityIndex {
 				{
 					double lon = jsonOb.get(longitude_property_name).getAsDouble();
 					double lat = jsonOb.get(latitude_property_name).getAsDouble();
-					if(p_neo.Location_In_Rect(lat, lon, rect))
+					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 					{
 						JudgeTime += System.currentTimeMillis() - start;
 						return true;
@@ -80,7 +83,7 @@ public class ReachabilityIndex {
 			for(int i = bulkcount * bulksize + 1;i< reach_nodes.size();i++)
 				query += ("," + iter.next());
 			query += "] return a";
-			result = p_neo.Execute(query);
+			result = Neo4j_Graph_Store.Execute(resource, query);
 			JsonArray jsonArr = p_neo.GetExecuteResultDataASJsonArray(result);
 			for(int j = 0;j<jsonArr.size();j++)
 			{
@@ -91,7 +94,7 @@ public class ReachabilityIndex {
 				{
 					double lon = jsonOb.get(longitude_property_name).getAsDouble();
 					double lat = jsonOb.get(latitude_property_name).getAsDouble();
-					if(p_neo.Location_In_Rect(lat, lon, rect))
+					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 					{
 						JudgeTime += System.currentTimeMillis() - start;
 						return true;

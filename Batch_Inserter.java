@@ -15,6 +15,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import com.sun.jersey.api.client.WebResource;
+
 public class Batch_Inserter {
 	
 	public static int node_count = 0;
@@ -51,11 +53,12 @@ public class Batch_Inserter {
 	public static void CreateUniqueConstraint()
 	{
 		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-		p_neo.Execute("create unique constraint on (n:Transitive_Closure) assert n.id is unique");
+		WebResource resource = p_neo.GetCypherResource();
+		p_neo.Execute(resource, "create unique constraint on (n:Transitive_Closure) assert n.id is unique");
 		for(int i = 0;i<100;i+=20)
 		{
-			p_neo.Execute("create constraint on (n:Graph_Random_" + Integer.toString(i) + ") assert n.id is unique");
-			p_neo.Execute("create constraint on (n:RTree_Random_" + Integer.toString(i) + ") assert n.id is unique");
+			p_neo.Execute(resource, "create constraint on (n:Graph_Random_" + Integer.toString(i) + ") assert n.id is unique");
+			p_neo.Execute(resource, "create constraint on (n:RTree_Random_" + Integer.toString(i) + ") assert n.id is unique");
 		}
 	}
 	
@@ -467,8 +470,6 @@ public class Batch_Inserter {
 					inserter.setNodeProperty(id + offset, "RMBR_maxy", maxy);
 				}
 				reader.close();
-				size = OwnMethods.getDirSize(new File(db_path)) - size;
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/RMBR_Index_Size.txt", true, ratio+"\t"+size+"\n");
 			}
 			catch(IOException e)
 			{
@@ -488,6 +489,8 @@ public class Batch_Inserter {
 					{					
 					}
 				}
+				size = OwnMethods.getDirSize(new File(db_path)) - size;
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/RMBR_Index_Size.txt", true, ratio+"\t"+size+"\n");
 			}
 		}
 			
