@@ -23,7 +23,7 @@ public class PostgresJDBC {
 		return con;
 	}
 	
-	public static void close(ResultSet resultSet) 
+	public static void Close(ResultSet resultSet) 
 	{
 	 
 		if (resultSet == null)
@@ -38,7 +38,7 @@ public class PostgresJDBC {
 			}
 	}
 	
-	public static void close(Statement statement) 
+	public static void Close(Statement statement) 
 	{
 
 		if (statement == null)

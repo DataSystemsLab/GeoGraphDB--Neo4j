@@ -9,7 +9,7 @@ import com.google.gson.JsonParser;
 public class Traversal implements ReachabilityQuerySolver	{
 	
 	//used in query procedure in order to record visited vertices
-	public static Set<Integer> VisitedVertices = new HashSet();
+	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	
@@ -35,7 +35,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 	
 	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
 	{
-		Queue<Integer> queue = new LinkedList();
+		Queue<Integer> queue = new LinkedList<Integer>();
 		VisitedVertices.clear();
 		
 		long start = System.currentTimeMillis();
@@ -65,7 +65,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 			{
 				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
 				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
-				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					JudgeTime+=System.currentTimeMillis() - start;
 					System.out.println(id);
@@ -114,7 +114,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 				{
 					double lat = Double.parseDouble(jsonObject.get("latitude").toString());
 					double lon = Double.parseDouble(jsonObject.get("longitude").toString());
-					if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 					{
 						JudgeTime+=System.currentTimeMillis() - start;
 						System.out.println(neighbor_id);
@@ -134,7 +134,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 
 	public boolean ReachabilityQueryImprove(int start_id, MyRectangle rect)
 	{
-		Queue<Integer> queue = new LinkedList();
+		Queue<Integer> queue = new LinkedList<Integer>();
 		VisitedVertices.clear();
 		
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b, a";
@@ -162,7 +162,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 			{
 				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
 				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
-				if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					System.out.println(id);
 					return true;
@@ -202,7 +202,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 				{
 					double lat = Double.parseDouble(jsonObject.get("latitude").toString());
 					double lon = Double.parseDouble(jsonObject.get("longitude").toString());
-					if(p_neo4j_graph_store.Location_In_Rect(lat, lon, rect))
+					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 					{
 						System.out.println(neighbor_id);
 						return true;

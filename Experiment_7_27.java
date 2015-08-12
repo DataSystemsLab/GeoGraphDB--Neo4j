@@ -1,5 +1,6 @@
 package def;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 
@@ -10,23 +11,21 @@ public class Experiment_7_27 {
 	private static double spatial_total_range = 1000;
 	private static String datasource = "citeseer";
 			
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 		
-		OwnMethods p_own = new OwnMethods();
-						
 		String result_file_path = "/home/yuhansun/Documents/Real_data/"+datasource+"/query_time.txt";
 		boolean break_flag = false;
 		
 		for(int ratio = 20;ratio<100;ratio+=20)
 		{
-			p_own.WriteFile(result_file_path, true, "ratio=" + ratio + "\n");
-			p_own.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\n");
+			OwnMethods.WriteFile(result_file_path, true, "ratio=" + ratio + "\n");
+			OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\n");
 			
 			String graph_label = "Graph_Random_" + ratio;
 			String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio;
-			HashSet<String> hs = p_own.GenerateRandomInteger(graph_size, experiment_node_count);
-			ArrayList<String> al = p_own.GenerateStartNode(hs, graph_label);
-			//p_own.WriteFile(filepath + "/experiment_node.txt", false, al);
+			HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, experiment_node_count);
+			ArrayList<String> al = OwnMethods.GenerateStartNode(hs, graph_label);
+			OwnMethods.WriteFile(filepath + "/experiment_node.txt", false, al);
 					
 			for(int j = 1;j<60;j+=10)
 			{
@@ -72,12 +71,12 @@ public class Experiment_7_27 {
 				spareach.Disconnect();
 				if(break_flag)
 					break;
-				p_own.WriteFile(result_file_path, true, j/100.0+"\t"+time_traversal/experiment_node_count+"\t"+time_reachindex/experiment_node_count+"\t"+time_georeach/experiment_node_count+"\n");
+				OwnMethods.WriteFile(result_file_path, true, j/100.0+"\t"+time_traversal/experiment_node_count+"\t"+time_reachindex/experiment_node_count+"\t"+time_georeach/experiment_node_count+"\n");
 			}
 			if(break_flag)
 				break;
 			
-			p_own.WriteFile(result_file_path, true, "\n");
+			OwnMethods.WriteFile(result_file_path, true, "\n");
 		}
 	}
 }

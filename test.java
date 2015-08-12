@@ -19,7 +19,7 @@ public class test {
 	
 	public static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 		
 		//Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 		

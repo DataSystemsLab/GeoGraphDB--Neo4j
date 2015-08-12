@@ -6,7 +6,7 @@ import java.util.*;
 public class OwnMethods {
 	
 	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
-	public HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
+	public static HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
 	{
 		HashSet<String> ids = new HashSet();
 		
@@ -21,7 +21,7 @@ public class OwnMethods {
 	}
 	
 	//Generate absolute id in database depends on attribute_id and node label
-	public ArrayList<String> GenerateStartNode(HashSet<String> attribute_ids, String label)
+	public static ArrayList<String> GenerateStartNode(HashSet<String> attribute_ids, String label)
 	{
 		Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 		String query = "match (a:" + label + ") where a.id in " + attribute_ids.toString() + " return id(a)";
@@ -115,4 +115,34 @@ public class OwnMethods {
             return 0;     
         }     
     }
+	
+	public static int GetNodeCount(String datasource)
+	{
+		int node_count = 0;
+		File file = null;
+		BufferedReader reader = null;
+		try
+		{
+			file = new File("/home/yuhansun/Documents/Real_data/"+datasource+"/graph.txt");
+			reader = new BufferedReader(new FileReader(file));
+			String str = reader.readLine();
+			String[] l = str.split(" ");
+			node_count = Integer.parseInt(l[0]);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			try {
+				reader.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		return node_count;
+				
+	}
 }

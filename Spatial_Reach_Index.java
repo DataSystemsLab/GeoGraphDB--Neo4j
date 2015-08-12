@@ -3,6 +3,7 @@ package def;
 import java.lang.reflect.Type;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
@@ -20,10 +21,19 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	private ResultSet rs;
 	private WebResource resource;
 	
-	Spatial_Reach_Index(String p_RTreeName)
+	public long postgresql_time;
+	public long neo4j_time;
+	public long judge_time;
+	
+	Spatial_Reach_Index(String p_RTreeName) throws SQLException
 	{
 		this.RTreeName = p_RTreeName;
 		con = PostgresJDBC.GetConnection();
+		st = con.createStatement();
+		
+		postgresql_time = 0;
+		neo4j_time = 0;
+		judge_time = 0;
 	}
 	
 	public void Disconnect()
@@ -34,14 +44,13 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	private void RangeQuery(MyRectangle rect)
 	{
 		try
-		{
-			st = con.createStatement();
+		{			
 			String query = "select id from " + RTreeName + " where location <@ box '((" + rect.min_x + "," + rect.min_y + ")," + "(" + rect.max_x + "," + rect.max_y + "))'";
 			rs = st.executeQuery(query);
 		}
 		catch(Exception e)
 		{
-			System.out.println(e.getMessage());
+			e.printStackTrace();
 		}
 	}
 
@@ -55,16 +64,24 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 		try
 		{
 			String query = "match (n) where id(n)="+start_id+" return n";
+			
+			long start = System.currentTimeMillis();
 			String result = Neo4j_Graph_Store.Execute(resource, query);
 			JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+			neo4j_time+=System.currentTimeMillis() - start;
+			
 			JsonObject jsonOb = jsonArr.get(0).getAsJsonObject();
 			jsonArr = jsonOb.get("row").getAsJsonArray();
 			jsonOb = jsonArr.get(0).getAsJsonObject();
 			int id = jsonOb.get("id").getAsInt();
 			
 			query = "match (n:Reachability_Index) where n.id = " + id + " return n";
+			
+			start = System.currentTimeMillis();
 			result = Neo4j_Graph_Store.Execute(resource, query);
 			jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+			neo4j_time += System.currentTimeMillis() - start;
+			
 			jsonOb = jsonArr.get(0).getAsJsonObject();
 			jsonArr = jsonOb.get("row").getAsJsonArray();
 			jsonOb = jsonArr.get(0).getAsJsonObject();
@@ -73,8 +90,10 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 			Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
 			ArrayList<Integer> source_reachTo = new Gson().fromJson(jsonOb.get("reachTo"), listType);
 
+			start = System.currentTimeMillis();
 			this.RangeQuery(rect);
-			int bulksize = 2000;
+			postgresql_time+=System.currentTimeMillis() - start;
+			int bulksize = 1000;
 			int i = 0;
 			while(rs.next())
 			{				
@@ -89,8 +108,13 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 				{
 					query += (","+rs.getString("id").toString()+"] return n");
 					i = 0;
+					
+					start = System.currentTimeMillis();
 					result = Neo4j_Graph_Store.Execute(resource, query);
 					jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+					neo4j_time+=System.currentTimeMillis() - start;
+					
+					start = System.currentTimeMillis();
 					for(int j = 0;j<jsonArr.size();j++)
 					{
 						jsonOb = jsonArr.get(j).getAsJsonObject();
@@ -109,9 +133,10 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 						    {
 						        int sp = source_reachTo.get(si), tp = target_reachFrom.get(ti);
 						        if (sp == tp) {
-						        	System.out.println(source_scc_id);
-						        	System.out.println(target_scc_id);
-						        	System.out.println(source_reachTo.get(si));
+//						        	System.out.println(source_scc_id);
+//						        	System.out.println(target_scc_id);
+//						        	System.out.println(source_reachTo.get(si));
+						        	judge_time += System.currentTimeMillis() - start;
 						            return true;
 						        }
 						        if (sp <= tp) {
@@ -123,6 +148,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 						    continue;
 						}
 					}
+					judge_time += System.currentTimeMillis() - start;
 				}
 				else
 				{
@@ -134,8 +160,13 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 			if(i!=0)
 			{
 				query+="] return n";
+				
+				start = System.currentTimeMillis();
 				result = Neo4j_Graph_Store.Execute(resource, query);
 				jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+				neo4j_time += System.currentTimeMillis() - start;
+				
+				start = System.currentTimeMillis();
 				for(int j = 0;j<jsonArr.size();j++)
 				{
 					jsonOb = jsonArr.get(j).getAsJsonObject();
@@ -154,9 +185,10 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 					    {
 					        int sp = source_reachTo.get(si), tp = target_reachFrom.get(ti);
 					        if (sp == tp) {
-					        	System.out.println(source_scc_id);
-					        	System.out.println(target_scc_id);
-					        	System.out.println(source_reachTo.get(si));
+//					        	System.out.println(source_scc_id);
+//					        	System.out.println(target_scc_id);
+//					        	System.out.println(source_reachTo.get(si));
+					        	judge_time += System.currentTimeMillis();
 					            return true;
 					        }
 					        if (sp <= tp) {
@@ -168,6 +200,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 					    continue;
 					}
 				}
+				judge_time += System.currentTimeMillis() - start;
 			}
 //			while(rs.next())
 //			{
@@ -208,14 +241,13 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 		}
 		catch(Exception e)
 		{
-			System.out.println(e.getMessage());
-			System.out.println(e.getStackTrace());
+			e.printStackTrace();
 			return false;
 		}
 		finally
 		{
-			PostgresJDBC.close(st);
-			PostgresJDBC.close(rs);
+			PostgresJDBC.Close(st);
+			PostgresJDBC.Close(rs);
 		}
 		
 	}

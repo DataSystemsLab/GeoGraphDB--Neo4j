@@ -25,6 +25,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	public long JudgeTime;
 	
 	private WebResource resource;
+	private Connection con;
 	
 	//used in query procedure in order to record visited vertices
 	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
@@ -33,13 +34,9 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	{
 		p_neo = new Neo4j_Graph_Store();
 		resource = p_neo.GetCypherResource();
-		new Index();
-		new OwnMethods();
-		new PostgresJDBC();
 		p_config = new Config();
-		p_config.GetLongitudePropertyName();
-		p_config.GetLatitudePropertyName();
 		RTreeName = p_RTreeName;
+		con = PostgresJDBC.GetConnection();
 		
 		Neo4jTime = 0;
 		PostgresTime = 0;
@@ -72,17 +69,49 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 //			System.out.println(tree_name + ": " + rtree_size);
 //		}
 //	}
-
-	public static void Construct_RTree_Index(String datasource)
+	
+	public static void DropTable(String datasource)
 	{
-		File file = null;
-		BufferedReader reader = null;
 		Connection con = null;
 		try
 		{
 			con = PostgresJDBC.GetConnection();
+			for(int ratio = 20;ratio<100;ratio+=20)
+			{
+				Statement st = null;
+				try
+				{
+					st = con.createStatement();
+					String query = "drop table "+ datasource + "_Random_"+ratio;
+					st.executeUpdate(query);
+				}
+				catch(Exception e)
+				{
+					System.out.println(e.getMessage());
+				}
+				finally
+				{
+					PostgresJDBC.Close(st);
+				}	
+			}
 			
-			//create table
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
+		finally
+		{
+			PostgresJDBC.Close(con);
+		}		
+	}
+		
+	public static void CreateTable(String datasource)
+	{
+		Connection con = null;
+		try
+		{
+			con = PostgresJDBC.GetConnection();
 			for(int ratio = 20;ratio<100;ratio+=20)
 			{
 				Statement st = null;
@@ -100,13 +129,33 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 				}
 				finally
 				{
-					PostgresJDBC.close(st);
+					PostgresJDBC.Close(st);
 				}				
 			}
-			
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
+		finally
+		{
+			PostgresJDBC.Close(con);
+		}	
+	}
+
+	public static void LoadData(String datasource)
+	{
+		File file = null;
+		BufferedReader reader = null;
+		Connection con = null;
+		try
+		{
+			con = PostgresJDBC.GetConnection();
+			con.setAutoCommit(false);
 			//insert data
 			for(int ratio = 20;ratio<100;ratio+=20)
 			{
+				System.out.println("load "+datasource+"_Random_" + ratio);
 				String filename = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio + "/entity.txt";
 				file = new File(filename);
 				reader = new BufferedReader(new FileReader(file));
@@ -120,25 +169,46 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 						continue;
 					String tablename = datasource + "_Random_" + ratio;
 					String query = "insert into " + tablename + " values (" + l[0] + ", '" + l[2] + "," + l[3] + "')";
-					System.out.println(query);
 					Statement st = con.createStatement();
 					st.executeUpdate(query);
 					st.close();
 				}
 				reader.close();
+				con.commit();
 			}
-			
+			con.setAutoCommit(true);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			PostgresJDBC.Close(con);
+		}
+	}
+
+	public static void CreateGistIndex(String datasource)
+	{
+		Connection con = null;
+		try
+		{			
+			con = PostgresJDBC.GetConnection();
+			OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/gist_index_time.txt", true,"ratio\tconstruct_time\n");
 			//create gist index
 			for(int ratio = 20;ratio<100;ratio+=20)
 			{
+				long start = System.currentTimeMillis();
 				String tablename = datasource + "_Random_" + ratio;
 				String query = "CREATE INDEX "+datasource+"_Random_"+ratio+"_Gist ON "+tablename+" USING gist(location)";
+				System.out.println(query);
 				Statement st = con.createStatement();
 				st.executeUpdate(query);
 				st.close();
-			}
-			
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/gist_index_time.txt", true, ""+ratio+"\t"+(System.currentTimeMillis()-start)+"\n");
+			}			
 			con.close();
+			
 		}
 		catch(Exception e)
 		{
@@ -148,6 +218,14 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		{
 			PostgresJDBC.Close(con);
 		}
+		
+	}
+	
+	public static void Construct_RTree_Index(String datasource)
+	{
+		CreateTable(datasource);
+		LoadData(datasource);
+		CreateGistIndex(datasource);
 
 	}
 	
@@ -166,7 +244,6 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			long start = System.currentTimeMillis();
 			
 			HashSet<Integer> hs = new HashSet<Integer>();
-			Connection con = PostgresJDBC.GetConnection();
 			Statement st = con.createStatement();
 			String query = "select id from " + RTreeName + " where location <@ box '((" + rect.min_x + "," + rect.min_y + ")," + "(" + rect.max_x + "," + rect.max_y + "))'";
 			ResultSet rs = st.executeQuery(query);

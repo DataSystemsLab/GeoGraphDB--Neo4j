@@ -7,7 +7,26 @@ public class Spatial_Index_test {
 
 	public static void main(String[] args) {
 		
-		SpatialIndex.Construct_RTree_Index("citeseer");
+		//SpatialIndex.Construct_RTree_Index("citeseer");
+		
+		ArrayList<String> datasources = new ArrayList<String>();
+		datasources.add("citeseerx");
+		datasources.add("go_uniprot");
+//		datasources.add("uniprotenc_22m");
+		datasources.add("uniprotenc_100m");
+		datasources.add("uniprotenc_150m");
+		for(int i = 0;i<datasources.size();i++)
+//		int i = 2;
+		{
+			String datasource = datasources.get(i);
+//			SpatialIndex.DropTable(datasource);
+//			SpatialIndex.Construct_RTree_Index(datasource);
+			SpatialIndex.CreateTable(datasource);
+			SpatialIndex.LoadData(datasource);
+			SpatialIndex.CreateGistIndex(datasource);
+		}
+		
+		
 		
 		// TODO Auto-generated method stub
 //		String graph_label = "Graph_Random_20";

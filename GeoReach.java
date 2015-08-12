@@ -16,10 +16,15 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	private static WebResource resource;
 	
+	public long neo4j_time;
+	public long judge_time;
+	
 	GeoReach()
 	{
 		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();
+		neo4j_time = 0;
+		judge_time = 0;
 	}
 	
 	// give a vertex id return a boolean value indicating whether it has RMBR
