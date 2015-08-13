@@ -335,7 +335,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			return true;
 		}
 		
-		judge_time += System.currentTimeMillis();
+		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";

@@ -7,7 +7,7 @@ import java.util.HashSet;
 public class Experiment_7_27 {	
 	
 	private static long graph_size;
-	private static int experiment_node_count = 100;
+	private static double experiment_node_count = 100.0;
 	private static double spatial_total_range = 1000;			
 	public static void main(String[] args) {
 		
@@ -28,19 +28,19 @@ public class Experiment_7_27 {
 			for(int ratio = 20;ratio<100;ratio+=20)
 			{
 				OwnMethods.WriteFile(result_file_path, true, "ratio=" + ratio + "\n");
-				OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialIndex_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\n");
+				OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialIndex_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\ttrue_result_count\n");
 				
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/traversal_time_composition.txt", true, "ratio="+ratio+"\nspatial_range\ttotal_time\tneo4j_time\tjudge_time\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/traversal_time_composition.txt", true, "ratio="+ratio+"\nspatial_range\ttotal_time\tneo4j_time\tjudge_time\ttrue_result_count\n");
 
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\ttrue_result_count\n");
 
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\ttrue_result_count\n");
 				
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tjudge_time\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tjudge_time\ttrue_result_count\n");
 				
 				String graph_label = "Graph_Random_" + ratio;
 				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio;
-				HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, experiment_node_count);
+				HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, (int)experiment_node_count);
 				ArrayList<String> al = OwnMethods.GenerateStartNode(hs, graph_label);
 				OwnMethods.WriteFile(filepath + "/experiment_node.txt", false, al);
 						
@@ -55,6 +55,7 @@ public class Experiment_7_27 {
 					MyRectangle query_rect = new MyRectangle(0, 0, rect_size, rect_size);
 					
 					long time_traversal = 0,time_reachindex = 0,time_georeach = 0,time_spa = 0;
+					int true_result_count = 0;
 					for(int i = 0;i<al.size();i++)
 					{					
 						System.out.println(i);
@@ -90,17 +91,20 @@ public class Experiment_7_27 {
 							break_flag=true;
 							break;
 						}
+						
+						if(result1)
+							true_result_count+=1;
 					}
 
-					OwnMethods.WriteFile(result_file_path, true, (j/100.0)*(j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+time_spa/experiment_node_count+"\t"+time_reachindex/experiment_node_count+"\t"+time_georeach/experiment_node_count+"\n");
+					OwnMethods.WriteFile(result_file_path, true, (j/100.0)*(j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+time_spa/experiment_node_count+"\t"+time_reachindex/experiment_node_count+"\t"+time_georeach/experiment_node_count+"\t"+true_result_count+"\n");
 					
-					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/traversal_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+traversal.Neo4jTime/experiment_node_count+"\t"+traversal.JudgeTime/experiment_node_count+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/traversal_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+traversal.Neo4jTime/experiment_node_count+"\t"+traversal.JudgeTime/experiment_node_count+"\t"+true_result_count+"\n");
 					
-					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialindex_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_spa/experiment_node_count+"\t"+spa.Neo4jTime+"\t"+spa.PostgresTime/experiment_node_count+"\t"+spa.JudgeTime/experiment_node_count+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialindex_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_spa/experiment_node_count+"\t"+spa.Neo4jTime/experiment_node_count+"\t"+spa.PostgresTime/experiment_node_count+"\t"+spa.JudgeTime/experiment_node_count+"\t"+true_result_count+"\n");
 					
-					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_reachindex/experiment_node_count+"\t"+spa.Neo4jTime+"\t"+spa.PostgresTime/experiment_node_count+"\t"+spa.JudgeTime/experiment_node_count+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_reachindex/experiment_node_count+"\t"+spareach.neo4j_time/experiment_node_count+"\t"+spareach.postgresql_time/experiment_node_count+"\t"+spareach.judge_time/experiment_node_count+"\t"+true_result_count+"\n");
 
-					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_georeach/experiment_node_count+"\t"+georeach.neo4j_time/experiment_node_count+"\t"+georeach.judge_time/experiment_node_count+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, (j/100.0)*(j/100.0)+"\t"+time_georeach/experiment_node_count+"\t"+georeach.neo4j_time/experiment_node_count+"\t"+georeach.judge_time/experiment_node_count+"\t"+true_result_count+"\n");
 					
 					spareach.Disconnect();
 					spa.Disconnect();
@@ -111,9 +115,11 @@ public class Experiment_7_27 {
 					break;
 				
 				OwnMethods.WriteFile(result_file_path, true, "\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/traversal_time_composition.txt", true, "\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialindex_time_composition.txt", true, "\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, "\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, "\n");
 			}
-		}
-		
-		
+		}				
 	}
 }
