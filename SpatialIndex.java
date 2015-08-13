@@ -26,6 +26,8 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	
 	private WebResource resource;
 	private Connection con;
+	private Statement st;
+	private ResultSet rs;
 	
 	//used in query procedure in order to record visited vertices
 	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
@@ -37,6 +39,12 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		p_config = new Config();
 		RTreeName = p_RTreeName;
 		con = PostgresJDBC.GetConnection();
+		try {
+			st = con.createStatement();
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		Neo4jTime = 0;
 		PostgresTime = 0;
@@ -244,9 +252,8 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			long start = System.currentTimeMillis();
 			
 			HashSet<Integer> hs = new HashSet<Integer>();
-			Statement st = con.createStatement();
 			String query = "select id from " + RTreeName + " where location <@ box '((" + rect.min_x + "," + rect.min_y + ")," + "(" + rect.max_x + "," + rect.max_y + "))'";
-			ResultSet rs = st.executeQuery(query);
+			rs = st.executeQuery(query);
 			while(rs.next())
 			{
 				long id = Long.parseLong(rs.getObject("id").toString());
@@ -271,7 +278,6 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			
 			for(int i = 0;i<jsonArr.size();i++)
 			{	
-				start = System.currentTimeMillis();
 				jsonObject = (JsonObject)jsonArr.get(i);
 				JsonArray row = (JsonArray)jsonObject.get("row");
 				
@@ -296,6 +302,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			}
 			
 			JudgeTime += System.currentTimeMillis() - start;
+			start = System.currentTimeMillis();
 			
 			while(!queue.isEmpty())
 			{
@@ -351,8 +358,16 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			System.out.println(e.getMessage());
 			return false;
 		}
+		finally
+		{
+			PostgresJDBC.Close(rs);
+		}
 	}
 	
-	
+	public void Disconnect()
+	{
+		PostgresJDBC.Close(st);
+		PostgresJDBC.Close(con);
+	}
 
 }

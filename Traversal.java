@@ -50,7 +50,8 @@ public class Traversal implements ReachabilityQuerySolver	{
 		jsonObject = (JsonObject) jsonArr.get(0);
 		jsonArr = (JsonArray) jsonObject.get("data");
 
-		Neo4jTime+=System.currentTimeMillis() - start;		
+		Neo4jTime += System.currentTimeMillis() - start;
+		
 		start = System.currentTimeMillis();
 		
 		for(int i = 0;i<jsonArr.size();i++)
@@ -80,7 +81,6 @@ public class Traversal implements ReachabilityQuerySolver	{
 		}
 		
 		JudgeTime += System.currentTimeMillis() - start;
-		start = System.currentTimeMillis();
 		
 		while(!queue.isEmpty())
 		{
