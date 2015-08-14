@@ -13,9 +13,9 @@ public class Experiment_7_27 {
 	public static void main(String[] args) {
 		
 		ArrayList<String> datasources = new ArrayList<String>();
-		//datasources.add("citeseerx");
-		//datasources.add("go_uniprot");
-		datasources.add("Patents");
+//		datasources.add("citeseerx");
+		datasources.add("go_uniprot");
+		//datasources.add("Patents");
 		//datasources.add("uniprotenc_22m");
 		//datasources.add("uniprotenc_100m");
 		//datasources.add("uniprotenc_150m");
@@ -28,6 +28,7 @@ public class Experiment_7_27 {
 			graph_size = OwnMethods.GetNodeCount(datasource);
 			
 			for(int ratio = 20;ratio<100;ratio+=20)
+//			int ratio = 20;
 			{
 				OwnMethods.WriteFile(result_file_path, true, "ratio=" + ratio + "\n");
 				OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialIndex_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\ttrue_result_count\n");
@@ -97,8 +98,12 @@ public class Experiment_7_27 {
 						System.out.println(result3);
 						
 						if(result1!=result2 || result1!=result3 || result1!=result4)
+//						if(result1!=result3 || result1!=result4)	
 						{
+							System.out.println(ratio);
 							System.out.println(id);
+							System.out.println(x);
+							System.out.println(y);
 							System.out.println(rect_size);
 							break_flag=true;
 							break;
