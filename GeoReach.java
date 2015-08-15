@@ -389,16 +389,22 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
 				RMBR.max_y = jsonObject.get("RMBR_maxy").getAsDouble();
 				
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_x && RMBR.max_y < rect.max_y)
+				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
 					judge_time += System.currentTimeMillis() - start;
 					return true;
 				}
 				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+				{
 					false_count+=1;
+					VisitedVertices.add(id);
+				}
 			}
 			else
+			{
 				false_count+=1;
+				VisitedVertices.add(id);
+			}
 
 		}
 		
