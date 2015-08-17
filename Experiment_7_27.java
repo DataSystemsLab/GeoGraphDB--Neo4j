@@ -14,8 +14,8 @@ public class Experiment_7_27 {
 		
 		ArrayList<String> datasources = new ArrayList<String>();
 //		datasources.add("citeseerx");
-		datasources.add("go_uniprot");
-		//datasources.add("Patents");
+//		datasources.add("go_uniprot");
+		datasources.add("Patents");
 		//datasources.add("uniprotenc_22m");
 		//datasources.add("uniprotenc_100m");
 		//datasources.add("uniprotenc_150m");
@@ -27,8 +27,8 @@ public class Experiment_7_27 {
 			boolean break_flag = false;
 			graph_size = OwnMethods.GetNodeCount(datasource);
 			
-			for(int ratio = 20;ratio<100;ratio+=20)
-//			int ratio = 20;
+			//for(int ratio = 60;ratio<100;ratio+=20)
+			int ratio = 80;
 			{
 				OwnMethods.WriteFile(result_file_path, true, "ratio=" + ratio + "\n");
 				OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialIndex_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\ttrue_result_count\n");
@@ -50,7 +50,7 @@ public class Experiment_7_27 {
 				
 				OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, "ratio="+ratio+"\n");
 						
-				for(int j = 1;j<60;j+=10)
+				for(int j = 31;j<60;j+=10)
 				{
 					Traversal traversal = new Traversal();
 					Spatial_Reach_Index spareach = new Spatial_Reach_Index(datasource + "_Random_" + ratio);
@@ -67,7 +67,7 @@ public class Experiment_7_27 {
 					{
 						double x = r.nextDouble()*(1000 - rect_size);
 						double y = r.nextDouble()*(1000 - rect_size);
-						OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, x+"\t"+y+"\n");
+						OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, i+"\t"+x+"\t"+y+"\n");
 					
 						MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
 						
@@ -86,10 +86,10 @@ public class Experiment_7_27 {
 						time_spa += System.currentTimeMillis() - start;
 						System.out.println(result4);
 						
-						start = System.currentTimeMillis();
-						boolean result2 = spareach.ReachabilityQuery(id, query_rect);
-						time_reachindex+= (System.currentTimeMillis() - start);
-						System.out.println(result2);
+//						start = System.currentTimeMillis();
+//						boolean result2 = spareach.ReachabilityQuery(id, query_rect);
+//						time_reachindex+= (System.currentTimeMillis() - start);
+//						System.out.println(result2);
 						
 						georeach.VisitedVertices.clear();
 						start = System.currentTimeMillis();
@@ -97,8 +97,8 @@ public class Experiment_7_27 {
 						time_georeach+=System.currentTimeMillis() - start;
 						System.out.println(result3);
 						
-						if(result1!=result2 || result1!=result3 || result1!=result4)
-//						if(result1!=result3 || result1!=result4)	
+						//if(result1!=result2 || result1!=result3 || result1!=result4)
+						if(result1!=result3 || result1!=result4)	
 						{
 							System.out.println(ratio);
 							System.out.println(id);
@@ -113,7 +113,9 @@ public class Experiment_7_27 {
 							true_result_count+=1;
 					}
 					
+					OwnMethods.WriteFile(filepath + "//experiment_node.txt", true, "\n");
 					OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, "\n");
+					
 
 					OwnMethods.WriteFile(result_file_path, true, (j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+time_spa/experiment_node_count+"\t"+time_reachindex/experiment_node_count+"\t"+time_georeach/experiment_node_count+"\t"+true_result_count+"\n");
 					

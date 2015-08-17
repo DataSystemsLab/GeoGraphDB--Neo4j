@@ -447,8 +447,7 @@ public class Batch_Inserter {
 				
 				File file = null;
 				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/"+ratio;
-				
-				
+							
 				file = new File(filepath + "/entity.txt");	
 				
 				reader = new BufferedReader(new FileReader(file));
