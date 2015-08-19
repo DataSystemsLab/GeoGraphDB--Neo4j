@@ -49,6 +49,102 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		return resource;
 	}
 	
+	public static String StartMyServer(String datasource)
+	{
+		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.2.3/bin/neo4j start";
+		String result = null;
+		try 
+		{
+			Process process = Runtime.getRuntime().exec(command);
+			process.waitFor();
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));  
+	        StringBuffer sb = new StringBuffer();  
+	        String line;  
+	        while ((line = br.readLine()) != null) 
+	        {  
+	            sb.append(line).append("\n");  
+	        }  
+	        result = sb.toString();  		
+        }   
+		catch (Exception e) 
+		{  
+			e.printStackTrace();
+        }
+		return result;
+	}
+	
+	public static String StartServer(String database_path)
+	{
+		String command = database_path+"/bin/neo4j start";
+		String result = null;
+		try 
+		{
+			Process process = Runtime.getRuntime().exec(command);
+			process.waitFor();
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));  
+	        StringBuffer sb = new StringBuffer();  
+	        String line;  
+	        while ((line = br.readLine()) != null) 
+	        {  
+	            sb.append(line).append("\n");  
+	        }  
+	        result = sb.toString();  		
+        }   
+		catch (Exception e) 
+		{  
+			e.printStackTrace();
+        }
+		return result;
+	}
+	
+	public static String StopMyServer(String datasource)
+	{
+		String command = "/home/yuhansun/Documents/Real_data/" + datasource+"/neo4j-community-2.2.3/bin/neo4j stop";
+		String result = null;
+		try 
+		{
+			Process process = Runtime.getRuntime().exec(command);
+			process.waitFor();
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));  
+	        StringBuffer sb = new StringBuffer();  
+	        String line;  
+	        while ((line = br.readLine()) != null) 
+	        {  
+	            sb.append(line).append("\n");  
+	        }  
+	        result = sb.toString();  		
+        }   
+		catch (Exception e) 
+		{  
+			e.printStackTrace();
+        }
+		return result;
+	}
+	
+	public static String StopServer(String database_path)
+	{
+		String command = database_path+"/bin/neo4j stop";
+		String result = null;
+		try 
+		{
+			Process process = Runtime.getRuntime().exec(command);
+			process.waitFor();
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));  
+	        StringBuffer sb = new StringBuffer();  
+	        String line;  
+	        while ((line = br.readLine()) != null) 
+	        {  
+	            sb.append(line).append("\n");  
+	        }  
+	        result = sb.toString();  		
+        }   
+		catch (Exception e) 
+		{  
+			e.printStackTrace();
+        }
+		return result;
+	}
+	
 	//execute a cypher query return a json format string
 	public static String Execute(WebResource resource, String query)
 	{				
