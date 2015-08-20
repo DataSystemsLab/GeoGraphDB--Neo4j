@@ -52,7 +52,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 	}
 
-	private boolean TraversalQuery(int start_id, MyRectangle rect)
+	private boolean TraversalQuery(int start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
 	{		
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
@@ -112,6 +112,57 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					false_count+=1;
 					VisitedVertices.add(id);
 				}
+				
+				Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
+				ArrayList<Integer> al = new Gson().fromJson(jsonObject.get("ReachGrid_5"), listType);
+				HashSet<Integer> reachgrid = new HashSet<Integer>();
+				for(int j = 0;j<al.size();j++)
+				{
+					reachgrid.add(al.get(j));
+				}
+				
+				//ReachGrid totally Lie In query rectangle
+				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+				{
+					for(int k = lb_x+1;k<rt_x;k++)
+					{
+						for(int j = lb_y+1;j<rt_y;j++)
+						{
+							int grid_id = k*split_pieces+j;
+							if(reachgrid.contains(grid_id))
+							{
+								judge_time += System.currentTimeMillis() - start;
+								return true;
+							}
+						}
+					}
+				}
+
+				//ReachGrid No overlap with query rectangle
+				boolean flag = false;
+				for(int j = lb_y;j<=rt_y;j++)
+				{
+					int grid_id = lb_x*split_pieces+j;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+					grid_id = rt_x*split_pieces+j;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+				}
+				for(int j = lb_x+1;j<rt_x;j++)
+				{
+					int grid_id = j*split_pieces+lb_y;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+					grid_id = j*split_pieces+rt_y;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+				}
+				if(flag == false)
+				{
+					judge_time += System.currentTimeMillis() - start;
+					return false;
+				}	
 			}
 			else
 			{
@@ -142,7 +193,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			}
 			VisitedVertices.add(id);
 			judge_time += System.currentTimeMillis() - start;
-			boolean reachable = TraversalQuery(id, rect);
+			boolean reachable = TraversalQuery(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
 				return true;		
@@ -288,6 +339,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					return true;
 				}
 			}
+			
 			if(jsonObject.has("RMBR_minx"))
 			{
 				RMBR = new MyRectangle();
@@ -306,6 +358,56 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					false_count+=1;
 					VisitedVertices.add(id);
 				}
+				
+				al = new Gson().fromJson(jsonObject.get("ReachGrid_5"), listType);
+				reachgrid = new HashSet<Integer>();
+				for(int j = 0;j<al.size();j++)
+				{
+					reachgrid.add(al.get(j));
+				}
+				
+				//ReachGrid totally Lie In query rectangle
+				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+				{
+					for(int k = lb_x+1;k<rt_x;k++)
+					{
+						for(int j = lb_y+1;j<rt_y;j++)
+						{
+							int grid_id = k*split_pieces+j;
+							if(reachgrid.contains(grid_id))
+							{
+								judge_time += System.currentTimeMillis() - start;
+								return true;
+							}
+						}
+					}
+				}
+
+				//ReachGrid No overlap with query rectangle
+				flag = false;
+				for(int j = lb_y;j<=rt_y;j++)
+				{
+					int grid_id = lb_x*split_pieces+j;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+					grid_id = rt_x*split_pieces+j;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+				}
+				for(int j = lb_x+1;j<rt_x;j++)
+				{
+					int grid_id = j*split_pieces+lb_y;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+					grid_id = j*split_pieces+rt_y;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+				}
+				if(flag == false)
+				{
+					judge_time += System.currentTimeMillis() - start;
+					return false;
+				}				
 			}
 			else
 			{
@@ -336,7 +438,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			}
 			VisitedVertices.add(id);
 			judge_time += System.currentTimeMillis() - start;
-			boolean reachable = TraversalQuery(id, rect);
+			boolean reachable = TraversalQuery(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
 				return true;
