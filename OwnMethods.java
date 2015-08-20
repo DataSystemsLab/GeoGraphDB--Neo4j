@@ -26,13 +26,13 @@ public class OwnMethods {
 		Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 		String query = "match (a:" + label + ") where a.id in " + attribute_ids.toString() + " return id(a)";
 		String result = p_neo4j_graph_store.Execute(query);
-		ArrayList<String> graph_ids = p_neo4j_graph_store.GetExecuteResultData(result);
+		ArrayList<String> graph_ids = Neo4j_Graph_Store.GetExecuteResultData(result);
 		return graph_ids;
 	}
 	
 	public ArrayList<String> ReadFile(String filename)
 	{
-		ArrayList<String> lines = new ArrayList();
+		ArrayList<String> lines = new ArrayList<String>();
 		
 		File file = new File(filename);
 		BufferedReader reader = null;
@@ -138,11 +138,45 @@ public class OwnMethods {
 			try {
 				reader.close();
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
-		return node_count;
-				
+		return node_count;		
+	}
+	
+	public static String ClearCache()
+	{
+		//String[] command = {"/bin/bash","-c","echo data| sudo -S ls"};
+		String []cmd = {"/bin/bash","-c","echo data | sudo -S sh -c \"sync; echo 3 > /proc/sys/vm/drop_caches\""};
+		String result = null;
+		try 
+		{
+			Process process = Runtime.getRuntime().exec(cmd);
+			process.waitFor();
+			BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));  
+	        StringBuffer sb = new StringBuffer();  
+	        String line;  
+	        while ((line = br.readLine()) != null) 
+	        {  
+	            sb.append(line).append("\n");  
+	        }  
+	        result = sb.toString();
+	        result+="\n";
+	        
+        }   
+		catch (Exception e) 
+		{  
+			e.printStackTrace();
+        }
+		return result;
+	}
+	
+	public static String RestartNeo4jClearCache(String datasource)
+	{
+		String result = "";
+		result += Neo4j_Graph_Store.StopMyServer(datasource);
+		result += ClearCache();
+		result += Neo4j_Graph_Store.StartMyServer(datasource);
+		return result;
 	}
 }
