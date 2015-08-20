@@ -1,17 +1,17 @@
 package def;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 
-public class Experiment_7_27 {	
+public class Experiment_8_18 {
 	
 	private static long graph_size;
 	private static double experiment_node_count = 500.0;
-	private static double spatial_total_range = 1000;			
+	private static double spatial_total_range = 1000;
+
 	public static void main(String[] args) {
-		
+	
 		ArrayList<String> datasources = new ArrayList<String>();
 //		datasources.add("citeseerx");
 //		datasources.add("go_uniprot");
@@ -24,22 +24,23 @@ public class Experiment_7_27 {
 		{
 			String datasource = datasources.get(datasourcei);
 			String result_file_path = "/home/yuhansun/Documents/Real_data/"+datasource+"/query_time.txt";
-			boolean break_flag = false;
 			graph_size = OwnMethods.GetNodeCount(datasource);
 			
-			//for(int ratio = 60;ratio<100;ratio+=20)
-			int ratio = 20;
+			for(int ratio = 20;ratio<100;ratio+=20)
+//			int ratio = 20;
 			{
 				OwnMethods.WriteFile(result_file_path, true, "ratio=" + ratio + "\n");
-				OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialIndex_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\ttrue_result_count\n");
+				OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialIndex_time\t"+"SpatialReachIndex_time\t"+"GeoReach_time\tGeoReachGrid_time\n");
 				
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/traversal_time_composition.txt", true, "ratio="+ratio+"\nspatial_range\ttotal_time\tneo4j_time\tjudge_time\ttrue_result_count\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/traversal_time_composition.txt", true, "ratio="+ratio+"\nspatial_range\ttotal_time\tneo4j_time\tjudge_time\n");
 
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\ttrue_result_count\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\n");
 
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\ttrue_result_count\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tpostgres_time\tjudge_time\n");
 				
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tjudge_time\ttrue_result_count\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tjudge_time\n");
+				
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/reachgrid_time_composition.txt", true, "ratio="+ratio+"\n"+"spatial_range\ttotal_time\tneo4j_time\tjudge_time\n");
 				
 				String graph_label = "Graph_Random_" + ratio;
 				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio;
@@ -50,8 +51,8 @@ public class Experiment_7_27 {
 				
 				OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, "ratio="+ratio+"\n");
 						
-//				for(int j = 31;j<60;j+=10)
-				int j = 1;
+				for(int j = 1;j<60;j+=10)
+//				int j = 1;
 				{
 					Traversal traversal = new Traversal();
 					Spatial_Reach_Index spareach = new Spatial_Reach_Index(datasource + "_Random_" + ratio);
@@ -60,16 +61,24 @@ public class Experiment_7_27 {
 					
 					double rect_size = spatial_total_range * Math.sqrt(j/100.0);
 					OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, "spatial_range="+j/100.0+"\n");
-					Random r = new Random();
 					
-					long time_traversal = 0,time_reachindex = 0,time_georeach = 0,time_spa = 0;
+					Random r = new Random();
+					ArrayList<Double> a_x = new ArrayList<Double>();
+					ArrayList<Double> a_y = new ArrayList<Double>();
+					for(int i = 0;i<al.size();i++)
+					{
+						double x = r.nextDouble()*(1000-rect_size);
+						double y = r.nextDouble()*(1000-rect_size);
+						a_x.add(x);
+						a_y.add(y);
+					}
+					
+					long time_traversal = 0,time_reachindex = 0,time_georeach = 0,time_spa = 0,time_reachgrid = 0;
 					int true_result_count = 0;
 					for(int i = 0;i<al.size();i++)
 					{
-						double x = r.nextDouble()*(1000 - rect_size);
-						double y = r.nextDouble()*(1000 - rect_size);
-						OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, i+"\t"+x+"\t"+y+"\n");
-					
+						double x = a_x.get(i);
+						double y = a_y.get(i);					
 						MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
 						
 						System.out.println(i);
@@ -82,36 +91,46 @@ public class Experiment_7_27 {
 						time_traversal+=System.currentTimeMillis() - start;
 						System.out.println(result1);
 						
-						start = System.currentTimeMillis();
+						if(result1)
+							true_result_count+=1;
+					}
+					
+					for(int i = 0;i<al.size();i++)
+					{						
+						System.out.println(i);
+						int id = Integer.parseInt(al.get(i));
+						System.out.println(id);
+						
+						double x = a_x.get(i);
+						double y = a_y.get(i);					
+						MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
+						
+						long start = System.currentTimeMillis();
 						boolean result4 = spa.ReachabilityQuery(id, query_rect);
 						time_spa += System.currentTimeMillis() - start;
 						System.out.println(result4);
+					}
+					
+					for(int i = 0;i<al.size();i++)
+					{	
+						System.out.println(i);
+						int id = Integer.parseInt(al.get(i));
+						System.out.println(id);
 						
-//						start = System.currentTimeMillis();
-//						boolean result2 = spareach.ReachabilityQuery(id, query_rect);
-//						time_reachindex+= (System.currentTimeMillis() - start);
-//						System.out.println(result2);
+						double x = a_x.get(i);
+						double y = a_y.get(i);					
+						MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
+						
+						long start = System.currentTimeMillis();
+						boolean result2 = spareach.ReachabilityQuery(id, query_rect);
+						time_reachindex+= (System.currentTimeMillis() - start);
+						System.out.println(result2);
 						
 						georeach.VisitedVertices.clear();
 						start = System.currentTimeMillis();
 						boolean result3 = georeach.ReachabilityQuery(id, query_rect);
 						time_georeach+=System.currentTimeMillis() - start;
 						System.out.println(result3);
-						
-						//if(result1!=result2 || result1!=result3 || result1!=result4)
-						if(result1!=result3 || result1!=result4)	
-						{
-							System.out.println(ratio);
-							System.out.println(id);
-							System.out.println(x);
-							System.out.println(y);
-							System.out.println(rect_size);
-							break_flag=true;
-							break;
-						}
-						
-						if(result1)
-							true_result_count+=1;
 					}
 					
 					OwnMethods.WriteFile(filepath + "//experiment_node.txt", true, "\n");
@@ -130,11 +149,8 @@ public class Experiment_7_27 {
 					
 					spareach.Disconnect();
 					spa.Disconnect();
-					if(break_flag)
-						break;
+
 				}
-				if(break_flag)
-					break;
 				
 				OwnMethods.WriteFile(filepath + "/experiment_rectangle_location.txt", true, "\n");
 				OwnMethods.WriteFile(result_file_path, true, "\n");
@@ -143,6 +159,7 @@ public class Experiment_7_27 {
 				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, "\n");
 				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, "\n");
 			}
-		}				
+		}	
 	}
+
 }

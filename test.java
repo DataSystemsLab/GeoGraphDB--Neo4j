@@ -23,34 +23,39 @@ public class test {
 		
 		//Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 		
-		OwnMethods p_own = new OwnMethods();
-		HashSet<String> hs = p_own.GenerateRandomInteger(3774768, 100);
-		ArrayList<String> al = p_own.GenerateStartNode(hs, "Graph_Random_20");
-		MyRectangle rect = new MyRectangle(0,0,30,30);
+//		System.out.println("hello world");
 		
+//		System.out.println(OwnMethods.ClearCache());
+		System.out.println(OwnMethods.RestartNeo4jClearCache("Patents"));
 		
-		Spatial_Reach_Index p_spareach = new Spatial_Reach_Index("Patents_Random_20");
-		
-		for(int i = 0; i<al.size();i++)
-		{
-			System.out.println(i);
-			int id = Integer.parseInt(al.get(i));
-			System.out.println(id);
-			
-			GeoReach p_georeach = new GeoReach();
-			boolean result1 = p_georeach.ReachabilityQuery(id, rect);			
-			System.out.println(result1);
-			
-			boolean result2 = p_spareach.ReachabilityQuery(id, rect);
-			System.out.println(result2);
-			
-			if(result1!=result2)
-			{
-				System.out.println(id);
-				return;
-			}
-			
-		}
+//		OwnMethods p_own = new OwnMethods();
+//		HashSet<String> hs = p_own.GenerateRandomInteger(3774768, 100);
+//		ArrayList<String> al = p_own.GenerateStartNode(hs, "Graph_Random_20");
+//		MyRectangle rect = new MyRectangle(0,0,30,30);
+//		
+//		
+//		Spatial_Reach_Index p_spareach = new Spatial_Reach_Index("Patents_Random_20");
+//		
+//		for(int i = 0; i<al.size();i++)
+//		{
+//			System.out.println(i);
+//			int id = Integer.parseInt(al.get(i));
+//			System.out.println(id);
+//			
+//			GeoReach p_georeach = new GeoReach();
+//			boolean result1 = p_georeach.ReachabilityQuery(id, rect);			
+//			System.out.println(result1);
+//			
+//			boolean result2 = p_spareach.ReachabilityQuery(id, rect);
+//			System.out.println(result2);
+//			
+//			if(result1!=result2)
+//			{
+//				System.out.println(id);
+//				return;
+//			}
+//			
+//		}
 		
 //		rect = new MyRectangle(0,0,300,300);
 //		for(int i = 0; i<al.size();i++)

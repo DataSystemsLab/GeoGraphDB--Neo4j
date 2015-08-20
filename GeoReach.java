@@ -3,7 +3,6 @@ package def;
 import java.util.*;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.WebResource;
@@ -11,7 +10,7 @@ import com.sun.jersey.api.client.WebResource;
 public class GeoReach implements ReachabilityQuerySolver	{
 	
 	//used in query procedure in order to record visited vertices
-	public static Set<Integer> VisitedVertices = new HashSet();
+	public Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	private static WebResource resource;
@@ -107,7 +106,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	{	
 		ArrayList<Integer> spatial_vertices = p_neo4j_graph_store.GetSpatialVertices();
 		Queue<Integer> queue = new LinkedList<Integer>();
-		HashSet<Integer> hs = new HashSet();
+		HashSet<Integer> hs = new HashSet<Integer>();
 		for(int i = 0;i<spatial_vertices.size();i++)
 		{
 			int id = spatial_vertices.get(i);
@@ -353,8 +352,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
 		jsonObject = (JsonObject) jsonArr.get(0);
 		jsonArr = (JsonArray) jsonObject.get("data");
-		int count = jsonArr.size();
-
+		
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)

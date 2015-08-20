@@ -1,18 +1,9 @@
 package def;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
-
-import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -21,9 +12,14 @@ import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.sun.jersey.api.client.WebResource;
 
-public class Geo_Reach_Grid implements ReachabilityQuerySolver{
-
-public static Set<Integer> VisitedVertices = new HashSet();
+public class GeoReach_Integrate implements ReachabilityQuerySolver
+{
+	public MyRectangle total_range;
+	public int split_pieces;
+	public double resolution;
+	
+	//used in query procedure in order to record visited vertices
+	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	private static WebResource resource;
@@ -31,13 +27,8 @@ public static Set<Integer> VisitedVertices = new HashSet();
 	public long neo4j_time;
 	public long judge_time;
 	
-	public MyRectangle total_range;
-	public int split_pieces;
-	public double resolution;
-	
-	Geo_Reach_Grid(MyRectangle rect, int p_split_pieces)
+	GeoReach_Integrate(MyRectangle rect, int p_split_pieces)
 	{
-		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();
 		
 		total_range = new MyRectangle();
@@ -46,85 +37,22 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		total_range.max_x = rect.max_x;
 		total_range.max_y = rect.max_y;
 		
-		split_pieces = p_split_pieces;		
+		split_pieces = p_split_pieces;
+		
 		resolution = (total_range.max_x - total_range.min_x)/split_pieces;
 		
+		p_neo4j_graph_store = new Neo4j_Graph_Store();
+		resource = p_neo4j_graph_store.GetCypherResource();
 		neo4j_time = 0;
 		judge_time = 0;
-	}
-	
-	
-	public static void LoadIndex(String datasource)
-	{
-		BatchInserter inserter = null;
-		BufferedReader reader = null;
-		File file = null;
-		Map<String, String> config = new HashMap<String, String>();
-		config.put("dbms.pagecache.memory", "5g");
-		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
-		int node_count = OwnMethods.GetNodeCount(datasource);
-		
-		for(int ratio = 40;ratio<100;ratio+=20)
-		//int ratio = 20;
-		{
-			long offset = ratio / 20 * node_count;
-			try
-			{
-				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
-				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_5/GeoReachGrid_"+ratio+".txt");
-				reader = new BufferedReader(new FileReader(file));
-				reader.readLine();
-				String tempString = null;
-				while((tempString = reader.readLine())!=null)
-				{
-					if(tempString.endsWith(" "))
-						tempString = tempString.substring(0, tempString.length()-1);
-					String[] l = tempString.split(" ");
-					int id = Integer.parseInt(l[0]);
-					int count = Integer.parseInt(l[1]);
-					if(count == 0)
-						continue;
-					else
-					{
-						Map<String, Object> properties = new HashMap<String, Object>();
-						int[] l_i = new int[l.length-2];
-						for(int i = 2;i<l.length;i++)
-							l_i[i-2] = Integer.parseInt(l[i]);
-						properties.put("ReachGrid_5", l_i);
-						inserter.setNodeProperty(id + offset, "ReachGrid_5", l_i);
-					}
-
-				}
-				reader.close();	
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
-			finally
-			{
-				if(inserter!=null)
-					inserter.shutdown();
-				if(reader!=null)
-				{
-					try
-					{
-						reader.close();
-					}
-					catch(IOException e)
-					{					
-					}
-				}
-			}
-		}	
 	}
 	
 	public void Preprocess() {
 		// TODO Auto-generated method stub
 		
 	}
-	
-	private boolean TraversalQuery(int start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
+
+	private boolean TraversalQuery(int start_id, MyRectangle rect)
 	{		
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		
@@ -165,52 +93,21 @@ public static Set<Integer> VisitedVertices = new HashSet();
 					return true;
 				}
 			}
-			if(jsonObject.has("ReachGrid_5"))
+			if(jsonObject.has("RMBR_minx"))
 			{
-				Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
-				ArrayList<Integer> al = new Gson().fromJson(jsonObject.get("ReachGrid_5"), listType);
-				HashSet<Integer> reachgrid = new HashSet<Integer>();
-				for(int j = 0;j<al.size();j++)
+				MyRectangle RMBR = new MyRectangle();
+				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
+				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
+				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
+				RMBR.max_y = jsonObject.get("RMBR_maxy").getAsDouble();
+				
+				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					reachgrid.add(al.get(j));
+					judge_time += System.currentTimeMillis() - start;
+					return true;
 				}
 				
-				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
-				{
-					for(int k = lb_x+1;k<rt_x;k++)
-					{
-						for(int j = lb_y+1;j<rt_y;j++)
-						{
-							int grid_id = k*split_pieces+j;
-							if(reachgrid.contains(grid_id))
-							{
-								judge_time += System.currentTimeMillis() - start;
-								return true;
-							}
-						}
-					}
-				}
-
-				boolean flag = false;
-				for(int j = lb_y;j<=rt_y;j++)
-				{
-					int grid_id = lb_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = rt_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				for(int j = lb_x+1;j<rt_x;j++)
-				{
-					int grid_id = j*split_pieces+lb_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = j*split_pieces+rt_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				if(flag == false)
+				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
 				{
 					false_count+=1;
 					VisitedVertices.add(id);
@@ -245,7 +142,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 			}
 			VisitedVertices.add(id);
 			judge_time += System.currentTimeMillis() - start;
-			boolean reachable = TraversalQuery(id, rect, lb_x, lb_y, rt_x, rt_y);
+			boolean reachable = TraversalQuery(id, rect);
 			
 			if(reachable)
 				return true;		
@@ -253,21 +150,48 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		
 		return false;	
 	}
-
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect) {
-		// TODO Auto-generated method stub		
+	
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect) 
+	{
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		
-		if(!all_attributes.has("ReachGrid_5"))
+		if(!all_attributes.has("RMBR_minx"))
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
+		String minx_s = String.valueOf(all_attributes.get("RMBR_minx"));
+		String miny_s = String.valueOf(all_attributes.get("RMBR_miny"));
+		String maxx_s = String.valueOf(all_attributes.get("RMBR_maxx"));
+		String maxy_s = String.valueOf(all_attributes.get("RMBR_maxy"));
+		
+		MyRectangle RMBR = new MyRectangle();
+										
+		RMBR.min_x = Double.parseDouble(minx_s);
+		RMBR.min_y = Double.parseDouble(miny_s);
+		RMBR.max_x = Double.parseDouble(maxx_s);
+		RMBR.max_y = Double.parseDouble(maxy_s);
+		
+		//RMBR No overlap case
+		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+		{
+			judge_time += System.currentTimeMillis() - start;
+			return false;
+		}
+		
+		//RMBR Contain case
+		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
+		{
+			judge_time += System.currentTimeMillis() - start;
+			return true;
+		}
+		
+		//Grid Section
 		Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
 		ArrayList<Integer> al = new Gson().fromJson(all_attributes.get("ReachGrid_5"), listType);
 		HashSet<Integer> reachgrid = new HashSet<Integer>();
@@ -281,6 +205,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		int rt_x = (int) ((rect.max_x - total_range.min_x)/resolution);
 		int rt_y = (int) ((rect.max_y - total_range.min_y)/resolution);
 		
+		//ReachGrid totally Lie In query rectangle
 		if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 		{
 			for(int i = lb_x+1;i<rt_x;i++)
@@ -297,6 +222,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 			}
 		}
 
+		//ReachGrid No overlap with query rectangle
 		boolean flag = false;
 		for(int i = lb_y;i<=rt_y;i++)
 		{
@@ -322,7 +248,6 @@ public static Set<Integer> VisitedVertices = new HashSet();
 			return false;
 		}
 		
-		
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
@@ -336,8 +261,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
 		jsonObject = (JsonObject) jsonArr.get(0);
 		jsonArr = (JsonArray) jsonObject.get("data");
-		int count = jsonArr.size();
-
+		
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
@@ -364,56 +288,24 @@ public static Set<Integer> VisitedVertices = new HashSet();
 					return true;
 				}
 			}
-			if(jsonObject.has("ReachGrid_5"))
+			if(jsonObject.has("RMBR_minx"))
 			{
-				al = new Gson().fromJson(all_attributes.get("ReachGrid_5"), listType);
-				reachgrid = new HashSet<Integer>();
-				for(int j = 0;j<al.size();j++)
-				{
-					reachgrid.add(al.get(j));
-				}
+				RMBR = new MyRectangle();
+				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
+				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
+				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
+				RMBR.max_y = jsonObject.get("RMBR_maxy").getAsDouble();
 				
-				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					for(int k = lb_x+1;k<rt_x;k++)
-					{
-						for(int j = lb_y+1;j<rt_y;j++)
-						{
-							int grid_id = k*split_pieces+j;
-							if(reachgrid.contains(grid_id))
-							{
-								judge_time += System.currentTimeMillis() - start;
-								return true;
-							}
-						}
-					}
+					judge_time += System.currentTimeMillis() - start;
+					return true;
 				}
-
-				flag = false;
-				for(int j = lb_y;j<=rt_y;j++)
-				{
-					int grid_id = lb_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = rt_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				for(int j = lb_x+1;j<rt_x;j++)
-				{
-					int grid_id = j*split_pieces+lb_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = j*split_pieces+rt_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				if(flag == false)
+				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
 				{
 					false_count+=1;
 					VisitedVertices.add(id);
 				}
-
 			}
 			else
 			{
@@ -444,7 +336,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 			}
 			VisitedVertices.add(id);
 			judge_time += System.currentTimeMillis() - start;
-			boolean reachable = TraversalQuery(id, rect, lb_x, lb_y, rt_x, rt_y);
+			boolean reachable = TraversalQuery(id, rect);
 			
 			if(reachable)
 				return true;
@@ -453,5 +345,6 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		
 		return false;
 	}
-
+	
+	
 }

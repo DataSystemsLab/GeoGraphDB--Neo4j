@@ -9,7 +9,7 @@ import com.google.gson.JsonParser;
 public class Traversal implements ReachabilityQuerySolver	{
 	
 	//used in query procedure in order to record visited vertices
-	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
+	public Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	

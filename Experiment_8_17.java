@@ -13,12 +13,12 @@ public class Experiment_8_17 {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		ArrayList<String> datasources = new ArrayList<String>();
-		datasources.add("citeseerx");
-		datasources.add("uniprotenc_22m");
-		//datasources.add("Patents");
-		datasources.add("uniprotenc_22m");
-		datasources.add("uniprotenc_100m");
-		datasources.add("uniprotenc_150m");
+//		datasources.add("citeseerx");
+//		datasources.add("uniprotenc_22m");
+		datasources.add("Patents");
+//		datasources.add("uniprotenc_22m");
+//		datasources.add("uniprotenc_100m");
+//		datasources.add("uniprotenc_150m");
 		
 		for(int datasourcei = 0;datasourcei<datasources.size();datasourcei++)
 		{
@@ -98,6 +98,7 @@ public class Experiment_8_17 {
 						catch(Exception e)
 						{
 							e.printStackTrace();
+							OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
 							i = i-1;
 							continue;
 						}
@@ -116,11 +117,22 @@ public class Experiment_8_17 {
 						int id = Integer.parseInt(al.get(i));
 						System.out.println(id);
 						
-						georeach.VisitedVertices.clear();
-						long start = System.currentTimeMillis();
-						boolean result2 = georeach.ReachabilityQuery(id, query_rect);
-						time_georeach+=System.currentTimeMillis() - start;
-						System.out.println(result2);
+						try
+						{
+							georeach.VisitedVertices.clear();
+							long start = System.currentTimeMillis();
+							boolean result2 = georeach.ReachabilityQuery(id, query_rect);
+							time_georeach+=System.currentTimeMillis() - start;
+							System.out.println(result2);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+							OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
+							i = i-1;
+							continue;
+						}
+						
 					}					
 					
 					//geogrid
@@ -135,11 +147,22 @@ public class Experiment_8_17 {
 						int id = Integer.parseInt(al.get(i));
 						System.out.println(id);
 						
-						geogrid.VisitedVertices.clear();
-						long start = System.currentTimeMillis();
-						boolean result3 = geogrid.ReachabilityQuery(id, query_rect);
-						time_geogrid += System.currentTimeMillis() - start;
-						System.out.println(result3);						
+						try
+						{
+							geogrid.VisitedVertices.clear();
+							long start = System.currentTimeMillis();
+							boolean result3 = geogrid.ReachabilityQuery(id, query_rect);
+							time_geogrid += System.currentTimeMillis() - start;
+							System.out.println(result3);
+						}
+						catch(Exception e)
+						{
+							e.printStackTrace();
+							OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
+							i = i-1;
+							continue;
+						}
+												
 					}	
 					
 					if(run_spa)
@@ -156,10 +179,21 @@ public class Experiment_8_17 {
 							int id = Integer.parseInt(al.get(i));
 							System.out.println(id);
 							
-							long start = System.currentTimeMillis();
-							boolean result4 = spa.ReachabilityQuery(id, query_rect);
-							time_spa += System.currentTimeMillis() - start;
-							System.out.println(result4);
+							
+							try 
+							{
+								long start = System.currentTimeMillis();
+								boolean result4 = spa.ReachabilityQuery(id, query_rect);
+								time_spa += System.currentTimeMillis() - start;
+								System.out.println(result4);
+							} 
+							catch(Exception e)
+							{
+								e.printStackTrace();
+								OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
+								i = i-1;
+								continue;
+							}
 						}
 					}
 					
@@ -177,10 +211,20 @@ public class Experiment_8_17 {
 							int id = Integer.parseInt(al.get(i));
 							System.out.println(id);
 							
-							long start = System.currentTimeMillis();
-							boolean result2 = spareach.ReachabilityQuery(id, query_rect);
-							time_spareach+= (System.currentTimeMillis() - start);
-							System.out.println(result2);					
+							try 
+							{
+								long start = System.currentTimeMillis();
+								boolean result2 = spareach.ReachabilityQuery(id, query_rect);
+								time_spareach += (System.currentTimeMillis() - start);
+								System.out.println(result2);
+							} 
+							catch(Exception e)
+							{
+								e.printStackTrace();
+								OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
+								i = i-1;
+								continue;
+							}				
 						}	
 					}
 					
