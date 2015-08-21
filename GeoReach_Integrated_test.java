@@ -11,7 +11,7 @@ public class GeoReach_Integrated_test {
 		// TODO Auto-generated method stub
 		String datasource = "Patents";
 		int graph_size = OwnMethods.GetNodeCount(datasource);
-		double experiment_node_count = 10;
+		double experiment_node_count = 100;
 		String graph_label = "Graph_Random_20";
 		double spatial_total_range = 1000;
 		HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, (int)experiment_node_count);
@@ -38,11 +38,12 @@ public class GeoReach_Integrated_test {
 		}
 		
 		boolean isbreak = false;
+		int true_count = 0;
 		for(int j = 1;j<60;j+=10)
 		{
 			double rect_size = spatial_total_range * Math.sqrt(j/100.0);
 			ArrayList<Double> lx = hs_x.get(j);
-			ArrayList<Double> ly = hs_x.get(j);
+			ArrayList<Double> ly = hs_y.get(j);
 			
 			for(int i = 0;i<al.size();i++)
 			{
@@ -61,11 +62,16 @@ public class GeoReach_Integrated_test {
 				System.out.println(result1);
 				System.out.println(result2);
 				
+				if(result1)
+					true_count+=1;
+				
 				if(result1!=result2)
 				{
+					System.out.println(i);
 					System.out.println(x);
 					System.out.println(y);
 					System.out.println(rect_size);
+					System.out.println(true_count);
 					
 					isbreak = true;
 					break;

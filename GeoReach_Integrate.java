@@ -19,7 +19,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	public double resolution;
 	
 	//used in query procedure in order to record visited vertices
-	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
+	public Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	private static WebResource resource;
@@ -29,7 +29,6 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 	GeoReach_Integrate(MyRectangle rect, int p_split_pieces)
 	{
-		resource = p_neo4j_graph_store.GetCypherResource();
 		
 		total_range = new MyRectangle();
 		total_range.min_x = rect.min_x;
@@ -111,6 +110,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				{
 					false_count+=1;
 					VisitedVertices.add(id);
+					continue;
 				}
 				
 				Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
@@ -160,8 +160,8 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				}
 				if(flag == false)
 				{
-					judge_time += System.currentTimeMillis() - start;
-					return false;
+					false_count+=1;
+					VisitedVertices.add(id);
 				}	
 			}
 			else
@@ -357,6 +357,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				{
 					false_count+=1;
 					VisitedVertices.add(id);
+					continue;
 				}
 				
 				al = new Gson().fromJson(jsonObject.get("ReachGrid_5"), listType);
@@ -405,8 +406,8 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				}
 				if(flag == false)
 				{
-					judge_time += System.currentTimeMillis() - start;
-					return false;
+					false_count+=1;
+					VisitedVertices.add(id);
 				}				
 			}
 			else

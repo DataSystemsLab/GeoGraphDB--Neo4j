@@ -11,7 +11,6 @@ public class Experiment_8_17 {
 	private static double spatial_total_range = 1000;		
 
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 		ArrayList<String> datasources = new ArrayList<String>();
 //		datasources.add("citeseerx");
 //		datasources.add("uniprotenc_22m");
