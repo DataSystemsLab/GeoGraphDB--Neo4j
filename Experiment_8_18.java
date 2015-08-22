@@ -47,7 +47,8 @@ public class Experiment_8_18 {
 				
 				boolean run_spa = true, run_spareach = true;
 				
-				for(int j = 1;j<60;j+=10)
+				double j = 0.01;
+				while(true)
 				{
 					Traversal traversal = new Traversal();
 					
@@ -204,6 +205,17 @@ public class Experiment_8_18 {
 					OwnMethods.WriteFile(result_file_path, true, (j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+time_spa/experiment_node_count+"\t"+time_spareach/experiment_node_count+"\t"+time_georeach/experiment_node_count+"\t"+true_result_count+"\n");
 										
 					if(break_flag)
+						break;
+					
+					if(break_flag)
+						break;
+					
+					if(j<1)
+						j*=10;
+					else
+						j+=10;
+					
+					if(j>60)
 						break;
 				}
 				if(break_flag)
