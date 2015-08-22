@@ -102,7 +102,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 			start = System.currentTimeMillis();
 			this.RangeQuery(rect);
 			postgresql_time+=System.currentTimeMillis() - start;
-			int bulksize = 1000;
+			int bulksize = 500;
 			int i = 0;
 			while(rs.next())
 			{				
@@ -110,6 +110,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 				{
 					query = "match (n:Reachability_Index) where n.id in ["+rs.getString("id").toString();
 					i++;
+					continue;
 				}
 
 				

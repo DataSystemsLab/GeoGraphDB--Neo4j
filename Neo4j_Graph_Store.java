@@ -207,8 +207,11 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
 		
 		if(jsonArr.size() == 0)
+		{
+			System.out.println(result);
 			return null;
-
+		}
+		
 		jsonObject = (JsonObject) jsonArr.get(0);
 		
 		jsonArr = (JsonArray) jsonObject.get("data");
