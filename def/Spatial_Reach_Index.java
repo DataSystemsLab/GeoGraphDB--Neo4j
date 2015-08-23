@@ -25,7 +25,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	public long neo4j_time;
 	public long judge_time;
 	
-	Spatial_Reach_Index(String p_RTreeName)
+	public Spatial_Reach_Index(String p_RTreeName)
 	{
 		this.RTreeName = p_RTreeName;
 		con = PostgresJDBC.GetConnection();

@@ -54,7 +54,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 	}
 	
 	
-	public static void LoadIndex(String datasource)
+	public static void LoadIndex(int split_pieces, String datasource)
 	{
 		BatchInserter inserter = null;
 		BufferedReader reader = null;
@@ -65,13 +65,13 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		int node_count = OwnMethods.GetNodeCount(datasource);
 		
 		for(int ratio = 40;ratio<100;ratio+=20)
-		//int ratio = 20;
+//		int ratio = 20;
 		{
 			long offset = ratio / 20 * node_count;
 			try
 			{
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
-				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_5/GeoReachGrid_"+ratio+".txt");
+				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/GeoReachGrid_"+ratio+".txt");
 				reader = new BufferedReader(new FileReader(file));
 				reader.readLine();
 				String tempString = null;
@@ -90,8 +90,8 @@ public static Set<Integer> VisitedVertices = new HashSet();
 						int[] l_i = new int[l.length-2];
 						for(int i = 2;i<l.length;i++)
 							l_i[i-2] = Integer.parseInt(l[i]);
-						properties.put("ReachGrid_5", l_i);
-						inserter.setNodeProperty(id + offset, "ReachGrid_5", l_i);
+						properties.put("ReachGrid_"+split_pieces, l_i);
+						inserter.setNodeProperty(id + offset, "ReachGrid_"+split_pieces, l_i);
 					}
 
 				}
@@ -168,7 +168,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 			if(jsonObject.has("ReachGrid_5"))
 			{
 				Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
-				ArrayList<Integer> al = new Gson().fromJson(jsonObject.get("ReachGrid_5"), listType);
+				ArrayList<Integer> al = new Gson().fromJson(jsonObject.get("ReachGrid_"+split_pieces), listType);
 				HashSet<Integer> reachgrid = new HashSet<Integer>();
 				for(int j = 0;j<al.size();j++)
 				{
@@ -262,14 +262,14 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		
 		start = System.currentTimeMillis();
 		
-		if(!all_attributes.has("ReachGrid_5"))
+		if(!all_attributes.has("ReachGrid_"+split_pieces))
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
 		Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
-		ArrayList<Integer> al = new Gson().fromJson(all_attributes.get("ReachGrid_5"), listType);
+		ArrayList<Integer> al = new Gson().fromJson(all_attributes.get("ReachGrid_"+split_pieces), listType);
 		HashSet<Integer> reachgrid = new HashSet<Integer>();
 		for(int i = 0;i<al.size();i++)
 		{
@@ -364,9 +364,9 @@ public static Set<Integer> VisitedVertices = new HashSet();
 					return true;
 				}
 			}
-			if(jsonObject.has("ReachGrid_5"))
+			if(jsonObject.has("ReachGrid_"+split_pieces))
 			{
-				al = new Gson().fromJson(all_attributes.get("ReachGrid_5"), listType);
+				al = new Gson().fromJson(all_attributes.get("ReachGrid_"+split_pieces), listType);
 				reachgrid = new HashSet<Integer>();
 				for(int j = 0;j<al.size();j++)
 				{

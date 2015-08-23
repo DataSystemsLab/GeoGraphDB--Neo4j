@@ -27,7 +27,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	public long neo4j_time;
 	public long judge_time;
 	
-	GeoReach_Integrate(MyRectangle rect, int p_split_pieces)
+	public GeoReach_Integrate(MyRectangle rect, int p_split_pieces)
 	{
 		
 		total_range = new MyRectangle();
