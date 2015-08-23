@@ -35,7 +35,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 	public int split_pieces;
 	public double resolution;
 	
-	Geo_Reach_Grid(MyRectangle rect, int p_split_pieces)
+	public Geo_Reach_Grid(MyRectangle rect, int p_split_pieces)
 	{
 		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();
@@ -429,10 +429,11 @@ public static Set<Integer> VisitedVertices = new HashSet();
 			return false;
 		}
 		judge_time += System.currentTimeMillis() - start;
-		start = System.currentTimeMillis();
+		
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
+			start = System.currentTimeMillis();
 			jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			

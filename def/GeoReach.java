@@ -18,7 +18,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	public long neo4j_time;
 	public long judge_time;
 	
-	GeoReach()
+	public GeoReach()
 	{
 		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();

@@ -1,4 +1,5 @@
-package def;
+package experiment;
+import def.*;
 
 import java.util.*;
 

@@ -25,7 +25,7 @@ public class GeoReach_Comparison {
 		for(int datasourcei = 0;datasourcei<datasources.size();datasourcei++)
 		{
 			String datasource = datasources.get(datasourcei);
-			String result_file_path = "/home/yuhansun/Documents/Real_data/"+datasource+"/query_time.txt";
+			String result_file_path = "/home/yuhansun/Documents/Real_data/"+datasource+"/query_time.csv";
 			boolean break_flag = false;
 			graph_size = OwnMethods.GetNodeCount(datasource);
 			
@@ -34,7 +34,9 @@ public class GeoReach_Comparison {
 			{
 				OwnMethods.WriteFile(result_file_path, true, "ratio=" + ratio + "\n");
 				OwnMethods.WriteFile(result_file_path, true, "spatial_range\t"+"traversal_time\t"+"SpatialIndex_time\tSpatialReachability_time\t"+"GeoReach_5_time\t"+"GeoReach_10\t"+"true_result_count\n");
-								
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_5_composition.csv", true, "ratio="+ratio+"\nspatial_range\t"+"total_time\t"+"neo4j_time\t"+"judge_time\t"+"true_result_count\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_10_composition.csv", true, "ratio="+ratio+"\nspatial_range\t"+"total_time\t"+"neo4j_time\t"+"judge_time\t"+"true_result_count\n");
+				
 				String graph_label = "Graph_Random_" + ratio;
 					
 				System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
@@ -46,8 +48,6 @@ public class GeoReach_Comparison {
 				ArrayList<Double> a_y = new ArrayList<Double>();
 				
 				Random r = new Random();
-				
-				boolean run_spa = false, run_spareach = false;
 				
 				double j = 0.01;
 				while(true)
@@ -66,44 +66,12 @@ public class GeoReach_Comparison {
 					}
 										
 					long time_traversal = 0,time_georeach_5 = 0, time_georeach_10 = 0, time_spa = 0, time_spareach = 0;
-					int true_result_count = 0;
-					
-					//traveral
-//					System.out.println(OwnMethods.ClearCache());
-//					System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
-//					for(int i = 0;i<al.size();i++)
-//					{
-//						double x = a_x.get(i);
-//						double y = a_y.get(i);
-//						MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
-//						
-//						System.out.println(i);
-//						int id = Integer.parseInt(al.get(i));
-//						System.out.println(id);
-//						
-//						try
-//						{
-//							traversal.VisitedVertices.clear();
-//							long start = System.currentTimeMillis();
-//							boolean result1 = traversal.ReachabilityQuery(id, query_rect);
-//							time_traversal+=System.currentTimeMillis() - start;
-//							System.out.println(result1);
-//
-//							if(result1)
-//								true_result_count+=1;	
-//						}
-//						catch(Exception e)
-//						{
-//							e.printStackTrace();
-//							OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
-//							i = i-1;
-//						}
-//											
-//					}					
+					int true_result_count_5 = 0,true_result_count_10 = 0;									
 					
 					//georeach_5
 					System.out.println(OwnMethods.ClearCache());
 					System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
+					ArrayList<Boolean> result_5 = new ArrayList<Boolean>();
 					GeoReach_Integrate georeach_5 = new GeoReach_Integrate(rect, 5);
 					for(int i = 0;i<al.size();i++)
 					{
@@ -122,8 +90,9 @@ public class GeoReach_Comparison {
 							boolean result3 = georeach_5.ReachabilityQuery(id, query_rect);
 							time_georeach_5 += System.currentTimeMillis() - start;
 							System.out.println(result3);
+							result_5.add(result3);
 							if(result3)
-								true_result_count+=1;
+								true_result_count_5+=1;
 						}
 						catch(Exception e)
 						{
@@ -137,6 +106,7 @@ public class GeoReach_Comparison {
 					//georeach_10
 					System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
 					GeoReach_Integrate georeach_10 = new GeoReach_Integrate(rect, 10);
+					ArrayList<Boolean> result_10 = new ArrayList<Boolean>();
 					for(int i = 0;i<al.size();i++)
 					{
 						double x = a_x.get(i);
@@ -154,6 +124,9 @@ public class GeoReach_Comparison {
 							boolean result3 = georeach_10.ReachabilityQuery(id, query_rect);
 							time_georeach_10 += System.currentTimeMillis() - start;
 							System.out.println(result3);
+							result_10.add(result3);
+							if(result3)
+								true_result_count_10+=1;
 						}
 						catch(Exception e)
 						{
@@ -166,8 +139,24 @@ public class GeoReach_Comparison {
 					
 					System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
 									
-					OwnMethods.WriteFile(result_file_path, true, (j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+time_spa/experiment_node_count+"\t"+time_spareach/experiment_node_count+"\t"+time_georeach_5/experiment_node_count+"\t"+time_georeach_10/experiment_node_count+"\t"+true_result_count+"\n");
-															
+					OwnMethods.WriteFile(result_file_path, true, (j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+time_spa/experiment_node_count+"\t"+time_spareach/experiment_node_count+"\t"+time_georeach_5/experiment_node_count+"\t"+time_georeach_10/experiment_node_count+"\t"+true_result_count_5+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_5_composition.csv", true, (j/100.0)+"\t"+time_georeach_5/experiment_node_count+"\t"+georeach_5.neo4j_time/experiment_node_count+"\t"+georeach_5.judge_time/experiment_node_count+"\t"+true_result_count_5+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_10_composition.csv", true, (j/100.0)+"\t"+time_georeach_10/experiment_node_count+"\t"+georeach_10.neo4j_time/experiment_node_count+"\t"+georeach_10.judge_time/experiment_node_count+"\t"+true_result_count_10+"\n");
+					
+					
+					for(int i = 0;i<result_5.size();i++)
+						if(result_5.get(i)!=result_10.get(i))
+						{
+							System.out.println(i);
+							System.out.println(al.get(i));
+							System.out.println(a_x.get(i));
+							System.out.println(a_y.get(i));
+							System.out.println(rect_size);
+							break_flag = true;
+							break;
+						}
+						
+								
 					if(break_flag)
 						break;
 					
@@ -183,6 +172,8 @@ public class GeoReach_Comparison {
 					break;
 				
 				OwnMethods.WriteFile(result_file_path, true, "\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_5_composition.csv", true, "\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_10_composition.csv", true, "\n");
 			}
 			if(break_flag)
 				break;

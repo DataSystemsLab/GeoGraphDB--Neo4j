@@ -114,7 +114,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				}
 				
 				Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
-				ArrayList<Integer> al = new Gson().fromJson(jsonObject.get("ReachGrid_5"), listType);
+				ArrayList<Integer> al = new Gson().fromJson(jsonObject.get("ReachGrid_"+split_pieces), listType);
 				HashSet<Integer> reachgrid = new HashSet<Integer>();
 				for(int j = 0;j<al.size();j++)
 				{
@@ -244,7 +244,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		//Grid Section
 		Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
-		ArrayList<Integer> al = new Gson().fromJson(all_attributes.get("ReachGrid_5"), listType);
+		ArrayList<Integer> al = new Gson().fromJson(all_attributes.get("ReachGrid_"+split_pieces), listType);
 		HashSet<Integer> reachgrid = new HashSet<Integer>();
 		for(int i = 0;i<al.size();i++)
 		{
@@ -360,7 +360,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					continue;
 				}
 				
-				al = new Gson().fromJson(jsonObject.get("ReachGrid_5"), listType);
+				al = new Gson().fromJson(jsonObject.get("ReachGrid_"+split_pieces), listType);
 				reachgrid = new HashSet<Integer>();
 				for(int j = 0;j<al.size();j++)
 				{
@@ -424,10 +424,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			return false;
 		}
 		judge_time += System.currentTimeMillis() - start;
-		start = System.currentTimeMillis();
+		
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
+			start = System.currentTimeMillis();
 			jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			

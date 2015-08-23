@@ -26,7 +26,7 @@ public class test {
 //		System.out.println("hello world");
 		
 //		System.out.println(OwnMethods.ClearCache());
-		System.out.println(OwnMethods.RestartNeo4jClearCache("Patents"));
+//		System.out.println(OwnMethods.RestartNeo4jClearCache("Patents"));
 		
 //		OwnMethods p_own = new OwnMethods();
 //		HashSet<String> hs = p_own.GenerateRandomInteger(3774768, 100);
