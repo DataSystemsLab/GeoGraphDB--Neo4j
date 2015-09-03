@@ -303,6 +303,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	
 	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
 	{
+		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
 		neo4j_time += System.currentTimeMillis() - start;

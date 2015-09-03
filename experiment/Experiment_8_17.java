@@ -14,7 +14,7 @@ public class Experiment_8_17 {
 	public static void main(String[] args) {
 		ArrayList<String> datasources = new ArrayList<String>();
 //		datasources.add("citeseerx");
-//		datasources.add("uniprotenc_22m");
+//		datasources.add("go_uniprot");
 		datasources.add("Patents");
 //		datasources.add("uniprotenc_22m");
 //		datasources.add("uniprotenc_100m");

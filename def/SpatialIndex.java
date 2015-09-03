@@ -24,13 +24,16 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	public long Neo4jTime;
 	public long JudgeTime;
 	
+	public int NeighborOperationCount = 0;
+	public int InRangeCount = 0;
+	
 	private WebResource resource;
 	private Connection con;
 	private Statement st;
 	private ResultSet rs;
 	
 	//used in query procedure in order to record visited vertices
-	public static Set<Integer> VisitedVertices = new HashSet<Integer>();
+	public Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
 	public SpatialIndex(String p_RTreeName)
 	{
@@ -260,9 +263,19 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 				hs.add((int)id);
 			}
 			PostgresTime += System.currentTimeMillis() - start;
+			
+			InRangeCount = hs.size();
+			
+			if(hs.size() == 0)
+			{
+				
+				return false;
+			}
+						
 			start = System.currentTimeMillis();
 			
 			query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b),b";
+			NeighborOperationCount+=1;
 			
 			String result = Neo4j_Graph_Store.Execute(resource, query);
 			
@@ -311,6 +324,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 				int id = queue.poll();
 				
 				query = "match (a)-->(b) where id(a) = " +Integer.toString(id) +" return id(b), b";
+				NeighborOperationCount+=1;
 				
 				result = Neo4j_Graph_Store.Execute(resource, query);
 				

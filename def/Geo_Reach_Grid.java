@@ -1,11 +1,15 @@
 package def;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Type;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -13,6 +17,7 @@ import java.util.Set;
 
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.roaringbitmap.RoaringBitmap;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -64,8 +69,8 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
 		int node_count = OwnMethods.GetNodeCount(datasource);
 		
-		for(int ratio = 40;ratio<100;ratio+=20)
-//		int ratio = 20;
+//		for(int ratio = 40;ratio<100;ratio+=20)
+		int ratio = 80;
 		{
 			long offset = ratio / 20 * node_count;
 			try
@@ -96,6 +101,88 @@ public static Set<Integer> VisitedVertices = new HashSet();
 
 				}
 				reader.close();	
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+		}	
+	}
+	
+	public static void LoadBitmapIndex(int split_pieces, String datasource)
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "5g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		int node_count = OwnMethods.GetNodeCount(datasource);
+		
+//		for(int ratio = 40;ratio<100;ratio+=20)
+		int ratio = 80;
+		{
+			long offset = ratio / 20 * node_count;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/GeoReachGrid_"+ratio+".txt");
+				reader = new BufferedReader(new FileReader(file));
+				reader.readLine();
+				String tempString = null;
+				while((tempString = reader.readLine())!=null)
+				{
+					if(tempString.endsWith(" "))
+						tempString = tempString.substring(0, tempString.length()-1);
+					String[] l = tempString.split(" ");
+					int id = Integer.parseInt(l[0]);
+					int count = Integer.parseInt(l[1]);
+					if(count == 0)
+						continue;
+					else
+					{
+						RoaringBitmap r3 = new RoaringBitmap();
+						for(int i = 2;i<l.length;i++)
+							r3.add(Integer.parseInt(l[i]));
+						
+						r3.runOptimize();
+						ByteBuffer outbb = ByteBuffer.allocate(r3.serializedSizeInBytes());
+				        // If there were runs of consecutive values, you could
+				        // call mrb.runOptimize(); to improve compression 
+				        r3.serialize(new DataOutputStream(new OutputStream(){
+				            ByteBuffer mBB;
+				            OutputStream init(ByteBuffer mbb) {mBB=mbb; return this;}
+				            public void close() {}
+				            public void flush() {}
+				            public void write(int b) {
+				                mBB.put((byte) b);}
+				            public void write(byte[] b) {mBB.put(b);}            
+				            public void write(byte[] b, int off, int l) {mBB.put(b,off,l);}
+				        }.init(outbb)));
+				        //
+//				        outbb.flip();
+//				        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
+						
+						inserter.setNodeProperty(id + offset, "Bitmap_"+split_pieces, outbb);
+						break;
+					}
+				}
+				reader.close();
 			}
 			catch(IOException e)
 			{
@@ -255,7 +342,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 	}
 
 	public boolean ReachabilityQuery(int start_id, MyRectangle rect) {
-		// TODO Auto-generated method stub		
+		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
 		neo4j_time += System.currentTimeMillis() - start;

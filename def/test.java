@@ -2,15 +2,27 @@ package def;
 
 import java.util.*;
 
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.roaringbitmap.RoaringBitmap;
+import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
-import java.io.*;
-import java.net.URI;
+import java.io.BufferedReader;
+import java.io.DataInput;
+import java.io.DataInputStream;
+import java.io.DataOutput;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import  java.sql. * ;
 
 public class test {
@@ -21,12 +33,147 @@ public class test {
 
 	public static void main(String[] args) throws SQLException {
 		
+//		RoaringBitmap r = RoaringBitmap.bitmapOf(1,2,3);
+//		System.out.println(r);
+		
+		
+		String datasource = "Patents";
+		int split_pieces = 128;
+		BufferedReader reader = null;
+		File file = null;
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		int node_count = OwnMethods.GetNodeCount(datasource);
+		long size = 0,size_bitmap = 0;
+		
+//		for(int ratio = 40;ratio<100;ratio+=20)
+		int ratio = 80;
+		{
+			long offset = ratio / 20 * node_count;
+			try
+			{
+				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/GeoReachGrid_"+ratio+".txt");
+				reader = new BufferedReader(new FileReader(file));
+				reader.readLine();
+				String tempString = null;
+				while((tempString = reader.readLine())!=null)
+				{
+					if(tempString.endsWith(" "))
+						tempString = tempString.substring(0, tempString.length()-1);
+					String[] l = tempString.split(" ");
+					int id = Integer.parseInt(l[0]);
+					int count = Integer.parseInt(l[1]);
+					if(count == 0)
+						continue;
+					else
+					{
+						RoaringBitmap r3 = new RoaringBitmap();
+						for(int i = 2;i<l.length;i++)
+							r3.add(Integer.parseInt(l[i]));
+						
+						r3.runOptimize();
+						ByteBuffer outbb = ByteBuffer.allocate(r3.serializedSizeInBytes());
+				        // If there were runs of consecutive values, you could
+				        // call mrb.runOptimize(); to improve compression 
+				        r3.serialize(new DataOutputStream(new OutputStream(){
+				            ByteBuffer mBB;
+				            OutputStream init(ByteBuffer mbb) {mBB=mbb; return this;}
+				            public void close() {}
+				            public void flush() {}
+				            public void write(int b) {
+				                mBB.put((byte) b);}
+				            public void write(byte[] b) {mBB.put(b);}            
+				            public void write(byte[] b, int off, int l) {mBB.put(b,off,l);}
+				        }.init(outbb)));
+				        //
+				        outbb.flip();
+				        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
+				        size+=serializedstring.getBytes().length;
+				        size_bitmap+=r3.getSizeInBytes();
+//						System.out.println(serializedstring);
+//						ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(serializedstring));
+//				        ImmutableRoaringBitmap irb = new ImmutableRoaringBitmap(newbb);
+//				        System.out.println("read bitmap "+ irb);
+					}
+//					break;
+
+				}
+				reader.close();
+				System.out.println(size);
+				System.out.println(size_bitmap);
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+			}
+			finally
+			{
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+		}	
+		
+//		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+//		String query = "match (n) where id(n) = 15099072 return n";
+//		JsonObject jo = p_neo.GetVertexAllAttributes(15099072);
+//		
+//		String bitmap = jo.get("Bitmap_128").getAsString();
+//		
+//		ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(bitmap));
+//        ImmutableRoaringBitmap irb = new ImmutableRoaringBitmap(newbb);
+//        System.out.println("read bitmap "+ irb);
+		
+//		File file = new File("/home/yuhansun/Documents/Real_data/Patents/GeoReachGrid_128/GeoReachGrid_80.txt");
+//		try {
+//			RoaringBitmap r3 = new RoaringBitmap();
+//			BufferedReader reader = new BufferedReader(new FileReader(file));
+//			reader.readLine();
+//			String tempString = null;
+////			FileOutputStream fos = null;
+////			DataOutputStream dps = null;
+//			long size = 0;
+//			while((tempString = reader.readLine())!=null)
+//			{
+//				if(tempString.endsWith(" "))
+//					tempString = tempString.substring(0, tempString.length()-1);
+//				String[] l = tempString.split(" ");
+//				int id = Integer.parseInt(l[0]);
+//				int count = Integer.parseInt(l[1]);
+//				if(count == 0)
+//					continue;
+//				else
+//				{
+//					for(int i = 2;i<l.length;i++)
+//					{
+//						r3.add(Integer.parseInt(l[i])+id*128*128-2100000000);
+//					}
+//					//fos = new FileOutputStream("/home/yuhansun/Documents/Real_data/Patents/GeoReachGrid_128/ser/"+id);
+////					dps = new DataOutputStream(fos);
+//					
+////					r3.serialize(dps);
+////					fos.close();
+////					dps.close();
+//				}
+//			}
+//			r3.runOptimize();
+//			size = r3.serializedSizeInBytes();
+//			reader.close();
+//			System.out.println(size);
+//			
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+		
+		
 		//Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-		
-//		System.out.println("hello world");
-		
-//		System.out.println(OwnMethods.ClearCache());
-//		System.out.println(OwnMethods.RestartNeo4jClearCache("Patents"));
 		
 //		OwnMethods p_own = new OwnMethods();
 //		HashSet<String> hs = p_own.GenerateRandomInteger(3774768, 100);

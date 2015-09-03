@@ -1,5 +1,6 @@
 package def;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -8,9 +9,11 @@ public class Geo_Reach_Grid_test {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
-		Geo_Reach_Grid.LoadIndex(10, "Patents");
-		
-		
+//		Geo_Reach_Grid.LoadIndex(128, "Patents");
+//		long size = OwnMethods.getDirSize(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db"));
+		Geo_Reach_Grid.LoadBitmapIndex(128, "Patents");
+//		size = OwnMethods.getDirSize(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db"))-size;
+//		System.out.println(size);
 //		String datasource = "Patents";
 //		String graph_label = "Graph_Random_20";
 //		int experiment_node_count = 100;

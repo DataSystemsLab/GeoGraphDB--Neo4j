@@ -25,12 +25,15 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	public long neo4j_time;
 	public long judge_time;
 	
+	public int AccessNodeCount = 0;
+	public int Neo4jAccessCount = 0;
+	
 	public Spatial_Reach_Index(String p_RTreeName)
 	{
 		this.RTreeName = p_RTreeName;
 		con = PostgresJDBC.GetConnection();
 		try {
-			st = con.createStatement();
+			st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 		} catch (SQLException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -42,6 +45,28 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 		postgresql_time = 0;
 		neo4j_time = 0;
 		judge_time = 0;
+	}
+	
+	public int GetInRangeCount()
+	{
+		int i = 0;
+		try 
+		{
+			rs.beforeFirst();
+			while(rs.next())
+				i++;
+			rs.beforeFirst();
+		} 
+		catch (SQLException e) 
+		{
+			e.printStackTrace();
+		}
+		return i;
+	}
+	
+	public void CloseResultSet()
+	{
+		PostgresJDBC.Close(rs);
 	}
 	
 	public void Disconnect()
@@ -72,9 +97,19 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	{
 		try
 		{
-			String query = "match (n) where id(n)="+start_id+" return n";
-			
 			long start = System.currentTimeMillis();
+			this.RangeQuery(rect);
+			postgresql_time+=System.currentTimeMillis() - start;
+			if(!rs.next())
+				return false;
+			else
+				rs.previous();
+			
+			String query = "match (n) where id(n)="+start_id+" return n";
+			AccessNodeCount+=1;
+			Neo4jAccessCount+=1;
+			
+			start = System.currentTimeMillis();
 			String result = Neo4j_Graph_Store.Execute(resource, query);
 			JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 			neo4j_time+=System.currentTimeMillis() - start;
@@ -85,6 +120,8 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 			int id = jsonOb.get("id").getAsInt();
 			
 			query = "match (n:Reachability_Index) where n.id = " + id + " return n";
+			AccessNodeCount+=1;
+			Neo4jAccessCount+=1;
 			
 			start = System.currentTimeMillis();
 			result = Neo4j_Graph_Store.Execute(resource, query);
@@ -99,9 +136,6 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 			Type listType = new TypeToken<ArrayList<Integer>>() {}.getType();
 			ArrayList<Integer> source_reachTo = new Gson().fromJson(jsonOb.get("reachTo"), listType);
 
-			start = System.currentTimeMillis();
-			this.RangeQuery(rect);
-			postgresql_time+=System.currentTimeMillis() - start;
 			int bulksize = 500;
 			int i = 0;
 			while(rs.next())
@@ -110,6 +144,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 				{
 					query = "match (n:Reachability_Index) where n.id in ["+rs.getString("id").toString();
 					i++;
+					AccessNodeCount+=1;
 					continue;
 				}
 
@@ -117,6 +152,8 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 				if(i == bulksize-1)
 				{
 					query += (","+rs.getString("id").toString()+"] return n");
+					AccessNodeCount+=1;
+					Neo4jAccessCount+=1;
 					i = 0;
 					
 					start = System.currentTimeMillis();
@@ -164,12 +201,14 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 				{
 					query+= ("," + rs.getString("id").toString());
 					i++;
+					AccessNodeCount+=1;
 				}
 			}
 			
 			if(i!=0)
 			{
 				query+="] return n";
+				Neo4jAccessCount+=1;
 				
 				start = System.currentTimeMillis();
 				result = Neo4j_Graph_Store.Execute(resource, query);
@@ -198,7 +237,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 //					        	System.out.println(source_scc_id);
 //					        	System.out.println(target_scc_id);
 //					        	System.out.println(source_reachTo.get(si));
-					        	judge_time += System.currentTimeMillis();
+					        	judge_time += System.currentTimeMillis() - start;
 					            return true;
 					        }
 					        if (sp <= tp) {
@@ -253,11 +292,6 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 		{
 			e.printStackTrace();
 			return false;
-		}
-		finally
-		{
-			PostgresJDBC.Close(rs);
-		}
-		
+		}		
 	}
 }

@@ -1,10 +1,9 @@
 package experiment;
+import def.*;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
-
-import def.*;
 
 public class GeoReach_Comparison {
 
@@ -16,7 +15,7 @@ public class GeoReach_Comparison {
 	
 		ArrayList<String> datasources = new ArrayList<String>();
 //		datasources.add("citeseerx");
-//		datasources.add("uniprotenc_22m");
+//		datasources.add("go_uniprot");
 		datasources.add("Patents");
 //		datasources.add("uniprotenc_22m");
 //		datasources.add("uniprotenc_100m");
