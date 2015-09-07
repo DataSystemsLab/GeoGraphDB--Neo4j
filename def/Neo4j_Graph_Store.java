@@ -177,24 +177,37 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	//decode return value of function Execute(String query) to get "data" section
 	public static ArrayList<String> GetExecuteResultData(String result)
 	{
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		
-		jsonObject = (JsonObject) jsonArr.get(0);
-		
-		jsonArr = (JsonArray) jsonObject.get("data");
-		ArrayList<String> l  = new ArrayList<String>();
-		
-		for(int i = 0;i<jsonArr.size();i++)
+		JsonArray jsonArr = null;
+		try
 		{
-			jsonObject=(JsonObject) jsonArr.get(i);
-			String str = jsonObject.get("row").toString();
-			str = str.substring(1, str.length()-1);
-			l.add(str);
+			JsonParser jsonParser = new JsonParser();
+			JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+			
+			jsonArr = (JsonArray) jsonObject.get("results");
+			
+			jsonObject = (JsonObject) jsonArr.get(0);
+			jsonArr = (JsonArray) jsonObject.get("data");
+			ArrayList<String> l  = new ArrayList<String>();
+			
+			for(int i = 0;i<jsonArr.size();i++)
+			{
+				jsonObject=(JsonObject) jsonArr.get(i);
+				String str = jsonObject.get("row").toString();
+				str = str.substring(1, str.length()-1);
+				l.add(str);
+			}
+			return l;
 		}
-		return l;
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			System.out.println(result);
+			System.out.println(jsonArr.getAsString());
+			return null;
+		}
+		
+		
+		
 	}
 	
 	//decode return value of function Execute(String query) to get "data" section
@@ -283,16 +296,25 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		String result = Execute(resource, query);
 		
 		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
 		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
-		
-		jsonObject = (JsonObject)jsonArr.get(0);
-		jsonArr = (JsonArray)jsonObject.get("row");
-		
-		jsonObject = (JsonObject)jsonArr.get(0);
+		JsonObject jsonObject = null;
+		try
+		{
+			jsonObject = (JsonObject) jsonParser.parse(result);
+			JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+			jsonObject = (JsonObject) jsonArr.get(0);
+			jsonArr = (JsonArray) jsonObject.get("data");
+			
+			jsonObject = (JsonObject)jsonArr.get(0);
+			jsonArr = (JsonArray)jsonObject.get("row");
+			
+			jsonObject = (JsonObject)jsonArr.get(0);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+			System.out.println("\n"+result);
+		}	
 		
 		return jsonObject;
 	}

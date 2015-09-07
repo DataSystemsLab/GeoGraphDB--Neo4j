@@ -25,7 +25,7 @@ public class GeoReach_Integrated_test {
 		
 		String datasource = "Patents";
 		int graph_size = OwnMethods.GetNodeCount(datasource);
-		double experiment_node_count = 100;
+		double experiment_node_count = 500;
 		String graph_label = "Graph_Random_80";
 		double spatial_total_range = 1000;
 		HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, (int)experiment_node_count);
@@ -35,7 +35,7 @@ public class GeoReach_Integrated_test {
 		Random r = new Random();
 		HashMap<Integer, ArrayList<Double>> hs_x = new HashMap();
 		HashMap<Integer, ArrayList<Double>> hs_y = new HashMap();
-		for(int j = 1;j<60;j++)
+		for(int j = 1;j<60;j+=10)
 		{
 			ArrayList<Double> lx = new ArrayList();
 			ArrayList<Double> ly = new ArrayList();
@@ -56,6 +56,7 @@ public class GeoReach_Integrated_test {
 		for(int j = 1;j<60;j+=10)
 		{
 			double rect_size = spatial_total_range * Math.sqrt(j/100.0);
+			System.out.println(rect_size);
 			ArrayList<Double> lx = hs_x.get(j);
 			ArrayList<Double> ly = hs_y.get(j);
 			
@@ -69,9 +70,10 @@ public class GeoReach_Integrated_test {
 				boolean result1 = tra.ReachabilityQuery(id, query_rect);
 				boolean result2 = p_geo.ReachabilityQuery_Bitmap(id, query_rect);
 				
-				System.out.println(id);
-				System.out.println(result1);
-				System.out.println(result2);
+//				System.out.println(i);
+//				System.out.println(id);
+//				System.out.println(result1);
+//				System.out.println(result2);
 				
 				if(result1)
 					true_count+=1;
@@ -88,6 +90,9 @@ public class GeoReach_Integrated_test {
 					break;
 				}
 			}
+			
+			System.out.println(true_count);
+			
 			if(isbreak)
 				break;
 		}
