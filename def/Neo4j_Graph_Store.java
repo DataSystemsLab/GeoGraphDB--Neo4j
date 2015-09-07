@@ -201,8 +201,8 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		catch(Exception e)
 		{
 			e.printStackTrace();
-			System.out.println(result);
-			System.out.println(jsonArr.getAsString());
+			System.out.println("\n"+result);
+			System.out.println("\n"+jsonArr.getAsString());
 			return null;
 		}
 		

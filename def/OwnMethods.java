@@ -3,6 +3,8 @@ package def;
 import java.io.*;
 import java.util.*;
 
+import com.sun.jersey.api.client.WebResource;
+
 public class OwnMethods {
 	
 	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
@@ -18,6 +20,15 @@ public class OwnMethods {
 		}
 		
 		return ids;
+	}
+	
+	//Generate absolute id in database depends on attribute_id and node label
+	public static ArrayList<String> GenerateStartNode(WebResource resource, HashSet<String> attribute_ids, String label)
+	{
+		String query = "match (a:" + label + ") where a.id in " + attribute_ids.toString() + " return id(a)";
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		ArrayList<String> graph_ids = Neo4j_Graph_Store.GetExecuteResultData(result);
+		return graph_ids;
 	}
 	
 	//Generate absolute id in database depends on attribute_id and node label

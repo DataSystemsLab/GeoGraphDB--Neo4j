@@ -15,7 +15,9 @@ public class OwnMethods_Test {
 		//GenerateTestData(262144, 1000, "Graph_18_16", "/home/yuhansun/Documents/Synthetic_data/18_16/test_graph_ids.txt");
 		//GenerateTestData(262144, 1000, "DAG_18_1", "/home/yuhansun/Documents/Synthetic_data/DAG/18_1/test_graph_ids.txt");
 		//GenerateTestData(262144, 1000, "DAG_18_4", "/home/yuhansun/Documents/Synthetic_data/DAG/18_4/test_graph_ids.txt");
-		System.out.println((OwnMethods.getDirSize(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db"))));
+//		System.out.println((OwnMethods.getDirSize(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db"))));
+		
+		OwnMethods.RestartNeo4jClearCache("Patents");
 		
 		/*String filename = "/home/yuhansun/Documents/Synthetic_data/test.txt";
 		p_ownmethod.WriteFile(filename,false,ids);
