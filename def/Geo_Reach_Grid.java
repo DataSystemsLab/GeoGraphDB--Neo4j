@@ -58,7 +58,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		judge_time = 0;
 	}
 	
-	
+	//load a list to represent reachable grids
 	public static void LoadIndex(int split_pieces, String datasource)
 	{
 		BatchInserter inserter = null;

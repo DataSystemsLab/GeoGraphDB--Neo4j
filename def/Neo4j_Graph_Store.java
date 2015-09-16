@@ -256,7 +256,36 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 			hs.add(Integer.parseInt(row));
 		}
 		return hs;
-	}	
+	}
+	
+	public static void Graph_Traversal(WebResource resource, long start_id, HashSet<Long> VisitedVertices)
+	{		
+		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b)";
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		
+		JsonParser jsonParser = new JsonParser();
+		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
+		
+		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
+		jsonObject = (JsonObject) jsonArr.get(0);
+		jsonArr = (JsonArray) jsonObject.get("data");
+		
+		for(int i = 0;i<jsonArr.size();i++)
+		{
+			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonArray row = (JsonArray)jsonObject.get("row");
+			
+			int id = row.get(0).getAsInt();
+			if(VisitedVertices.contains(id))
+				continue;
+			else
+			{
+				VisitedVertices.add((long) id);
+				Graph_Traversal(resource, id, VisitedVertices);
+			}				
+			
+		}
+	}
 	
 	//return all vertices' id
 	public ArrayList<Integer> GetAllVertices()

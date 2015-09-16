@@ -24,21 +24,26 @@ public class Index_Speed {
 		{
 			System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
 			System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
-			//for(int k = 0;k<10;k++)
+			Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+			WebResource source = p_neo.GetCypherResource();
+			long time = 0;
+			for(int k = 0;k<11;k++)
 			{
-				Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-				WebResource source = p_neo.GetCypherResource();
 				
 				HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, experiment_node_count);
 				long start = System.currentTimeMillis();
 				ArrayList<String> al = OwnMethods.GenerateStartNode(source, hs, graph_label);
-				long time = System.currentTimeMillis() - start;
-				OwnMethods.WriteFile(resultpath, true, experiment_node_count+"\t"+time+"\n");
-				if(experiment_node_count<100)
-					experiment_node_count+=10;
-				else
-					experiment_node_count+=100;
+				if(k == 0)
+					continue;
+				time += System.currentTimeMillis() - start;
+				
 			}
+			OwnMethods.WriteFile(resultpath, true, experiment_node_count+"\t"+time/10.0+"\n");
+			if(experiment_node_count<100)
+				experiment_node_count+=10;
+			else
+				experiment_node_count+=100;
+			
 			
 		}
 		OwnMethods.WriteFile(resultpath, true, "\n");	
