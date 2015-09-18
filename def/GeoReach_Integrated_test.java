@@ -24,13 +24,13 @@ public class GeoReach_Integrated_test {
 //		System.out.println(p_geo.ReachabilityQuery(5479369, rect));
 		
 		String datasource = "Patents";
-		int graph_size = OwnMethods.GetNodeCount(datasource);
+		//int graph_size = OwnMethods.GetNodeCount(datasource);
+		int graph_size = 3774768;
 		double experiment_node_count = 500;
 		String graph_label = "Graph_Random_80";
 		double spatial_total_range = 1000;
 		HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, (int)experiment_node_count);
 		ArrayList<String> al = OwnMethods.GenerateStartNode(hs, graph_label);
-		OwnMethods.GetNodeCount(datasource);
 		
 		Random r = new Random();
 		HashMap<Integer, ArrayList<Double>> hs_x = new HashMap();

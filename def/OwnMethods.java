@@ -1,7 +1,11 @@
 package def;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.*;
+
+import org.roaringbitmap.RoaringBitmap;
+import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import com.sun.jersey.api.client.WebResource;
 
@@ -189,5 +193,40 @@ public class OwnMethods {
 		result += ClearCache();
 		result += Neo4j_Graph_Store.StartMyServer(datasource);
 		return result;
+	}
+	
+	public static String Serialize_RoarBitmap_ToString(RoaringBitmap r)
+	{
+		r.runOptimize();
+				
+		ByteBuffer outbb = ByteBuffer.allocate(r.serializedSizeInBytes());
+        // If there were runs of consecutive values, you could
+        // call mrb.runOptimize(); to improve compression 
+        try {
+			r.serialize(new DataOutputStream(new OutputStream(){
+			    ByteBuffer mBB;
+			    OutputStream init(ByteBuffer mbb) {mBB=mbb; return this;}
+			    public void close() {}
+			    public void flush() {}
+			    public void write(int b) {
+			        mBB.put((byte) b);}
+			    public void write(byte[] b) {mBB.put(b);}            
+			    public void write(byte[] b, int off, int l) {mBB.put(b,off,l);}
+			}.init(outbb)));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        //
+        outbb.flip();
+        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
+        return serializedstring;
+	}
+	
+	public static ImmutableRoaringBitmap Deserialize_String_ToRoarBitmap(String serializedstring)
+	{
+		ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(serializedstring));
+	    ImmutableRoaringBitmap ir = new ImmutableRoaringBitmap(newbb);
+	    return ir;
 	}
 }

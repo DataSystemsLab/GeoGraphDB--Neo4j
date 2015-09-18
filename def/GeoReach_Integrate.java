@@ -532,53 +532,57 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					continue;
 				}
 				
-				String ser = jsonObject.get("Bitmap_"+split_pieces).getAsString();
-				ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
-			    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
-
-				
-				//ReachGrid totally Lie In query rectangle
-				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+				if(jsonObject.has("Bitmap_"+split_pieces))
 				{
-					for(int k = lb_x+1;k<rt_x;k++)
+					String ser = jsonObject.get("Bitmap_"+split_pieces).getAsString();
+					ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+				    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
+
+					
+					//ReachGrid totally Lie In query rectangle
+					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 					{
-						for(int j = lb_y+1;j<rt_y;j++)
+						for(int k = lb_x+1;k<rt_x;k++)
 						{
-							int grid_id = k*split_pieces+j;
-							if(reachgrid.contains(grid_id))
+							for(int j = lb_y+1;j<rt_y;j++)
 							{
-								judge_time += System.currentTimeMillis() - start;
-								return true;
+								int grid_id = k*split_pieces+j;
+								if(reachgrid.contains(grid_id))
+								{
+									judge_time += System.currentTimeMillis() - start;
+									return true;
+								}
 							}
 						}
 					}
-				}
 
-				//ReachGrid No overlap with query rectangle
-				boolean flag = false;
-				for(int j = lb_y;j<=rt_y;j++)
-				{
-					int grid_id = lb_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = rt_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				for(int j = lb_x+1;j<rt_x;j++)
-				{
-					int grid_id = j*split_pieces+lb_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = j*split_pieces+rt_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				if(flag == false)
-				{
-					false_count+=1;
-					VisitedVertices.add(id);
-				}	
+					//ReachGrid No overlap with query rectangle
+					boolean flag = false;
+					for(int j = lb_y;j<=rt_y;j++)
+					{
+						int grid_id = lb_x*split_pieces+j;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+						grid_id = rt_x*split_pieces+j;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+					}
+					for(int j = lb_x+1;j<rt_x;j++)
+					{
+						int grid_id = j*split_pieces+lb_y;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+						grid_id = j*split_pieces+rt_y;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+					}
+					if(flag == false)
+					{
+						false_count+=1;
+						VisitedVertices.add(id);
+					}	
+				}		
+				
 			}
 			else
 			{
@@ -661,60 +665,75 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			return true;
 		}
 		
-		//Grid Section
-		String ser = all_attributes.get("Bitmap_"+split_pieces).getAsString();
-		ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
-	    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
-
+		String ser = null;
+		ByteBuffer newbb = null;
+		ImmutableRoaringBitmap reachgrid = null;
 		
 		int lb_x = (int) ((rect.min_x - total_range.min_x)/resolution);
 		int lb_y = (int) ((rect.min_y - total_range.min_y)/resolution);
 		int rt_x = (int) ((rect.max_x - total_range.min_x)/resolution);
 		int rt_y = (int) ((rect.max_y - total_range.min_y)/resolution);
 		
-		//ReachGrid totally Lie In query rectangle
-		if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+		boolean flag = false;
+		
+		//Grid Section
+		if(all_attributes.has("Bitmap_"+split_pieces))
 		{
-			for(int i = lb_x+1;i<rt_x;i++)
+			ser = all_attributes.get("Bitmap_"+split_pieces).getAsString();
+			newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+		    reachgrid = new ImmutableRoaringBitmap(newbb);
+
+			
+			lb_x = (int) ((rect.min_x - total_range.min_x)/resolution);
+			lb_y = (int) ((rect.min_y - total_range.min_y)/resolution);
+			rt_x = (int) ((rect.max_x - total_range.min_x)/resolution);
+			rt_y = (int) ((rect.max_y - total_range.min_y)/resolution);
+			
+			//ReachGrid totally Lie In query rectangle
+			if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 			{
-				for(int j = lb_y+1;j<rt_y;j++)
+				for(int i = lb_x+1;i<rt_x;i++)
 				{
-					int grid_id = i*split_pieces+j;
-					if(reachgrid.contains(grid_id))
+					for(int j = lb_y+1;j<rt_y;j++)
 					{
-						judge_time += System.currentTimeMillis() - start;
-						return true;
+						int grid_id = i*split_pieces+j;
+						if(reachgrid.contains(grid_id))
+						{
+							judge_time += System.currentTimeMillis() - start;
+							return true;
+						}
 					}
 				}
 			}
-		}
 
-		//ReachGrid No overlap with query rectangle
-		boolean flag = false;
-		for(int i = lb_y;i<=rt_y;i++)
-		{
-			int grid_id = lb_x*split_pieces+i;
-			if(reachgrid.contains(grid_id))
-				flag = true;
-			grid_id = rt_x*split_pieces+i;
-			if(reachgrid.contains(grid_id))
-				flag = true;
+			//ReachGrid No overlap with query rectangle
+			flag = false;
+			for(int i = lb_y;i<=rt_y;i++)
+			{
+				int grid_id = lb_x*split_pieces+i;
+				if(reachgrid.contains(grid_id))
+					flag = true;
+				grid_id = rt_x*split_pieces+i;
+				if(reachgrid.contains(grid_id))
+					flag = true;
+			}
+			for(int i = lb_x+1;i<rt_x;i++)
+			{
+				int grid_id = i*split_pieces+lb_y;
+				if(reachgrid.contains(grid_id))
+					flag = true;
+				grid_id = i*split_pieces+rt_y;
+				if(reachgrid.contains(grid_id))
+					flag = true;
+			}
+			if(flag == false)
+			{
+				judge_time += System.currentTimeMillis() - start;
+				false_outside+=1;
+				return false;
+			}
 		}
-		for(int i = lb_x+1;i<rt_x;i++)
-		{
-			int grid_id = i*split_pieces+lb_y;
-			if(reachgrid.contains(grid_id))
-				flag = true;
-			grid_id = i*split_pieces+rt_y;
-			if(reachgrid.contains(grid_id))
-				flag = true;
-		}
-		if(flag == false)
-		{
-			judge_time += System.currentTimeMillis() - start;
-			false_outside+=1;
-			return false;
-		}
+		
 		
 		judge_time += System.currentTimeMillis() - start;
 		
@@ -779,52 +798,56 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					continue;
 				}
 				
-				ser = jsonObject.get("Bitmap_"+split_pieces).getAsString();
-				newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
-			    reachgrid = new ImmutableRoaringBitmap(newbb);
-				
-				//ReachGrid totally Lie In query rectangle
-				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+				if(jsonObject.has("Bitmap_128"))
 				{
-					for(int k = lb_x+1;k<rt_x;k++)
+					ser = jsonObject.get("Bitmap_"+split_pieces).getAsString();
+					newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+					reachgrid = new ImmutableRoaringBitmap(newbb);
+					
+					//ReachGrid totally Lie In query rectangle
+					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 					{
-						for(int j = lb_y+1;j<rt_y;j++)
+						for(int k = lb_x+1;k<rt_x;k++)
 						{
-							int grid_id = k*split_pieces+j;
-							if(reachgrid.contains(grid_id))
+							for(int j = lb_y+1;j<rt_y;j++)
 							{
-								judge_time += System.currentTimeMillis() - start;
-								return true;
+								int grid_id = k*split_pieces+j;
+								if(reachgrid.contains(grid_id))
+								{
+									judge_time += System.currentTimeMillis() - start;
+									return true;
+								}
 							}
 						}
 					}
-				}
 
-				//ReachGrid No overlap with query rectangle
-				flag = false;
-				for(int j = lb_y;j<=rt_y;j++)
-				{
-					int grid_id = lb_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = rt_x*split_pieces+j;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				for(int j = lb_x+1;j<rt_x;j++)
-				{
-					int grid_id = j*split_pieces+lb_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-					grid_id = j*split_pieces+rt_y;
-					if(reachgrid.contains(grid_id))
-						flag = true;
-				}
-				if(flag == false)
-				{
-					false_count+=1;
-					VisitedVertices.add(id);
-				}				
+					//ReachGrid No overlap with query rectangle
+					flag = false;
+					for(int j = lb_y;j<=rt_y;j++)
+					{
+						int grid_id = lb_x*split_pieces+j;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+						grid_id = rt_x*split_pieces+j;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+					}
+					for(int j = lb_x+1;j<rt_x;j++)
+					{
+						int grid_id = j*split_pieces+lb_y;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+						grid_id = j*split_pieces+rt_y;
+						if(reachgrid.contains(grid_id))
+							flag = true;
+					}
+					if(flag == false)
+					{
+						false_count+=1;
+						VisitedVertices.add(id);
+					}	
+				}	
+							
 			}
 			else
 			{
