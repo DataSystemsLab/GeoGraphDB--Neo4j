@@ -27,21 +27,24 @@ public class Store_Bitmap {
 		File file = null;
 		int node_count = OwnMethods.GetNodeCount(datasource);
 		
-		int split_pieces = 128;
+		int split_pieces = 64;
 		int compressed_count = 0, nocompressed_count = 0;
-		long compressed_size = 0, nocompressed_size = 0;
-		int[] reachgrids_count = new int[128*128];
-		long[] reachgrids_size = new long[128*128];
-		for(int i = 0;i<128*128;i++)
-		{
-			reachgrids_count[i] = 0;
-			reachgrids_size[i] = 0;
-		}
+		
 		
 		
 //		for(int ratio = 40;ratio<100;ratio+=20)
-		int ratio = 80;
+		for(;split_pieces>=2;split_pieces/=2)
+		
 		{
+			long compressed_size = 0, nocompressed_size = 0;
+			int[] reachgrids_count = new int[split_pieces*split_pieces+1];
+			long[] reachgrids_size = new long[split_pieces*split_pieces+1];
+			for(int i = 0;i<=split_pieces*split_pieces;i++)
+			{
+				reachgrids_count[i] = 0;
+				reachgrids_size[i] = 0;
+			}
+			int ratio = 80;
 			try
 			{
 				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/GeoReachGrid_"+ratio+".txt");
@@ -56,7 +59,9 @@ public class Store_Bitmap {
 					int id = Integer.parseInt(l[0]);
 					int count = Integer.parseInt(l[1]);
 					if(count == 0)
-						continue;
+					{
+						reachgrids_count[0]+=1;
+					}
 					else
 					{
 						RoaringBitmap r3 = new RoaringBitmap();
@@ -82,7 +87,7 @@ public class Store_Bitmap {
 				        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
 				        reachgrids_count[count]+=1;
 				        reachgrids_size[count]+=serializedstring.getBytes().length;
-						if(serializedstring.getBytes().length>2048)
+						if(serializedstring.getBytes().length>split_pieces*split_pieces/8)
 						{
 							nocompressed_count++;
 							nocompressed_size+=serializedstring.getBytes().length;
@@ -117,9 +122,9 @@ public class Store_Bitmap {
 			System.out.println(compressed_size);
 			System.out.println(nocompressed_count);
 			System.out.println(nocompressed_size);
-			for(int i = 0;i<128*128;i++)
+			for(int i = 0;i<=split_pieces*split_pieces;i++)
 			{
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/Patents/a_store.csv", true, i+"\t"+reachgrids_count[i]+"\t"+reachgrids_size[i]+"\t"+(double)reachgrids_size[i]/(double)reachgrids_count[i]+"\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/Patents/"+split_pieces+"_store.csv", true, i+"\t"+reachgrids_count[i]+"\t"+reachgrids_size[i]+"\t"+(double)reachgrids_size[i]/(double)reachgrids_count[i]+"\n");
 			}
 		}	
 	}
