@@ -153,18 +153,74 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			PostgresJDBC.Close(con);
 		}	
 	}
+	
+//	public static void LoadDataPrepare(String datasource)
+//	{
+//		File file = null;
+//		BufferedReader reader = null;
+//		Connection con = null;
+//		PreparedStatement pst = null;
+//		try
+//		{
+//			con = PostgresJDBC.GetConnection();
+//			con.setAutoCommit(false);
+//			//insert data
+////			for(int ratio = 20;ratio<100;ratio+=20)
+//			int ratio = 80;
+//			{
+//				String tablename = datasource + "_Random_" + ratio;
+//				String query = "insert into " + tablename + "(id, location) values (?,?)";
+//				pst = con.prepareStatement(query);
+//				
+//				System.out.println("load "+datasource+"_Random_" + ratio);
+//				String filename = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio + "/entity.txt";
+//				file = new File(filename);
+//				reader = new BufferedReader(new FileReader(file));
+//				reader.readLine();
+//				String tempString = null;
+//				while((tempString = reader.readLine())!=null)
+//				{
+//					String[] l = tempString.split(" ");
+//					int isspatial = Integer.parseInt(l[1]);
+//					if(isspatial == 0)
+//						continue;
+//					
+//					pst.setLong(1, Integer.parseInt(l[0]));
+//					pst.setObject(2, x);
+//					st = con.createStatement();
+//					st.executeUpdate(query);
+//					st.close();
+//				}
+//				reader.close();
+//				con.commit();
+//			}
+//			con.setAutoCommit(true);
+//		}
+//		catch(Exception e)
+//		{
+//			e.printStackTrace();
+//		}
+//		finally
+//		{
+//			PostgresJDBC.Close(st);
+//			PostgresJDBC.Close(con);
+//		}
+//	}
 
 	public static void LoadData(String datasource)
 	{
 		File file = null;
 		BufferedReader reader = null;
 		Connection con = null;
+		Statement st = null;
 		try
 		{
 			con = PostgresJDBC.GetConnection();
 			con.setAutoCommit(false);
 			//insert data
-			for(int ratio = 20;ratio<100;ratio+=20)
+//			for(int ratio = 20;ratio<100;ratio+=20)
+			st = con.createStatement();
+			int ratio = 20;
 			{
 				System.out.println("load "+datasource+"_Random_" + ratio);
 				String filename = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio + "/entity.txt";
@@ -180,7 +236,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 						continue;
 					String tablename = datasource + "_Random_" + ratio;
 					String query = "insert into " + tablename + " values (" + l[0] + ", '" + l[2] + "," + l[3] + "')";
-					Statement st = con.createStatement();
+					st = con.createStatement();
 					st.executeUpdate(query);
 					st.close();
 				}
@@ -195,6 +251,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		}
 		finally
 		{
+			PostgresJDBC.Close(st);
 			PostgresJDBC.Close(con);
 		}
 	}

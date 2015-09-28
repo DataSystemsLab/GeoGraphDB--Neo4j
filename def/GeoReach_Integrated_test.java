@@ -68,7 +68,7 @@ public class GeoReach_Integrated_test {
 				MyRectangle query_rect = new MyRectangle(x,y,x+rect_size,y+rect_size);
 				
 				boolean result1 = tra.ReachabilityQuery(id, query_rect);
-				boolean result2 = p_geo.ReachabilityQuery_Bitmap(id, query_rect);
+				boolean result2 = p_geo.ReachabilityQuery_Bitmap_Partial(id, query_rect);
 				
 //				System.out.println(i);
 //				System.out.println(id);

@@ -84,15 +84,15 @@ public class Experiment_9_16 {
 						
 						try
 						{
-							georeach.VisitedVertices.clear();
-							long start = System.currentTimeMillis();
-							boolean result3 = georeach.ReachabilityQuery_Bitmap(id, query_rect);
-							time_georeach += System.currentTimeMillis() - start;
-							System.out.println(result3);
-							accessnodecount+=georeach.VisitedVertices.size();
-							if(pieces == 128)
-								if(result3)
-									true_count+=1;
+//							georeach.VisitedVertices.clear();
+//							long start = System.currentTimeMillis();
+//							boolean result3 = georeach.ReachabilityQuery_Bitmap(id, query_rect);
+//							time_georeach += System.currentTimeMillis() - start;
+//							System.out.println(result3);
+//							accessnodecount+=georeach.VisitedVertices.size();
+//							if(pieces == 128)
+//								if(result3)
+//									true_count+=1;
 						}
 						catch(Exception e)
 						{

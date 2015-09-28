@@ -735,22 +735,63 @@ public class Batch_Inserter {
 			
 		}
 	}
+	
+	public static void Set_Bitmap_Boolean(String datasource)
+	{
+		node_count  = 3774768;
+		BatchInserter inserter = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "5g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+				
+//		for(int ratio = 20;ratio<100;ratio+=20)
+		int ratio = 80;
+		{
+			long offset = ratio / 20 * node_count;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				for(long id = 0;id<3774768;id++)
+				{
+					long node_ID = id+offset;
+					Map<String,Object> attributes = inserter.getNodeProperties(node_ID);
+					if(attributes.containsKey("Bitmap_128"))
+					{
+						inserter.setNodeProperty(node_ID, "HasBitmap", (Object)true);
+					}
+				}
+				
+				
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+			}
+		}
+	}
 
 	public static void main(String[] args) 
-	{		
+	{	
+		
+		Set_Bitmap_Boolean("Patents");
 		//CreateUniqueConstraint();
 		//LoadRTreeNodes();
 		//SetRMBR();
 		//UpdateError();
-		
-		String datasource = "uniprotenc_100m";
-		GetNodeCount(datasource);
+//		
+//		String datasource = "uniprotenc_100m";
+//		GetNodeCount(datasource);
 			
 		//ReachabilityIndex insert
 //		Batch_Inserter.LoadReachabilityIndex(datasource);
 
 		//load graph nodes and relationships
-		Batch_Inserter.LoadGraph(datasource);
+//		Batch_Inserter.LoadGraph(datasource);
 		
 		//SetRMBR(datasource);
 	}

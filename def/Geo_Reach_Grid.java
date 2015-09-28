@@ -175,11 +175,10 @@ public static Set<Integer> VisitedVertices = new HashSet();
 				            public void write(byte[] b, int off, int l) {mBB.put(b,off,l);}
 				        }.init(outbb)));
 				        //
-//				        outbb.flip();
-//				        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
+				        outbb.flip();
+				        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
 						
-						inserter.setNodeProperty(id + offset, "Bitmap_"+split_pieces, outbb);
-						break;
+						inserter.setNodeProperty(id + offset, "Bitmap_"+split_pieces, serializedstring);
 					}
 				}
 				reader.close();
