@@ -1,13 +1,24 @@
 package def;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.roaringbitmap.RoaringBitmap;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import com.google.gson.Gson;
@@ -66,7 +77,133 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		// TODO Auto-generated method stub
 		
 	}
+	
+	public static void LoadCompresedBitmap(int split_pieces, String datasource)
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "5g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		int node_count = OwnMethods.GetNodeCount(datasource);
+		
+//		for(int ratio = 20;ratio<=80;ratio+=20)
+		int ratio = 80;
+		{
+			long offset = ratio / 20 * node_count;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/Bitmap_"+ratio+".txt");
+				reader = new BufferedReader(new FileReader(file));
+				reader.readLine();
+				String tempString = null;
+				while((tempString = reader.readLine())!=null)
+				{
+					if(tempString.endsWith(" "))
+						tempString = tempString.substring(0, tempString.length()-1);
+					String[] l = tempString.split("\t");
+					int id = Integer.parseInt(l[0]);
+					String bitmap = l[1];
+										
+					inserter.setNodeProperty(id + offset, "Bitmap_"+split_pieces, bitmap);
+				}
+				reader.close();
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+				if(inserter!=null)
+					inserter.shutdown();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+		}	
+	}
 
+	public static void Set_Bitmap_Boolean(String datasource,int split_pieces,int threshold)
+	{
+		long node_count;
+		BatchInserter inserter = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "5g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+				
+		for(int ratio = 20;ratio<=80;ratio+=20)
+//		int ratio = 20;
+		{
+			BufferedReader reader = null;
+			File file = null;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/Bitmap_"+ratio+".txt");
+				reader = new BufferedReader(new FileReader(file));
+				String tempString = null;
+				tempString = reader.readLine();
+				node_count = Long.parseLong(tempString);
+				long offset = ratio / 20 * node_count;
+				while((tempString = reader.readLine())!=null)
+				{
+					if(tempString.endsWith(" "))
+						tempString = tempString.substring(0, tempString.length()-1);
+					String[] l = tempString.split("\t");
+					int id = Integer.parseInt(l[0]);
+					String bitmap = l[1];
+					
+					ImmutableRoaringBitmap r = OwnMethods.Deserialize_String_ToRoarBitmap(bitmap);
+					int count = 0;
+					Iterator<Integer> i = r.iterator();
+					while(i.hasNext())
+					{
+						i.next();
+						count++;
+					}
+
+					if(count<=threshold)
+					{
+						inserter.setNodeProperty(id + offset, "HasBitmap_"+split_pieces+"_"+threshold, true);
+					}
+				}
+				reader.close();					
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+				OwnMethods.ClearCache();
+			}
+		}
+	}
+	
 	private boolean TraversalQuery(int start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
 	{		
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";

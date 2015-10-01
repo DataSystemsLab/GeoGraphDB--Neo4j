@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.DynamicLabel;
@@ -13,6 +14,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import com.sun.jersey.api.client.WebResource;
 
@@ -736,32 +738,27 @@ public class Batch_Inserter {
 		}
 	}
 	
-	public static void Set_Bitmap_Boolean(String datasource)
+	public static void SetNull(String datasource, String propertyname)
 	{
-		node_count  = 3774768;
+		long node_count;
 		BatchInserter inserter = null;
 		Map<String, String> config = new HashMap<String, String>();
 		config.put("dbms.pagecache.memory", "5g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
 				
-//		for(int ratio = 20;ratio<100;ratio+=20)
-		int ratio = 80;
+//		for(int ratio = 20;ratio<=80;ratio+=20)
+		int ratio = 20;
 		{
-			long offset = ratio / 20 * node_count;
 			try
 			{
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
-				for(long id = 0;id<3774768;id++)
+				node_count = OwnMethods.GetNodeCount(datasource);
+				long offset = ratio / 20 * node_count;
+				for(int id = 0;id<node_count;id++)
 				{
-					long node_ID = id+offset;
-					Map<String,Object> attributes = inserter.getNodeProperties(node_ID);
-					if(attributes.containsKey("Bitmap_128"))
-					{
-						inserter.setNodeProperty(node_ID, "HasBitmap", (Object)true);
-					}
+					if(inserter.getNodeProperties(id+offset).containsKey(propertyname))
+						inserter.removeNodeProperty(id + offset, propertyname);
 				}
-				
-				
 			}
 			catch(Exception e)
 			{
@@ -771,14 +768,15 @@ public class Batch_Inserter {
 			{
 				if(inserter!=null)
 					inserter.shutdown();
+				OwnMethods.ClearCache();
 			}
 		}
 	}
 
 	public static void main(String[] args) 
 	{	
+		SetNull("Patents", "HasBitmap_128_200");
 		
-		Set_Bitmap_Boolean("Patents");
 		//CreateUniqueConstraint();
 		//LoadRTreeNodes();
 		//SetRMBR();
