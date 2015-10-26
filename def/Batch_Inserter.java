@@ -2,8 +2,12 @@ package def;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -21,6 +25,363 @@ import com.sun.jersey.api.client.WebResource;
 public class Batch_Inserter {
 	
 	public static int node_count = 0;
+	private String longitude_property_name;
+	private String latitude_property_name;
+	private String RMBR_minx_name;
+	private String RMBR_miny_name;
+	private String RMBR_maxx_name;
+	private String RMBR_maxy_name;
+	
+	public Batch_Inserter()
+	{
+		Config config = new Config();
+//		suffix = config.GetSuffix();
+		longitude_property_name = config.GetLongitudePropertyName();
+		latitude_property_name = config.GetLatitudePropertyName();
+		RMBR_minx_name = config.GetRMBR_minx_name();
+		RMBR_miny_name = config.GetRMBR_miny_name();
+		RMBR_maxx_name = config.GetRMBR_maxx_name();
+		RMBR_maxy_name = config.GetRMBR_maxy_name();
+	}
+	
+	public void SetLocationRMBR(String type, String datasource, int ratio)
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "10g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		node_count = OwnMethods.GetNodeCount(datasource);
+		//for(int ratio = 20;ratio<100;ratio+=20)
+		//int ratio = 80;
+		{
+			long offset = ratio / 20 * node_count;
+			long size = OwnMethods.getDirSize(new File(db_path));
+			try
+			{
+				int setcount = 0;
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+
+				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+type+"/"+ratio;
+							
+				file = new File(filepath + "/entity.txt");	
+				
+				reader = new BufferedReader(new FileReader(file));
+				String tempString = null;
+				tempString = reader.readLine();
+				while((tempString = reader.readLine())!=null)
+				{
+					String[] l = tempString.split(" ");
+					int id = Integer.parseInt(l[0]);
+					int isspatial = Integer.parseInt(l[1]);
+					if(isspatial == 1)
+					{
+						double lon = Double.parseDouble(l[2]);
+						double lat = Double.parseDouble(l[3]);
+						inserter.setNodeProperty(id+offset, longitude_property_name, lon);
+						inserter.setNodeProperty(id+offset, latitude_property_name, lat);
+						setcount+=2;
+//						System.out.println(longitude_property_name);
+					}
+					double minx = Double.parseDouble(l[6]);
+					if(minx > 0)
+					{
+						double miny = Double.parseDouble(l[7]);
+						double maxx = Double.parseDouble(l[8]);
+						double maxy = Double.parseDouble(l[9]);
+//						System.out.println(RMBR_maxx_name);
+						inserter.setNodeProperty(id + offset, RMBR_minx_name, minx);
+						inserter.setNodeProperty(id + offset, RMBR_miny_name, miny);
+						inserter.setNodeProperty(id + offset, RMBR_maxx_name, maxx);
+						inserter.setNodeProperty(id + offset, RMBR_maxy_name, maxy);
+						setcount+=4;
+					}
+					
+				}
+				reader.close();
+				System.out.println(String.format("set %d properties", setcount));
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+		}
+	}
+	
+	public void SetLocationRMBRNull(String filetype, String datasource, int ratio)
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "6g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		node_count = OwnMethods.GetNodeCount(datasource);
+		//for(int ratio = 20;ratio<100;ratio+=20)
+		{
+			long offset = ratio / 20 * node_count;
+			long size = OwnMethods.getDirSize(new File(db_path));
+			int id = 0;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+
+				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+filetype+"/"+ratio;
+							
+				file = new File(filepath + "/entity.txt");	
+				
+				reader = new BufferedReader(new FileReader(file));
+				String tempString = null;
+				tempString = reader.readLine();
+				while((tempString = reader.readLine())!=null)
+				{
+					String[] l = tempString.split(" ");
+					id = Integer.parseInt(l[0]);
+					int isspatial = Integer.parseInt(l[1]);
+					if(isspatial == 1)
+					{
+						inserter.removeNodeProperty(id+offset, longitude_property_name);
+						inserter.removeNodeProperty(id+offset, latitude_property_name);
+					}
+					double minx = Double.parseDouble(l[6]);
+					if(minx > 0)
+					{
+						double miny = Double.parseDouble(l[7]);
+						double maxx = Double.parseDouble(l[8]);
+						double maxy = Double.parseDouble(l[9]);
+						inserter.removeNodeProperty(id + offset, RMBR_minx_name);					
+						inserter.removeNodeProperty(id + offset, RMBR_miny_name);
+						inserter.removeNodeProperty(id + offset, RMBR_maxx_name);
+						inserter.removeNodeProperty(id + offset, RMBR_maxy_name);
+					}
+					
+				}
+				reader.close();
+			}
+			catch(Exception e)
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				System.out.println(datasource+"\t"+ratio+"\t"+id);
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, datasource+"\t"+ratio+"\t"+id);
+				FileOutputStream fos;
+				try {
+					fos = new FileOutputStream("/home/yuhansun/Documents/Real_data/error_log.txt");
+					PrintStream ps = new PrintStream(fos);  
+			        System.setErr(ps); 
+					e.printStackTrace();
+				} catch (FileNotFoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}	        
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+		}
+	}
+	
+	public void SetUselessNull(String filetype, String datasource, int ratio)
+	{
+		BatchInserter inserter = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "4096M");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		node_count = OwnMethods.GetNodeCount(datasource);
+		//for(int ratio = 20;ratio<100;ratio+=20)
+		{
+			long offset = ratio / 20 * node_count;
+			int id = 0;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				Map<String, Object> properties = null;
+				int access_count = 0;
+				int set_count = 0;
+				for(id = 0;id<node_count;id++)
+				{
+					if(inserter.nodeHasProperty(id+offset, "longitude_zipf")||inserter.nodeHasProperty(id+offset, "RMBR_minx_zipf"))
+					{
+						access_count ++;
+						OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"_delete_ids.txt", true, ""+(id+offset)+"\n");
+					}
+//					properties = inserter.getNodeProperties(id+offset);
+//					access_count++;
+//					if(properties.containsKey("longitude_zipf"))
+//					{
+//						inserter.removeNodeProperty(id+offset, "longitude_zipf");
+//						set_count++;
+//					}
+//					if(properties.containsKey("latitude_zipf"))
+//					{
+//						set_count++;
+//						inserter.removeNodeProperty(id+offset, "latitude_zipf");
+//					}
+//					if(properties.containsKey("RMBR_minx_zipf"))
+//					{
+//						set_count++;
+//						inserter.removeNodeProperty(id+offset, "RMBR_minx_zipf");
+//					}
+//					if(properties.containsKey("RMBR_miny_zipf"))
+//					{
+//						set_count++;
+//						inserter.removeNodeProperty(id+offset, "RMBR_miny_zipf");
+//					}
+//					if(properties.containsKey("RMBR_maxx_zipf"))
+//					{
+//						set_count++;
+//						inserter.removeNodeProperty(id+offset, "RMBR_maxx_zipf");
+//					}
+//					if(properties.containsKey("RMBR_maxy_zipf"))
+//					{
+//						set_count++;
+//						inserter.removeNodeProperty(id+offset, "RMBR_maxy_zipf");
+//					}
+//					if(properties.containsKey("Bitmap_128_zipf"))
+//					{
+//						set_count++;
+//						inserter.removeNodeProperty(id+offset, "Bitmap_128_zipf");
+//					}
+//					if(properties.containsKey("HasBitmap_128_200_zipf"))
+//					{
+//						set_count++;
+//						inserter.removeNodeProperty(id+offset, "HasBitmap_128_200_zipf");
+//					}
+				}
+				System.out.println("Access Count\t"+access_count);		
+//				System.out.println("Set_count\t"+set_count);
+//				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, "Access Count\t"+access_count+"\n");
+//				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, "Access Count\t"+access_count+"\n");
+			}
+			catch(Exception e)
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				System.out.println("error occurs at "+datasource+"\t"+ratio+"\t"+id);
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, "error occurs at "+datasource+"\t"+ratio+"\t"+id+"\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, e.getMessage());
+				e.printStackTrace();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+			}
+		}
+	}
+	
+	public void SetUselessNullInBulk(String filetype, String datasource, int ratio)
+	{
+		BatchInserter inserter = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "4096M");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		node_count = OwnMethods.GetNodeCount(datasource);
+		//for(int ratio = 20;ratio<100;ratio+=20)
+		{
+			long offset = ratio / 20 * node_count;
+			int id = 0;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				Map<String, Object> properties = null;
+				int access_count = 0;
+				int set_count = 0;
+				for(id = 0;id<node_count;id++)
+				{
+					properties = inserter.getNodeProperties(id+offset);
+					access_count++;
+					if(properties.containsKey("longitude_zipf"))
+					{
+						inserter.removeNodeProperty(id+offset, "longitude_zipf");
+						set_count++;
+					}
+					if(properties.containsKey("latitude_zipf"))
+					{
+						set_count++;
+						inserter.removeNodeProperty(id+offset, "latitude_zipf");
+					}
+					if(properties.containsKey("RMBR_minx_zipf"))
+					{
+						set_count++;
+						inserter.removeNodeProperty(id+offset, "RMBR_minx_zipf");
+					}
+					if(properties.containsKey("RMBR_miny_zipf"))
+					{
+						set_count++;
+						inserter.removeNodeProperty(id+offset, "RMBR_miny_zipf");
+					}
+					if(properties.containsKey("RMBR_maxx_zipf"))
+					{
+						set_count++;
+						inserter.removeNodeProperty(id+offset, "RMBR_maxx_zipf");
+					}
+					if(properties.containsKey("RMBR_maxy_zipf"))
+					{
+						set_count++;
+						inserter.removeNodeProperty(id+offset, "RMBR_maxy_zipf");
+					}
+					if(properties.containsKey("Bitmap_128_zipf"))
+					{
+						set_count++;
+						inserter.removeNodeProperty(id+offset, "Bitmap_128_zipf");
+					}
+					if(properties.containsKey("HasBitmap_128_200_zipf"))
+					{
+						set_count++;
+						inserter.removeNodeProperty(id+offset, "HasBitmap_128_200_zipf");
+					}
+					break;
+				}
+				System.out.println("Access Count\t"+access_count);			
+				System.out.println("Set_count\t"+set_count);
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, "Access Count\t"+access_count+"\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, "Access Count\t"+access_count+"\n");
+			}
+			catch(Exception e)
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				System.out.println("error occurs at "+datasource+"\t"+ratio+"\t"+id);
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, "error occurs at "+datasource+"\t"+ratio+"\t"+id+"\n");
+				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/error_log.txt", true, e.getMessage());
+				e.printStackTrace();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+			}
+		}
+	}
 	
 	public static int GetNodeCount(String datasource)
 	{
@@ -55,11 +416,13 @@ public class Batch_Inserter {
 	{
 		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 		WebResource resource = p_neo.GetCypherResource();
-		p_neo.Execute(resource, "create unique constraint on (n:Transitive_Closure) assert n.id is unique");
+		p_neo.Execute(resource, "create constraint on (n:Reachability_Index) assert n.id is unique");
+		p_neo.Execute(resource, "create constraint on (n:Reachability_Index) assert n.scc_id is unique");
+
 		for(int i = 0;i<100;i+=20)
 		{
 			p_neo.Execute(resource, "create constraint on (n:Graph_Random_" + Integer.toString(i) + ") assert n.id is unique");
-			p_neo.Execute(resource, "create constraint on (n:RTree_Random_" + Integer.toString(i) + ") assert n.id is unique");
+			//p_neo.Execute(resource, "create constraint on (n:RTree_Random_" + Integer.toString(i) + ") assert n.id is unique");
 		}
 	}
 	
@@ -560,6 +923,8 @@ public class Batch_Inserter {
 		}
 		catch(IOException e)
 		{
+			if(inserter!=null)
+				inserter.shutdown();
 			e.printStackTrace();
 		}
 		finally
@@ -607,7 +972,9 @@ public class Batch_Inserter {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put("dbms.pagecache.memory", "6g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
-		for(int ratio = 20;ratio<100;ratio+=20)
+		//for(int ratio = 20;ratio<100;ratio+=20)
+		node_count = OwnMethods.GetNodeCount(datasource);
+		int ratio = 80;
 		{
 			int offset = ratio / 20 * node_count;
 			RelationshipType graph_rel = DynamicRelationshipType.withName("LINK");
@@ -738,7 +1105,7 @@ public class Batch_Inserter {
 		}
 	}
 	
-	public static void SetNull(String datasource, String propertyname)
+	public static void SetNull(String datasource, int ratio, String propertyname)
 	{
 		long node_count;
 		BatchInserter inserter = null;
@@ -746,8 +1113,6 @@ public class Batch_Inserter {
 		config.put("dbms.pagecache.memory", "5g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
 				
-//		for(int ratio = 20;ratio<=80;ratio+=20)
-		int ratio = 20;
 		{
 			try
 			{
@@ -762,6 +1127,8 @@ public class Batch_Inserter {
 			}
 			catch(Exception e)
 			{
+				if(inserter!=null)
+					inserter.shutdown();
 				e.printStackTrace();
 			}
 			finally
@@ -775,21 +1142,54 @@ public class Batch_Inserter {
 
 	public static void main(String[] args) 
 	{	
-		SetNull("Patents", "HasBitmap_128_200");
+		try
+		{
+			String datasource = args[0];
+			int ratio = Integer.parseInt(args[1]);
+			//String datasource = "uniprotenc_150m";
+			//int ratio = 20;
+			
+//			String datasource = "uniprotenc_150m";
+			System.out.println(datasource+"\t"+ratio);
+			Batch_Inserter bi = new Batch_Inserter();
+			//bi.SetUselessNull("Zipf_distributed", datasource, ratio);
+//			bi.SetLocationRMBRNull("Zipf_distributed", datasource, ratio);
+			bi.SetLocationRMBR("Zipf_distributed", datasource, ratio);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 		
-		//CreateUniqueConstraint();
+//		ArrayList<String> properties = new ArrayList();
+//		properties.add(bi.longitude_property_name);
+//		properties.add(bi.latitude_property_name);
+//		properties.add(bi.RMBR_minx_name);
+//		properties.add(bi.RMBR_miny_name);
+//		properties.add(bi.RMBR_maxx_name);
+//		properties.add(bi.RMBR_maxy_name);
+//		
+//		for(int i = 0;i<properties.size();i++)
+//		{
+//			String str = properties.get(i);SetNull(datasource, str);
+//		}
+
+		
+		
+//		
+//		CreateUniqueConstraint();
 		//LoadRTreeNodes();
 		//SetRMBR();
 		//UpdateError();
 //		
-//		String datasource = "uniprotenc_100m";
-//		GetNodeCount(datasource);
+		//String datasource = "uniprotenc_150m";
+		//GetNodeCount(datasource);
 			
 		//ReachabilityIndex insert
-//		Batch_Inserter.LoadReachabilityIndex(datasource);
+		//Batch_Inserter.LoadReachabilityIndex(datasource);
 
 		//load graph nodes and relationships
-//		Batch_Inserter.LoadGraph(datasource);
+		//Batch_Inserter.LoadGraph(datasource);
 		
 		//SetRMBR(datasource);
 	}

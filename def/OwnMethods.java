@@ -4,6 +4,7 @@ import java.io.*;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import org.neo4j.graphdb.Node;
 import org.roaringbitmap.RoaringBitmap;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
@@ -228,5 +229,17 @@ public class OwnMethods {
 		ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(serializedstring));
 	    ImmutableRoaringBitmap ir = new ImmutableRoaringBitmap(newbb);
 	    return ir;
+	}
+	
+	public static void PrintNode(Node node)
+	{
+		Iterator<String> iter = node.getPropertyKeys().iterator();
+		HashMap<String, String> properties = new HashMap();
+		while(iter.hasNext())
+		{
+			String key = iter.next();
+			properties.put(key, node.getProperty(key).toString());
+		}
+		System.out.println(properties.toString());
 	}
 }

@@ -117,7 +117,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		}		
 	}
 		
-	public static void CreateTable(String datasource)
+	public static void CreateTable(String datasource, String suffix)
 	{
 		Connection con = null;
 		try
@@ -129,7 +129,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 				try
 				{
 					st = con.createStatement();
-					String query = "create table "+datasource+"_Random_" + ratio + " (id bigint,";
+					String query = "create table "+datasource+"_Random_" + ratio + suffix + " (id bigint,";
 					query+=("location point)");
 					System.out.println(query);
 					st.executeUpdate(query);
@@ -207,7 +207,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 //		}
 //	}
 
-	public static void LoadData(String datasource)
+	public static void LoadData(String datasource, String suffix, String filesuffix)
 	{
 		File file = null;
 		BufferedReader reader = null;
@@ -217,13 +217,14 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		{
 			con = PostgresJDBC.GetConnection();
 			con.setAutoCommit(false);
-			//insert data
-//			for(int ratio = 20;ratio<100;ratio+=20)
 			st = con.createStatement();
-			int ratio = 20;
+			//insert data
+			for(int ratio = 20;ratio<100;ratio+=20)
+			
+			//int ratio = 20;
 			{
-				System.out.println("load "+datasource+"_Random_" + ratio);
-				String filename = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio + "/entity.txt";
+				System.out.println("load "+datasource+"_Random_" + ratio + suffix);
+				String filename = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+filesuffix+"/" + ratio + "/entity.txt";
 				file = new File(filename);
 				reader = new BufferedReader(new FileReader(file));
 				reader.readLine();
@@ -234,15 +235,14 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 					int isspatial = Integer.parseInt(l[1]);
 					if(isspatial == 0)
 						continue;
-					String tablename = datasource + "_Random_" + ratio;
+					String tablename = datasource + "_Random_" + ratio + suffix;
 					String query = "insert into " + tablename + " values (" + l[0] + ", '" + l[2] + "," + l[3] + "')";
-					st = con.createStatement();
 					st.executeUpdate(query);
-					st.close();
 				}
 				reader.close();
 				con.commit();
 			}
+			st.close();
 			con.setAutoCommit(true);
 		}
 		catch(Exception e)
@@ -291,9 +291,9 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	
 	public static void Construct_RTree_Index(String datasource)
 	{
-		CreateTable(datasource);
-		LoadData(datasource);
-		CreateGistIndex(datasource);
+//		CreateTable(datasource);
+//		LoadData(datasource);
+//		CreateGistIndex(datasource);
 
 	}
 	

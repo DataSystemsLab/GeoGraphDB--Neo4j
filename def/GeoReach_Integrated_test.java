@@ -9,9 +9,25 @@ public class GeoReach_Integrated_test {
 
 	public static void main(String[] args) {
 		
-		GeoReach_Integrate.Set_Bitmap_Boolean("Patents", 128, 200);
+		try
+		{
+			MyRectangle rect = new MyRectangle(0,0,1000,1000);
+			GeoReach_Integrate tt = new GeoReach_Integrate(rect,128);
+//			String datasource = "uniprotenc_150m";
+//			int ratio = 80;
+//			tt.LoadCompresedBitmap(128, datasource, "Clustered_distributed");
+			String datasource = args[0];
+			int ratio = Integer.parseInt(args[1]);
+			System.out.println(datasource+"\t"+ratio);
+			//tt.LoadCompresedBitmap(128, datasource, "Zipf_distributed", ratio);
+			tt.Set_HasBitmap_Boolean_Reading(datasource, 128, 200, "Zipf_distributed", ratio);
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 		
-//		GeoReach_Integrate.LoadCompresedBitmap(128, "uniprotenc_150m");
+
 
 //		MyRectangle range = new MyRectangle(0,0,1000,1000);
 //		

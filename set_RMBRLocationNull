@@ -1,0 +1,25 @@
+#!/bin/sh
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter citeseerx 20
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter citeseerx 40
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter citeseerx 60
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter citeseerx 80
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter go_uniprot 20
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter go_uniprot 40
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter go_uniprot 60
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter go_uniprot 80
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter Patents 20
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter Patents 40
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter Patents 60
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter Patents 80
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_22m 20
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_22m 40
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_22m 60
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_22m 80
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_100m 20
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_100m 40
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_100m 60
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_100m 80
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_150m 20
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_150m 40
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_150m 60
+java -Xmx10000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter uniprotenc_150m 80

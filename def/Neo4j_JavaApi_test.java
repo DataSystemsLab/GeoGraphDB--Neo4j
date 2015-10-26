@@ -2,6 +2,8 @@ package def;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Random;
 
 import org.neo4j.graphdb.Node;
@@ -17,12 +19,12 @@ public class Neo4j_JavaApi_test {
 	public static void main(String[] args) 
 	{
 		//remove those high storage bitmap_128
-		int node_count = 3774768;
+		/*int node_count = 3774768;
 		String dbpath = ("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db");
 		int ratio = 80;
 		long offset = ratio/20*node_count;
 		Neo4j_JavaApi p_neo = new Neo4j_JavaApi(dbpath);
-		
+//		
 		try
 		{
 			for(int id = 0;id<node_count;id++)
@@ -57,15 +59,22 @@ public class Neo4j_JavaApi_test {
 		finally
 		{
 			p_neo.ShutDown();
-		}
+		}*/
 		
 		
 //		OwnMethods.ClearCache();
-//		String dbpath = ("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db");
-//		Neo4j_JavaApi p_neo = new Neo4j_JavaApi(dbpath);
-//		Transaction tx = p_neo.graphDb.beginTx();
-//		try
-//		{
+		String str = "uniprotenc_150m";
+		String dbpath = ("/home/yuhansun/Documents/Real_data/"+str+"/neo4j-community-2.2.3/data/graph.db");
+		Neo4j_JavaApi p_neo = new Neo4j_JavaApi(dbpath);
+		Transaction tx = p_neo.graphDb.beginTx();
+		try
+		{
+			/*System.out.println("start");
+			for(int i = 0;i<10;i++)
+			{
+				Node node = p_neo.GetNodeByID(i);
+				System.out.println(node.getId());
+			}*/
 //			for(int i = 0;i<5;i++)
 //			{
 //				Random r = new Random();
@@ -76,18 +85,32 @@ public class Neo4j_JavaApi_test {
 //				System.out.println(node.getId());
 //				System.out.println(time);
 //			}
-//			
-//			tx.success();
-//		}
-//		catch(Exception e)
-//		{
-//			e.printStackTrace();
-//		}
-//		finally
-//		{
-//			tx.close();
-//			p_neo.ShutDown();
-//		}	
+			int node_count = OwnMethods.GetNodeCount(str);
+			for(int i = 0;i<25;i++)
+			{
+				Node node = p_neo.GetNodeByID(1*node_count+i);
+				System.out.println(node.getId());
+				
+				Iterator<String> iter = node.getPropertyKeys().iterator();
+				HashMap<String, String> properties = new HashMap();
+				while(iter.hasNext())
+				{
+					String key = iter.next();
+					properties.put(key, node.getProperty(key).toString());
+				}
+				System.out.println(properties.toString());				
+			}
+			tx.success();
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			tx.close();
+			p_neo.ShutDown();
+		}	
 		
 	}
 

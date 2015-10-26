@@ -21,45 +21,339 @@ import def.OwnMethods;
 
 public class Store_Bitmap {
 	
-	public static void ReachGridFullToPartialBitmap()
+	public static void ReachGridToBitmapGeneral(String filenae1, String filename2)
 	{
-		String datasource = "Patents";
-		BufferedReader reader = null;
 		File file = null;
+		BufferedReader reader = null;
 		FileWriter fw = null;
-		int node_count = 0;
-		
-		int split_pieces = 128;
-		
-//		for(int ratio = 20;ratio<=80;ratio+=20)
-		int ratio = 80;
+		try
 		{
-			try
+			file = new File(filenae1);
+			reader = new BufferedReader(new FileReader(file));
+			
+			String tempString = reader.readLine();
+			int node_count = Integer.parseInt(tempString);
+			
+			String writeString = "";
+			fw = new FileWriter(filename2,true);
+			fw.write(node_count+"\n");
+			while((tempString = reader.readLine())!=null)
 			{
-				file = new File("D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/GeoReachGrid_"+ratio+"_sort.txt");
-				reader = new BufferedReader(new FileReader(file));
-				
-				String wfilepath = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/Bitmap_"+ratio+"_partial.txt";
-				
-				String tempString = reader.readLine();
-				node_count = Integer.parseInt(tempString);
-				
-				String writeString = "";
-				fw = new FileWriter(wfilepath,true);
-				fw.write(node_count+"\n");
-				while((tempString = reader.readLine())!=null)
+				if(tempString.endsWith(" "))
+					tempString = tempString.substring(0, tempString.length()-1);
+				String[] l = tempString.split(" ");
+				int id = Integer.parseInt(l[0]);
+				int count = Integer.parseInt(l[1]);
+				if(count == 0)
 				{
-					if(tempString.endsWith(" "))
-						tempString = tempString.substring(0, tempString.length()-1);
-					String[] l = tempString.split(" ");
-					int id = Integer.parseInt(l[0]);
-					int count = Integer.parseInt(l[1]);
-					if(count == 0||count>200)
+					continue;
+				}
+				else
+				{
+					RoaringBitmap r3 = new RoaringBitmap();
+					for(int i = 2;i<l.length;i++)
+						r3.add(Integer.parseInt(l[i]));
+					
+			        String serializedstring = OwnMethods.Serialize_RoarBitmap_ToString(r3);
+					writeString=id+"\t"+serializedstring+"\n";
+					fw.write(writeString);					
+				}
+			}
+			reader.close();
+			fw.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			if(reader!=null)
+			{
+				try
+				{
+					reader.close();
+				}
+				catch(IOException e)
+				{	
+					e.printStackTrace();
+				}
+			}
+			if(fw!=null)
+			{
+				try
+				{
+					fw.close();
+				}
+				catch(IOException e)
+				{	
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	
+	public static void ReachGridFullToBitmapFull(String type)
+	{
+		ArrayList<String> datasource_a = new ArrayList<String>();
+//		datasource_a.add("citeseerx");
+//		datasource_a.add("go_uniprot");
+		datasource_a.add("Patents");
+//		datasource_a.add("uniprotenc_22m");
+//		datasource_a.add("uniprotenc_100m");
+//		datasource_a.add("uniprotenc_150m");
+		for(int data_index = 0;data_index<datasource_a.size();data_index++)
+		{
+			String datasource = datasource_a.get(data_index);
+			BufferedReader reader = null;
+			File file = null;
+			FileWriter fw = null;
+			int node_count = 0;
+			
+			int split_pieces = 128;
+			
+			//for(int ratio = 20;ratio<=80;ratio+=20)
+			int ratio = 80;
+			{
+				try
+				{
+					file = new File("D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/GeoReachGrid_"+ratio+".txt");
+					reader = new BufferedReader(new FileReader(file));
+					
+					String wfilepath = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/Bitmap_"+ratio+".txt";
+					
+					String tempString = reader.readLine();
+					node_count = Integer.parseInt(tempString);
+					
+					String writeString = "";
+					fw = new FileWriter(wfilepath,true);
+					fw.write(node_count+"\n");
+					while((tempString = reader.readLine())!=null)
 					{
-						continue;
+						if(tempString.endsWith(" "))
+							tempString = tempString.substring(0, tempString.length()-1);
+						String[] l = tempString.split(" ");
+						int id = Integer.parseInt(l[0]);
+						int count = Integer.parseInt(l[1]);
+						if(count == 0)
+						{
+							continue;
+						}
+						else
+						{
+							RoaringBitmap r3 = new RoaringBitmap();
+							for(int i = 2;i<l.length;i++)
+								r3.add(Integer.parseInt(l[i]));
+							
+							r3.runOptimize();
+							ByteBuffer outbb = ByteBuffer.allocate(r3.serializedSizeInBytes());
+					        // If there were runs of consecutive values, you could
+					        // call mrb.runOptimize(); to improve compression 
+					        r3.serialize(new DataOutputStream(new OutputStream(){
+					            ByteBuffer mBB;
+					            OutputStream init(ByteBuffer mbb) {mBB=mbb; return this;}
+					            public void close() {}
+					            public void flush() {}
+					            public void write(int b) {
+					                mBB.put((byte) b);}
+					            public void write(byte[] b) {mBB.put(b);}            
+					            public void write(byte[] b, int off, int l) {mBB.put(b,off,l);}
+					        }.init(outbb)));
+					        //
+					        outbb.flip();
+					        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
+							writeString=id+"\t"+serializedstring+"\n";
+							fw.write(writeString);					
+						}
 					}
-					else
+					reader.close();
+					fw.close();
+				}
+				catch(IOException e)
+				{
+					e.printStackTrace();
+				}
+				finally
+				{
+					if(reader!=null)
 					{
+						try
+						{
+							reader.close();
+						}
+						catch(IOException e)
+						{	
+							e.printStackTrace();
+						}
+					}
+					if(fw!=null)
+					{
+						try
+						{
+							fw.close();
+						}
+						catch(IOException e)
+						{	
+							e.printStackTrace();
+						}
+					}
+				}
+			}	
+		}
+		
+	}
+	
+	public static void ReachGridFullToPartialBitmap(String type)
+	{
+		ArrayList<String> datasource_a = new ArrayList<String>();
+		datasource_a.add("citeseerx");
+		datasource_a.add("go_uniprot");
+		datasource_a.add("Patents");
+		datasource_a.add("uniprotenc_22m");
+		datasource_a.add("uniprotenc_100m");
+		datasource_a.add("uniprotenc_150m");
+		for(int data_index = 0;data_index<datasource_a.size();data_index++)
+		{
+			String datasource = datasource_a.get(data_index);
+			BufferedReader reader = null;
+			File file = null;
+			FileWriter fw = null;
+			int node_count = 0;
+			
+			int split_pieces = 128;
+			
+			for(int ratio = 20;ratio<=80;ratio+=20)
+			//int ratio = 80;
+			{
+				try
+				{
+					file = new File("D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/GeoReachGrid_"+ratio+".txt");
+					reader = new BufferedReader(new FileReader(file));
+					
+					String wfilepath = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/Bitmap_"+ratio+"_partial_comparejava.txt";
+					
+					String tempString = reader.readLine();
+					node_count = Integer.parseInt(tempString);
+					
+					String writeString = "";
+					fw = new FileWriter(wfilepath,true);
+					fw.write(node_count+"\n");
+					while((tempString = reader.readLine())!=null)
+					{
+						if(tempString.endsWith(" "))
+							tempString = tempString.substring(0, tempString.length()-1);
+						String[] l = tempString.split(" ");
+						int id = Integer.parseInt(l[0]);
+						int count = Integer.parseInt(l[1]);
+						if(count == 0||count>200)
+						{
+							continue;
+						}
+						else
+						{
+							RoaringBitmap r3 = new RoaringBitmap();
+							for(int i = 2;i<l.length;i++)
+								r3.add(Integer.parseInt(l[i]));
+							
+							r3.runOptimize();
+							ByteBuffer outbb = ByteBuffer.allocate(r3.serializedSizeInBytes());
+					        // If there were runs of consecutive values, you could
+					        // call mrb.runOptimize(); to improve compression 
+					        r3.serialize(new DataOutputStream(new OutputStream(){
+					            ByteBuffer mBB;
+					            OutputStream init(ByteBuffer mbb) {mBB=mbb; return this;}
+					            public void close() {}
+					            public void flush() {}
+					            public void write(int b) {
+					                mBB.put((byte) b);}
+					            public void write(byte[] b) {mBB.put(b);}            
+					            public void write(byte[] b, int off, int l) {mBB.put(b,off,l);}
+					        }.init(outbb)));
+					        //
+					        outbb.flip();
+					        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
+							writeString=id+"\t"+serializedstring+"\n";
+							fw.write(writeString);					
+						}
+					}
+					reader.close();
+					fw.close();
+				}
+				catch(IOException e)
+				{
+					e.printStackTrace();
+				}
+				finally
+				{
+					if(reader!=null)
+					{
+						try
+						{
+							reader.close();
+						}
+						catch(IOException e)
+						{	
+							e.printStackTrace();
+						}
+					}
+					if(fw!=null)
+					{
+						try
+						{
+							fw.close();
+						}
+						catch(IOException e)
+						{	
+							e.printStackTrace();
+						}
+					}
+				}
+			}	
+		}	
+	}
+	
+	public static void ReachGridPartialToBitmap(String type)
+	{
+		ArrayList<String> datasource_a = new ArrayList<String>();
+		datasource_a.add("citeseerx");
+		datasource_a.add("go_uniprot");
+		datasource_a.add("Patents");
+		datasource_a.add("uniprotenc_22m");
+		datasource_a.add("uniprotenc_100m");
+		datasource_a.add("uniprotenc_150m");
+		for(int data_index = 0;data_index<datasource_a.size();data_index++)
+		{
+			String datasource = datasource_a.get(data_index);
+			BufferedReader reader = null;
+			File file = null;
+			FileWriter fw = null;
+			int node_count = 0;		
+			int split_pieces = 128;
+		
+			for(int ratio = 20;ratio<=80;ratio+=20)
+//			int ratio = 60;
+			{
+				try
+				{
+					file = new File("D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/GeoReachGrid_"+ratio+"_partial.txt");
+					reader = new BufferedReader(new FileReader(file));
+					
+					String wfilepath = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/Bitmap_"+ratio+"_partial.txt";
+					
+					String tempString = reader.readLine();
+					node_count = Integer.parseInt(tempString);
+					
+					String writeString = "";
+					fw = new FileWriter(wfilepath,true);
+					fw.write(node_count+"\n");
+					while((tempString = reader.readLine())!=null)
+					{
+						if(tempString.endsWith(" "))
+							tempString = tempString.substring(0, tempString.length()-1);
+						String[] l = tempString.split(" ");
+						int id = Integer.parseInt(l[0]);
+						int count = Integer.parseInt(l[1]);
 						RoaringBitmap r3 = new RoaringBitmap();
 						for(int i = 2;i<l.length;i++)
 							r3.add(Integer.parseInt(l[i]));
@@ -81,135 +375,46 @@ public class Store_Bitmap {
 				        //
 				        outbb.flip();
 				        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
+
 						writeString=id+"\t"+serializedstring+"\n";
 						fw.write(writeString);					
 					}
+					reader.close();
+					fw.close();
 				}
-				reader.close();
-				fw.close();
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
-			finally
-			{
-				if(reader!=null)
+				catch(IOException e)
 				{
-					try
+					e.printStackTrace();
+				}
+				finally
+				{
+					if(reader!=null)
 					{
-						reader.close();
+						try
+						{
+							reader.close();
+						}
+						catch(IOException e)
+						{	
+							e.printStackTrace();
+						}
 					}
-					catch(IOException e)
-					{	
-						e.printStackTrace();
-					}
-				}
-				if(fw!=null)
-				{
-					try
+					if(fw!=null)
 					{
-						fw.close();
-					}
-					catch(IOException e)
-					{	
-						e.printStackTrace();
+						try
+						{
+							fw.close();
+						}
+						catch(IOException e)
+						{	
+							e.printStackTrace();
+						}
 					}
 				}
-			}
-		}	
-	}
-	
-	public static void ReachGridPartialToBitmap(String datasource)
-	{
-		BufferedReader reader = null;
-		File file = null;
-		FileWriter fw = null;
-		int node_count = 0;		
-		int split_pieces = 128;
-	
-		for(int ratio = 20;ratio<=80;ratio+=20)
-//		int ratio = 60;
-		{
-			try
-			{
-				file = new File("D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/GeoReachGrid_"+ratio+"_newpartial.txt");
-				reader = new BufferedReader(new FileReader(file));
-				
-				String wfilepath = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/Bitmap_"+ratio+"_partial.txt";
-				
-				String tempString = reader.readLine();
-				node_count = Integer.parseInt(tempString);
-				
-				String writeString = "";
-				fw = new FileWriter(wfilepath,true);
-				fw.write(node_count+"\n");
-				while((tempString = reader.readLine())!=null)
-				{
-					if(tempString.endsWith(" "))
-						tempString = tempString.substring(0, tempString.length()-1);
-					String[] l = tempString.split(" ");
-					int id = Integer.parseInt(l[0]);
-					int count = Integer.parseInt(l[1]);
-					RoaringBitmap r3 = new RoaringBitmap();
-					for(int i = 2;i<l.length;i++)
-						r3.add(Integer.parseInt(l[i]));
-					
-					r3.runOptimize();
-					ByteBuffer outbb = ByteBuffer.allocate(r3.serializedSizeInBytes());
-			        // If there were runs of consecutive values, you could
-			        // call mrb.runOptimize(); to improve compression 
-			        r3.serialize(new DataOutputStream(new OutputStream(){
-			            ByteBuffer mBB;
-			            OutputStream init(ByteBuffer mbb) {mBB=mbb; return this;}
-			            public void close() {}
-			            public void flush() {}
-			            public void write(int b) {
-			                mBB.put((byte) b);}
-			            public void write(byte[] b) {mBB.put(b);}            
-			            public void write(byte[] b, int off, int l) {mBB.put(b,off,l);}
-			        }.init(outbb)));
-			        //
-			        outbb.flip();
-			        String serializedstring = Base64.getEncoder().encodeToString(outbb.array());
 
-					writeString=id+"\t"+serializedstring+"\n";
-					fw.write(writeString);					
-				}
-				reader.close();
-				fw.close();
-			}
-			catch(IOException e)
-			{
-				e.printStackTrace();
-			}
-			finally
-			{
-				if(reader!=null)
-				{
-					try
-					{
-						reader.close();
-					}
-					catch(IOException e)
-					{	
-						e.printStackTrace();
-					}
-				}
-				if(fw!=null)
-				{
-					try
-					{
-						fw.close();
-					}
-					catch(IOException e)
-					{	
-						e.printStackTrace();
-					}
-				}
-			}
-
-		}	
+			}	
+		}
+		
 	}
 	
 	public static void ReachGridFullToReachGridPartial()
@@ -289,12 +494,33 @@ public class Store_Bitmap {
 		}	
 	}
 	
-	public static boolean CompareReachGrid()
+	public static void GeoReachGridMultiLevelToBitmap(String type)
 	{
-		String filename1 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/citeseerx/GeoReachGrid_128/GeoReachGrid_20_multilevel_2_newexist.txt";
-		String filename2 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/citeseerx/GeoReachGrid_128/GeoReachGrid_20_multilevel_2_exist.txt";
-//		String filename2 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/citeseerx/GeoReachGrid_128/GeoReachGrid_20_newpartial.txt";
-
+		int split_pieces = 128;
+		ArrayList<String> datasource_a = new ArrayList<String>();
+//		datasource_a.add("citeseerx");
+//		datasource_a.add("go_uniprot");
+//		datasource_a.add("Patents");
+//		datasource_a.add("uniprotenc_22m");
+//		datasource_a.add("uniprotenc_100m");
+		datasource_a.add("uniprotenc_150m");
+		for(int data_index = 0;data_index<datasource_a.size();data_index++)
+		{
+			String datasource = datasource_a.get(data_index);
+			for(int ratio = 20;ratio<=80;ratio+=20)
+			{
+				for(int mer = 2;mer<=3;mer++)
+				{
+					String file1 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/GeoReachGrid_"+ratio+"_multilevelfull_"+mer+".txt";
+					String file2 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/Bitmap_"+ratio+"_multilevelfull_"+mer+".txt";
+					ReachGridToBitmapGeneral(file1,file2);
+				}
+			}
+		}
+	}
+	
+	public static boolean CompareReachGrid(String filename1, String filename2)
+	{
 		BufferedReader reader1 = null;
 		File file1 = null;
 		BufferedReader reader2 = null;
@@ -373,18 +599,29 @@ public class Store_Bitmap {
 		
 		return true;
 	}
+	
+	public static boolean CompareReachGrid(String filetype, String datasource, int ratio)
+	{
+		String filename1 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/"+datasource+"/GeoReachGrid_128/"+filetype+"/Bitmap_"+ratio+"_partial.txt";
+		String filename2 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/"+datasource+"/GeoReachGrid_128/"+filetype+"/Bitmap_"+ratio+"_partial_comparejava.txt";
+		
+		if(CompareReachGrid(filename1, filename2))
+			return true;
+		else
+			return false;		
+	}
 
-	public static void CalculateStorageOverhead()
+	public static void CalculateStorageOverhead(String type)
 	{
 		ArrayList<String> datasource_a = new ArrayList<String>();
-//		datasource_a.add("citeseerx");
-//		datasource_a.add("go_uniprot");
+		datasource_a.add("citeseerx");
+		datasource_a.add("go_uniprot");
 		datasource_a.add("Patents");
 		datasource_a.add("uniprotenc_22m");
 		datasource_a.add("uniprotenc_100m");
 		datasource_a.add("uniprotenc_150m");
 		int split_pieces = 128;
-		String wfilepath = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/Experiment_result/Random/storage.csv";
+		String wfilepath = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/Experiment_result/"+type+"/storage.csv";
 		for(int i = 0;i<datasource_a.size();i++)
 		{
 			String datasource = datasource_a.get(i);
@@ -398,7 +635,7 @@ public class Store_Bitmap {
 				File filemultilevel = null;
 				try
 				{
-					String readfullgrids = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/Bitmap_"+ratio+".txt";
+					String readfullgrids = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/Bitmap_"+ratio+".txt";
 					filefullgrids = new File(readfullgrids);
 					reader = new BufferedReader(new FileReader(filefullgrids));										
 					String tempString = reader.readLine();
@@ -414,7 +651,7 @@ public class Store_Bitmap {
 					}
 					reader.close();
 					
-					String readfpartialgrids = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/Bitmap_"+ratio+"_partial.txt";
+					String readfpartialgrids = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+type+"/Bitmap_"+ratio+"_partial.txt";
 					filepartialgrids = new File(readfpartialgrids);
 					reader = new BufferedReader(new FileReader(filepartialgrids));										
 					tempString = reader.readLine();
@@ -504,9 +741,8 @@ public class Store_Bitmap {
 		}
 	}
 	
-	public static void PartialRMBRCount()
+	public static void PartialRMBRCount(String type)
 	{
-		String type = "Clustered_distributed";
 		ArrayList<String> datasource_a = new ArrayList<String>();
 		datasource_a.add("citeseerx");
 		datasource_a.add("go_uniprot");
@@ -519,6 +755,7 @@ public class Store_Bitmap {
 		for(int index = 0;index<datasource_a.size();index++)
 		{
 			String datasource = datasource_a.get(index);
+			OwnMethods.WriteFile(wfilepath, true, datasource+"\n");
 			for(int ratio = 20;ratio<=80;ratio+=20)
 			{
 				String rfilepath1 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/"+datasource+"/GeoReachGrid_"+split_pieces+"/"+type+"/Bitmap_"+ratio+"_partial.txt";
@@ -568,7 +805,6 @@ public class Store_Bitmap {
 	
 	public static void RMBR_size(String type)
 	{
-//		String type = "Zipf_distributed";
 		ArrayList<String> datasource_a = new ArrayList<String>();
 		datasource_a.add("citeseerx");
 		datasource_a.add("go_uniprot");
@@ -625,19 +861,103 @@ public class Store_Bitmap {
 		}
 	}
 	
+	public static void CompareReachGridFull(String filetype)
+	{
+		ArrayList<String> datasource_a = new ArrayList<String>();
+//		datasource_a.add("citeseerx");
+		datasource_a.add("go_uniprot");
+//		datasource_a.add("Patents");
+		datasource_a.add("uniprotenc_22m");
+//		datasource_a.add("uniprotenc_100m");
+//		datasource_a.add("uniprotenc_150m");
+		for(int i = 0;i<datasource_a.size();i++)
+		{
+			String str = datasource_a.get(i);
+			for(int ratio = 20;ratio<=80;ratio+=20)
+			{
+				for(int merge_count = 2;merge_count<=4;merge_count++)
+				{
+					String filename1 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/"+str+"/GeoReachGrid_128/"+filetype+"/GeoReachGrid_"+ratio+"_multilevelfull_"+merge_count+".txt";
+					String filename2 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/"+str+"/GeoReachGrid_128/"+filetype+"/GeoReachGrid_"+ratio+"_multilevelfull_"+merge_count+"_inset.txt";
+					CompareReachGrid(filename1, filename2);
+				}
+			}
+		}
+	}
+	
 	public static void main(String[] args) 
 	{
-		RMBR_size("Clustered_distributed");
-		RMBR_size("Zipf_distributed");
-//		PartialRMBRCount();
-//		CalculateStorageOverhead();
-//		System.out.println(CompareReachGrid());
-//		ReachGridFullToPartialBitmap();
+		ArrayList<String> datasource_a = new ArrayList<String>();
+		//datasource_a.add("citeseerx");
+		//datasource_a.add("go_uniprot");
+		//datasource_a.add("Patents");
+		//datasource_a.add("uniprotenc_22m");
+//		datasource_a.add("uniprotenc_100m");
+//		datasource_a.add("uniprotenc_150m");
+//		RMBR_size("Clustered_distributed");
+//		RMBR_size("Zipf_distributed");
+//		PartialRMBRCount("Zipf_distributed");
+//		CalculateStorageOverhead("Zipf_distributed");
+//		CalculateStorageOverhead("Clustered_distributed");
+//		for(int ratio = 20; ratio<=80;ratio+=20)
+//		{
+//			System.out.println(CompareReachGrid("Zipf_distributed", "go_uniprot", ratio));
+//			System.out.println(CompareReachGrid("Zipf_distributed", "uniprotenc_22m", ratio));
+//			
+//			System.out.println(CompareReachGrid("Zipf_distributed", "citeseerx", ratio));
+//			System.out.println(CompareReachGrid("Zipf_distributed", "Patents", ratio));
+//			System.out.println(CompareReachGrid("Zipf_distributed", "uniprotenc_100m", ratio));
+//			System.out.println(CompareReachGrid("Zipf_distributed", "uniprotenc_150m", ratio));
+//			
+//		}
+//		ReachGridFullToPartialBitmap("Zipf_distributed");
+//		ReachGridFullToBitmapFull("Zipf_distributed");
+//		ReachGridPartialToBitmap("Zipf_distributed");
+		
+		
 //		ReachGridPartialToBitmap("Patents");
 //		ReachGridPartialToBitmap("uniprotenc_22m");
 //		ReachGridPartialToBitmap("uniprotenc_100m");
 //		ReachGridPartialToBitmap("uniprotenc_150m");
 //		ReachGridFullToReachGridPartial();
+		
+		//ReachGridFullToBitmapFull("Random_spatial_distributed");
+		//ReachGridFullToBitmapFull("Clustered_distributed");
+//		ReachGridFullToBitmapFull("Zipf_distributed");
+		
+//		ReachGridPartialToBitmap("Clustered_distributed");
+		
+//		PartialRMBRCount("Clustered_distributed");
+//		PartialRMBRCount("Zipf_distributed");
+		
+//		for(int ratio = 20;ratio<=80;ratio+=20)
+//		{
+//			for(int mer = 2;mer<=3;mer++)
+//			{
+//				String file1="D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/uniprotenc_22m/GeoReachGrid_128/Zipf_distributed/GeoReachGrid_"+ratio+"_multilevelfull_"+mer+".txt";
+//				String file2="D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/uniprotenc_22m/GeoReachGrid_128/Zipf_distributed/GeoReachGrid_"+ratio+"_multilevelfull_"+mer+"_inset.txt";
+//				System.out.println(CompareReachGrid(file1, file2));
+//			}
+//		}
+		
+		/*for(int i = 0;i<datasource_a.size();i++)
+		{
+			String datasource = datasource_a.get(i);
+			for(int ratio = 20;ratio<=80;ratio+=20)
+			{
+				for(int mergecount = 2;mergecount<=4;mergecount++)
+				{
+					String file1 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/"+datasource+"/GeoReachGrid_128/Random_spatial_distributed/GeoReachGrid_20_multilevel_"+mergecount+".txt";
+					String file2 = "D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/"+datasource+"/GeoReachGrid_128/Random_spatial_distributed/GeoReachGrid_20_multilevel_"+mergecount+"_inset.txt";
+					System.out.println(CompareReachGrid(file1, file2));
+				}
+			}
+		}*/
+		
+//		ReachGridToBitmapGeneral("D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/citeseerx/GeoReachGrid_128/Zipf_distributed/GeoReachGrid_80_multilevelfull_4_new.txt","D:/Graph_05_13/graph_2015_1_24_mfc/data/Real_Data/citeseerx/GeoReachGrid_128/Zipf_distributed/Bitmap_80_multilevelfull_4.txt");
+//		CompareReachGridFull("Clustered_distributed");
+		
+		GeoReachGridMultiLevelToBitmap("Random_spatial_distributed");
 	}
 
 }

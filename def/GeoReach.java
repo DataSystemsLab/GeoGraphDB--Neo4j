@@ -15,6 +15,14 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
 	private static WebResource resource;
 	
+	private String longitude_property_name;
+	private String latitude_property_name;
+	
+	private String RMBR_minx_name;
+	private String RMBR_miny_name;
+	private String RMBR_maxx_name;
+	private String RMBR_maxy_name;
+	
 	public long neo4j_time;
 	public long judge_time;
 	
@@ -22,21 +30,30 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	{
 		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();
+		
+		Config config = new Config();
+		longitude_property_name = config.GetLongitudePropertyName();
+		latitude_property_name = config.GetLatitudePropertyName();
+		RMBR_minx_name = config.GetRMBR_minx_name();
+		RMBR_miny_name = config.GetRMBR_miny_name();
+		RMBR_maxx_name = config.GetRMBR_maxx_name();
+		RMBR_maxy_name = config.GetRMBR_maxy_name();
+		
 		neo4j_time = 0;
 		judge_time = 0;
 	}
 	
 	// give a vertex id return a boolean value indicating whether it has RMBR
-	public static boolean HasRMBR(int id)
+	public boolean HasRMBR(int id)
 	{
-		return p_neo4j_graph_store.HasProperty(id, "RMBR_minx");
+		return p_neo4j_graph_store.HasProperty(id, RMBR_minx_name);
 	}
 	
-	public static MyRectangle GetRMBR(int id)
+	public MyRectangle GetRMBR(int id)
 	{
 		MyRectangle RMBR = new MyRectangle();
 		
-		String query = "match (a) where id(a) = " + id + " return a.RMBR_minx, a.RMBR_miny, a.RMBR_maxx, a.RMBR_maxy";		
+		String query = "match (a) where id(a) = " + id + " return a."+RMBR_minx_name+", a."+RMBR_miny_name+", a."+RMBR_maxx_name+", a."+RMBR_maxy_name;		
 		ArrayList<String> result = Neo4j_Graph_Store.GetExecuteResultData(Neo4j_Graph_Store.Execute(resource, query));
 		
 		String data = result.get(0);
@@ -50,7 +67,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	}
 	
 	//MBR operation of a given id vertex's current RMBR and another rectangle return a new rectangle, if no change happens it will return null
-	public static MyRectangle MBR(int id,String minx2_s, String miny2_s, String maxx2_s, String maxy2_s)
+	public MyRectangle MBR(int id,String minx2_s, String miny2_s, String maxx2_s, String maxy2_s)
 	{	
 		MyRectangle rec;				
 			
@@ -170,7 +187,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						String maxx = Double.toString(new_RMBR.max_x);
 						String maxy = Double.toString(new_RMBR.max_y);
 						
-						String query = "match (a) where id(a) = " + neighbor + " set a.RMBR_minx = " + minx + ", a.RMBR_miny = " + miny + ", a.RMBR_maxx = " + maxx + ", a.RMBR_maxy = " + maxy;
+						String query = "match (a) where id(a) = " + neighbor + " set a."+RMBR_minx_name+" = " + minx + ", a."+RMBR_miny_name+" = " + miny + ", a."+RMBR_maxx_name+" = " + maxx + ", a."+RMBR_maxy_name+" = " + maxy;
 						Neo4j_Graph_Store.Execute(resource, query);
 					}
 				}
@@ -187,7 +204,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						String maxx = Double.toString(new_RMBR.max_x);
 						String maxy = Double.toString(new_RMBR.max_y);
 						
-						String query = "match (a) where id(a) = " + neighbor + " set a.RMBR_minx = " + minx + ", a.RMBR_miny = " + miny + ", a.RMBR_maxx = " + maxx + ", a.RMBR_maxy = " + maxy;
+						String query = "match (a) where id(a) = " + neighbor + " set a."+RMBR_minx_name+" = " + minx + ", a."+RMBR_miny_name+" = " + miny + ", a."+RMBR_maxx_name+" = " + maxx + ", a."+RMBR_maxy_name+" = " + maxy;
 						Neo4j_Graph_Store.Execute(resource, query);
 					}
 				}
@@ -232,10 +249,10 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			}
 			
 			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has("longitude"))
+			if(jsonObject.has(longitude_property_name))
 			{
-				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
-				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
+				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
+				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -243,13 +260,13 @@ public class GeoReach implements ReachabilityQuerySolver	{
 					return true;
 				}
 			}
-			if(jsonObject.has("RMBR_minx"))
+			if(jsonObject.has(RMBR_minx_name))
 			{
 				MyRectangle RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
-				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
-				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
-				RMBR.max_y = jsonObject.get("RMBR_maxy").getAsDouble();
+				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
+				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
+				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
+				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
@@ -310,16 +327,16 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		
 		start = System.currentTimeMillis();
 		
-		if(!all_attributes.has("RMBR_minx"))
+		if(!all_attributes.has(RMBR_minx_name))
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
-		String minx_s = String.valueOf(all_attributes.get("RMBR_minx"));
-		String miny_s = String.valueOf(all_attributes.get("RMBR_miny"));
-		String maxx_s = String.valueOf(all_attributes.get("RMBR_maxx"));
-		String maxy_s = String.valueOf(all_attributes.get("RMBR_maxy"));
+		String minx_s = String.valueOf(all_attributes.get(RMBR_minx_name));
+		String miny_s = String.valueOf(all_attributes.get(RMBR_miny_name));
+		String maxx_s = String.valueOf(all_attributes.get(RMBR_maxx_name));
+		String maxy_s = String.valueOf(all_attributes.get(RMBR_maxy_name));
 		
 		MyRectangle RMBR = new MyRectangle();
 										
@@ -369,10 +386,10 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			}
 		
 			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has("longitude"))
+			if(jsonObject.has(longitude_property_name))
 			{
-				double lat = Double.parseDouble(jsonObject.get("latitude").toString());
-				double lon = Double.parseDouble(jsonObject.get("longitude").toString());
+				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
+				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -380,13 +397,13 @@ public class GeoReach implements ReachabilityQuerySolver	{
 					return true;
 				}
 			}
-			if(jsonObject.has("RMBR_minx"))
+			if(jsonObject.has(RMBR_minx_name))
 			{
 				RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get("RMBR_minx").getAsDouble();
-				RMBR.min_y = jsonObject.get("RMBR_miny").getAsDouble();
-				RMBR.max_x = jsonObject.get("RMBR_maxx").getAsDouble();
-				RMBR.max_y = jsonObject.get("RMBR_maxy").getAsDouble();
+				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
+				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
+				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
+				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
