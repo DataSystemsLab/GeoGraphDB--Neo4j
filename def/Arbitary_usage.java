@@ -14,17 +14,30 @@ public class Arbitary_usage {
 
 	public static void main(String[] args) {
 		
-		String datasource = "Patents";
-		BatchInserter inserter = null;
-		BufferedReader reader = null;
-		File file = null;
-		Map<String, String> config = new HashMap<String, String>();
-		config.put("dbms.pagecache.memory", "5g");
-		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
-		int node_count = OwnMethods.GetNodeCount(datasource);
-		int ratio = 60;
-		//{
-			long offset = ratio / 20 * node_count;
+		ArrayList<String> datasource_a = new ArrayList<String>();
+		datasource_a.add("citeseerx");
+		datasource_a.add("go_uniprot");
+		datasource_a.add("Patents");
+		datasource_a.add("uniprotenc_22m");
+		datasource_a.add("uniprotenc_100m");
+		datasource_a.add("uniprotenc_150m");
+		for(int name_index = 0;name_index<datasource_a.size();name_index++)
+		{
+			String datasource = datasource_a.get(name_index);
+			SpatialIndex.DropTable(datasource, "_zipf");
+		}
+		
+//		String datasource = "Patents";
+//		BatchInserter inserter = null;
+//		BufferedReader reader = null;
+//		File file = null;
+//		Map<String, String> config = new HashMap<String, String>();
+//		config.put("dbms.pagecache.memory", "5g");
+//		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+//		int node_count = OwnMethods.GetNodeCount(datasource);
+//		int ratio = 60;
+//		//{
+//			long offset = ratio / 20 * node_count;
 //			try
 //			{
 //				

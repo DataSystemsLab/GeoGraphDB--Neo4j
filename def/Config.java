@@ -3,7 +3,7 @@ package def;
 public class Config	{
 	private String SERVER_ROOT_URI = "http://localhost:7474/db/data";
 	
-	private String suffix = "_clustered";
+	private String suffix = "_zipf";
 	private String longitude_property_name = "longitude";
 	private String latitude_property_name = "latitude";
 	

@@ -154,6 +154,42 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		}	
 	}
 	
+	public static void DropTable(String datasource, String suffix)
+	{
+		Connection con = null;
+		try
+		{
+			con = PostgresJDBC.GetConnection();
+			for(int ratio = 20;ratio<100;ratio+=20)
+			{
+				Statement st = null;
+				try
+				{
+					st = con.createStatement();
+					String query = "drop table "+datasource+"_Random_" + ratio + suffix;
+					System.out.println(query);
+					st.executeUpdate(query);
+				}
+				catch(Exception e)
+				{
+					System.out.println(e.getMessage());
+				}
+				finally
+				{
+					PostgresJDBC.Close(st);
+				}				
+			}
+		}
+		catch(Exception e)
+		{
+			System.out.println(e.getMessage());
+		}
+		finally
+		{
+			PostgresJDBC.Close(con);
+		}	
+	}
+	
 //	public static void LoadDataPrepare(String datasource)
 //	{
 //		File file = null;
@@ -256,7 +292,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		}
 	}
 
-	public static void CreateGistIndex(String datasource)
+	public static void CreateGistIndex(String datasource, String suffix)
 	{
 		Connection con = null;
 		try
@@ -267,8 +303,8 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			for(int ratio = 20;ratio<100;ratio+=20)
 			{
 				long start = System.currentTimeMillis();
-				String tablename = datasource + "_Random_" + ratio;
-				String query = "CREATE INDEX "+datasource+"_Random_"+ratio+"_Gist ON "+tablename+" USING gist(location)";
+				String tablename = datasource + "_Random_" + ratio+suffix;
+				String query = "CREATE INDEX "+datasource+"_Random_"+ratio+suffix+"_Gist ON "+tablename+" USING gist(location)";
 				System.out.println(query);
 				Statement st = con.createStatement();
 				st.executeUpdate(query);
@@ -286,7 +322,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		{
 			PostgresJDBC.Close(con);
 		}
-		
+
 	}
 	
 	public static void Construct_RTree_Index(String datasource)

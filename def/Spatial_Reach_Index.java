@@ -16,6 +16,7 @@ import com.sun.jersey.api.client.WebResource;
 public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 
 	private String RTreeName;
+	private String suffix;
 	private Connection con;
 	private Statement st;
 	private ResultSet rs;
@@ -30,7 +31,9 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 	
 	public Spatial_Reach_Index(String p_RTreeName)
 	{
-		this.RTreeName = p_RTreeName;
+		Config config = new Config();
+		suffix = config.GetSuffix();
+		this.RTreeName = p_RTreeName+suffix;
 		con = PostgresJDBC.GetConnection();
 		try {
 			st = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
@@ -41,6 +44,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 		
 		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 		resource = p_neo.GetCypherResource();
+	
 		
 		postgresql_time = 0;
 		neo4j_time = 0;

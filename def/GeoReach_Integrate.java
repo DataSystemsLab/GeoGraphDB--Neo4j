@@ -440,6 +440,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;	
 	}
 	
+	//RMBR and full grid list
 	public boolean ReachabilityQuery(int start_id, MyRectangle rect) 
 	{
 		VisitedVertices.clear();
@@ -826,6 +827,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;	
 	}
 	
+	//grids bitmap
 	public boolean ReachabilityQuery_FullGrids(int start_id, MyRectangle rect) 
 	{
 		VisitedVertices.clear();
@@ -1653,6 +1655,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;	
 	}
 	
+	//RMBR and partial grids bitmap
 	public boolean ReachabilityQuery_Bitmap_Partial(int start_id, MyRectangle rect) 
 	{
 		VisitedVertices.clear();
@@ -2069,6 +2072,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;	
 	}
 	
+	//RMBR and grids bitmap
 	public boolean ReachabilityQuery_Bitmap_Total(int start_id, MyRectangle rect) 
 	{
 		VisitedVertices.clear();

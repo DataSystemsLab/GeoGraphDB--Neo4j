@@ -13,9 +13,9 @@ public class Spatial_Index_test {
 	public static void main(String[] args) {
 		
 		ArrayList<String> datasource_a = new ArrayList<String>();
-//		datasource_a.add("citeseerx");
-//		datasource_a.add("go_uniprot");
-//		datasource_a.add("Patents");
+		datasource_a.add("citeseerx");
+		datasource_a.add("go_uniprot");
+		datasource_a.add("Patents");
 		datasource_a.add("uniprotenc_22m");
 		datasource_a.add("uniprotenc_100m");
 		datasource_a.add("uniprotenc_150m");
@@ -25,9 +25,10 @@ public class Spatial_Index_test {
 			String datasource = datasource_a.get(i);
 //			SpatialIndex.CreateTable(datasource, "_clustered");
 //			SpatialIndex.CreateTable(datasource, "_zipf");
-			SpatialIndex.LoadData(datasource, "_clustered", "Clustered_distributed");
-			SpatialIndex.LoadData(datasource, "_zipf", "Zipf_distributed");
+//			SpatialIndex.LoadData(datasource, "_clustered", "Clustered_distributed");
+//			SpatialIndex.LoadData(datasource, "_zipf", "Zipf_distributed");
 			
+			SpatialIndex.CreateGistIndex(datasource, "_zipf");
 		}
 		
 //		for(int ratio = 20;ratio<80;ratio+=20)
