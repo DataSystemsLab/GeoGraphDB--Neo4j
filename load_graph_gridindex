@@ -1,0 +1,65 @@
+#!/bin/sh
+
+datasource="uniprotenc_100m"
+
+#java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  experiment.Experiment_9_27 GenerateExperimentNode $datasource
+
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter LoadGraph $datasource
+
+
+
+suffix="_clustered"
+filesuffix="Clustered_distributed"
+
+cp -r Documents/share/$datasource/$filesuffix Documents/Real_data/$datasource/
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 20 $suffix $filesuffix
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 40 $suffix $filesuffix
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 60 $suffix $filesuffix
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 80 $suffix $filesuffix
+rm -r Documents/Real_data/$datasource/$filesuffix
+
+cp -r Documents/share/$datasource/GeoReachGrid_128/$filesuffix Documents/Real_data/$datasource/GeoReachGrid_128/
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 20  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 40  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 60  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 80  $suffix $filesuffix 2
+
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 20  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 20  $suffix $filesuffix 3
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 40  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 40  $suffix $filesuffix 3
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 60  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 60  $suffix $filesuffix 3
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 80  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 80  $suffix $filesuffix 3
+rm -r Documents/Real_data/$datasource/GeoReachGrid_128/$filesuffix
+
+java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar experiment.Experiment_9_27 $datasource $suffix
+
+suffix="_zipf"
+filesuffix="Zipf_distributed"
+
+cp -r Documents/share/$datasource/$filesuffix Documents/Real_data/$datasource/
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 20 $suffix $filesuffix
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 40 $suffix $filesuffix
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 60 $suffix $filesuffix
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter SetLocationRMBR $datasource 80 $suffix $filesuffix
+rm -r Documents/Real_data/$datasource/$filesuffix
+
+cp -r Documents/share/$datasource/GeoReachGrid_128/$filesuffix Documents/Real_data/$datasource/GeoReachGrid_128/
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 20  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 40  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 60  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 80  $suffix $filesuffix 2
+
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 20  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 20  $suffix $filesuffix 3
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 40  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 40  $suffix $filesuffix 3
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 60  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 60  $suffix $filesuffix 3
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 80  $suffix $filesuffix 2
+java -Xmx6000m -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadMultilevelBitmap $datasource 80  $suffix $filesuffix 3
+rm -r Documents/Real_data/$datasource/GeoReachGrid_128/$filesuffix
+
+java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar experiment.Experiment_9_27 $datasource $suffix

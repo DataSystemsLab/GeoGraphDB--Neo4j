@@ -1,5 +1,9 @@
 package experiment;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -14,19 +18,57 @@ import def.Spatial_Reach_Index;
 
 public class Experiment_9_27 {
 
+	public static ArrayList<String> ReadExperimentNode(String datasource)
+	{
+		String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/experiment_id.txt";
+		ArrayList<String> al = new ArrayList<String>();
+		BufferedReader reader  = null;
+		File file = null;
+		try
+		{
+			file = new File(filepath);
+			reader = new BufferedReader(new FileReader(file));
+			String temp = null;
+			while((temp = reader.readLine())!=null)
+			{
+				al.add(temp);
+			}
+			reader.close();
+		}
+		catch(Exception e)
+		{
+			
+			e.printStackTrace();
+		}
+		finally
+		{
+			if(reader!=null)
+			{
+				try
+				{
+					reader.close();
+				}
+				catch(IOException e)
+				{					
+				}
+			}
+		}
+		return al;
+	}
+	
 	public static void main(String[] args) 
 	{
 		ArrayList<String> datasource_a = new ArrayList<String>();
 		datasource_a.add("citeseerx");
-		datasource_a.add("go_uniprot");
-		datasource_a.add("Patents");
-		datasource_a.add("uniprotenc_22m");
-		datasource_a.add("uniprotenc_100m");
-		datasource_a.add("uniprotenc_150m");
+//		datasource_a.add("go_uniprot");
+//		datasource_a.add("Patents");
+//		datasource_a.add("uniprotenc_22m");
+//		datasource_a.add("uniprotenc_100m");
+//		datasource_a.add("uniprotenc_150m");
 		for(int name_index = 0;name_index<datasource_a.size();name_index++)
 		{
 			String datasource = datasource_a.get(name_index);
-			String resultpath = "/home/yuhansun/Documents/Real_data/query_time_9_27_zipf.csv";
+			String resultpath = "/home/yuhansun/Documents/Real_data/query_time_9_27_random.csv";
 			OwnMethods.WriteFile(resultpath, true, datasource+"\n");
 			int pieces = 128;
 			
@@ -298,18 +340,29 @@ public class Experiment_9_27 {
 			
 			//else
 			{
-				for(int ratio = 20;ratio<=80;ratio+=20)
+				int ratio = Integer.parseInt(args[0]);
+//				for(int ratio = 20;ratio<=80;ratio+=20)
 				{
 					OwnMethods.WriteFile(resultpath, true, ratio+"\n");
 					OwnMethods.WriteFile(resultpath, true, "spatial_range\tGeoReach_RMBR\tGeoReach_Full\tGeoReach_Partial\tSpaReach\ttrue_count\n");
 					String graph_label = "Graph_Random_" + ratio;
 					long graph_size = OwnMethods.GetNodeCount(datasource);
-					System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
+					int offset = (int) (ratio/20*graph_size);
+//					System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
 					long experiment_node_count = 500;
-					HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, (int)experiment_node_count);
-					ArrayList<String> al = OwnMethods.GenerateStartNode(hs, graph_label);
-					System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
+//					HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, (int)experiment_node_count);
+//					ArrayList<String> al = OwnMethods.GenerateStartNode(hs, graph_label);
+//					System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
 					
+					ArrayList<String> temp_al = ReadExperimentNode(datasource);
+					ArrayList<String> al = new ArrayList<String>();
+					for(int i = 0;i<temp_al.size();i++)
+					{
+						Integer absolute_id = Integer.parseInt(temp_al.get(i))+offset;
+						String x = absolute_id.toString();
+						al.add(x);
+					}
+									
 					ArrayList<Double> a_x = new ArrayList<Double>();
 					ArrayList<Double> a_y = new ArrayList<Double>();
 					
@@ -339,7 +392,7 @@ public class Experiment_9_27 {
 							ArrayList<Boolean> geo_partial_result = new ArrayList<Boolean>();
 							ArrayList<Boolean> spareach_result = new ArrayList<Boolean>();
 							{
-								//GeoReach_RMBR
+//								GeoReach_RMBR
 								System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
 								System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
 								try {
@@ -436,7 +489,7 @@ public class Experiment_9_27 {
 								}
 								OwnMethods.WriteFile(resultpath, true, time_georeach_full/experiment_node_count+"\t");
 								
-								//GeoReach_Partial
+//								GeoReach_Partial
 								System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
 								System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
 								

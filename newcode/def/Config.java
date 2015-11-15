@@ -3,7 +3,7 @@ package def;
 public class Config	{
 	private String SERVER_ROOT_URI = "http://localhost:7474/db/data";
 	
-	private String suffix = "_random";
+	private String suffix;
 	private String longitude_property_name = "longitude";
 	private String latitude_property_name = "latitude";
 	
@@ -11,6 +11,11 @@ public class Config	{
 	private String RMBR_miny_name = "RMBR_miny";
 	private String RMBR_maxx_name = "RMBR_maxx";
 	private String RMBR_maxy_name = "RMBR_maxy";
+	
+	public Config(String p_suffix)
+	{
+		suffix = p_suffix;
+	}
 	
 	public String GetServerRoot() {
 		return SERVER_ROOT_URI;
