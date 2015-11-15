@@ -97,7 +97,7 @@ public class Spatial_Reach_Index implements ReachabilityQuerySolver{
 		
 	}
 
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect) 
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect) 
 	{
 		try
 		{

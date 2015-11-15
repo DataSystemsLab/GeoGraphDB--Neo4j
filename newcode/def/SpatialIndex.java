@@ -338,7 +338,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		//Construct_RTree_Index();
 	}
 
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect) 
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect) 
 	{
 		try
 		{
@@ -367,7 +367,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 						
 			start = System.currentTimeMillis();
 			
-			query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b),b";
+			query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b),b";
 			NeighborOperationCount+=1;
 			
 			String result = Neo4j_Graph_Store.Execute(resource, query);

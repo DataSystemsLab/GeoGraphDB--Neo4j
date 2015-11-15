@@ -8,7 +8,7 @@ public class ExperimentSCC {
 
 		Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store("");
 		
-		GeoReach georeach = new GeoReach("");
+		GeoReach georeach = new GeoReach("", 0);
 		Index index = new Index("");
 		Traversal traversal = new Traversal("");
 		

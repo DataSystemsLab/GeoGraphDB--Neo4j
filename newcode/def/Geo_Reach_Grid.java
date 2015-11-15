@@ -210,9 +210,9 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		
 	}
 	
-	private boolean TraversalQuery(int start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
+	private boolean TraversalQuery(long start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
 	{		
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		
 		long start = System.currentTimeMillis();
 		String result = Neo4j_Graph_Store.Execute(resource, query);
@@ -340,7 +340,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		return false;	
 	}
 
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect) {
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect) {
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
@@ -412,7 +412,7 @@ public static Set<Integer> VisitedVertices = new HashSet();
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
 		neo4j_time += System.currentTimeMillis() - start;
 		

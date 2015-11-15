@@ -4,7 +4,7 @@ import java.util.*;
 
 public class GeoReach_test 
 {	
-	private static GeoReach p_georeach = new GeoReach("");
+	private static GeoReach p_georeach = new GeoReach("_random", 20);
 	
 	public static void main(String[] args)
 	{
@@ -19,10 +19,10 @@ public class GeoReach_test
 		long end = System.currentTimeMillis();
 		System.out.println((end-start)/1000.0);*/
 		
-		double x = 356.06470243024137, y = 868.148461610409;
+		double x = 333.6805821379945, y = 847.520696027844;
 		
-		MyRectangle rect = new MyRectangle(x,y,x+100,y+100);
-		System.out.println(p_georeach.ReachabilityQuery(9434538, rect));
+		MyRectangle rect = new MyRectangle(x,y,x+10.0,y+10.0);
+		System.out.println(p_georeach.ReachabilityQuery(12132840, rect));
 		/*long sumtime = 0;
 		for(int i = 0;i<50;i++)
 		{

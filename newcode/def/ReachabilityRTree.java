@@ -189,7 +189,7 @@ public class ReachabilityRTree implements ReachabilityQuerySolver{
 		
 	}
 
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect) {
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect) {
 		// TODO Auto-generated method stub
 		return false;
 	}

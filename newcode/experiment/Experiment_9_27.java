@@ -139,49 +139,49 @@ public class Experiment_9_27 {
 								ArrayList<Boolean> spareach_result = new ArrayList<Boolean>();
 								{
 									//GeoReach_RMBR
-//									System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
-//									System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
-//									try {
-//										Thread.currentThread().sleep(5000);
-//									} catch (InterruptedException e1) {
-//										// TODO Auto-generated catch block
-//										e1.printStackTrace();
-//									}
-//									GeoReach georeach_RMBR = new GeoReach();
-//									try {
-//										Thread.currentThread().sleep(5000);
-//									} catch (InterruptedException e1) {
-//										// TODO Auto-generated catch block
-//										e1.printStackTrace();
-//									}
+									System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
+									System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
+									try {
+										Thread.currentThread().sleep(5000);
+									} catch (InterruptedException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
+									GeoReach georeach_RMBR = new GeoReach(suffix, ratio);
+									try {
+										Thread.currentThread().sleep(5000);
+									} catch (InterruptedException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
 									int accessnodecount = 0, time_georeach_RMBR = 0;
-//									for(int i = 0;i<al.size();i++)
-//									{
-//										double x = a_x.get(i);
-//										double y = a_y.get(i);
-//										MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
-//										
-//										System.out.println(i);
-//										int id = Integer.parseInt(al.get(i));
-//										System.out.println(id);
-//										
-//										try
-//										{
-//											georeach_RMBR.VisitedVertices.clear();
-//											long start = System.currentTimeMillis();
-//											boolean result3 = georeach_RMBR.ReachabilityQuery(id, query_rect);
-//											time_georeach_RMBR += System.currentTimeMillis() - start;
-//											System.out.println(result3);
-//											geo_RMBR_result.add(result3);
-//											accessnodecount+=georeach_RMBR.VisitedVertices.size();
-//										}
-//										catch(Exception e)
-//										{
-//											e.printStackTrace();
-//											OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
-//											i = i-1;
-//										}						
-//									}
+									for(int i = 0;i<al.size();i++)
+									{
+										double x = a_x.get(i);
+										double y = a_y.get(i);
+										MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
+										
+										System.out.println(i);
+										long id = al.get(i);
+										System.out.println(id);
+										
+										try
+										{
+											georeach_RMBR.VisitedVertices.clear();
+											long start = System.currentTimeMillis();
+											boolean result3 = georeach_RMBR.ReachabilityQuery(id, query_rect);
+											time_georeach_RMBR += System.currentTimeMillis() - start;
+											System.out.println(result3);
+											geo_RMBR_result.add(result3);
+											accessnodecount+=georeach_RMBR.VisitedVertices.size();
+										}
+										catch(Exception e)
+										{
+											e.printStackTrace();
+											OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
+											i = i-1;
+										}						
+									}
 									OwnMethods.WriteFile(resultpath, true, time_georeach_RMBR/experiment_node_count+"\t");
 									
 									//GeoReach_Full
@@ -330,54 +330,54 @@ public class Experiment_9_27 {
 									OwnMethods.WriteFile(resultpath, true, time_georeach_multilevel3/experiment_node_count+"\t");
 									
 									//GeoReach_Partial
-//									System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
-//									System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
-//									
-//									try {
-//										Thread.currentThread().sleep(5000);
-//									} catch (InterruptedException e1) {
-//										// TODO Auto-generated catch block
-//										e1.printStackTrace();
-//									}
-//									
-//									GeoReach_Integrate georeach_partial = new GeoReach_Integrate(rect, pieces);
-//									
-//									try {
-//										Thread.currentThread().sleep(5000);
-//									} catch (InterruptedException e1) {
-//										// TODO Auto-generated catch block
-//										e1.printStackTrace();
-//									}
-//									
-//									accessnodecount = 0;
+									System.out.println(OwnMethods.RestartNeo4jClearCache(datasource));
+									System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
+									
+									try {
+										Thread.currentThread().sleep(5000);
+									} catch (InterruptedException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
+									
+									GeoReach_Integrate georeach_partial = new GeoReach_Integrate(rect, pieces, ratio, suffix);
+									
+									try {
+										Thread.currentThread().sleep(5000);
+									} catch (InterruptedException e1) {
+										// TODO Auto-generated catch block
+										e1.printStackTrace();
+									}
+									
+									accessnodecount = 0;
 									int time_georeach_partial = 0;
-//									for(int i = 0;i<al.size();i++)
-//									{
-//										double x = a_x.get(i);
-//										double y = a_y.get(i);
-//										MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
-//										
-//										System.out.println(i);
-//										int id = Integer.parseInt(al.get(i));
-//										System.out.println(id);
-//										
-//										try
-//										{
-//											georeach_partial.VisitedVertices.clear();
-//											long start = System.currentTimeMillis();
-//											boolean result3 = georeach_partial.ReachabilityQuery_Bitmap_Partial(id, query_rect);
-//											time_georeach_partial += System.currentTimeMillis() - start;
-//											System.out.println(result3);
-//											geo_partial_result.add(result3);
-//											accessnodecount+=georeach_partial.VisitedVertices.size();
-//										}
-//										catch(Exception e)
-//										{
-//											e.printStackTrace();
-//											OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
-//											i = i-1;
-//										}						
-//									}
+									for(int i = 0;i<al.size();i++)
+									{
+										double x = a_x.get(i);
+										double y = a_y.get(i);
+										MyRectangle query_rect = new MyRectangle(x, y, x + rect_size, y + rect_size);
+										
+										System.out.println(i);
+										long id = (al.get(i));
+										System.out.println(id);
+										
+										try
+										{
+											georeach_partial.VisitedVertices.clear();
+											long start = System.currentTimeMillis();
+											boolean result3 = georeach_partial.ReachabilityQuery_Bitmap_Partial(id, query_rect);
+											time_georeach_partial += System.currentTimeMillis() - start;
+											System.out.println(result3);
+											geo_partial_result.add(result3);
+											accessnodecount+=georeach_partial.VisitedVertices.size();
+										}
+										catch(Exception e)
+										{
+											e.printStackTrace();
+											OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/error.txt", true, e.getMessage().toString()+"\n");
+											i = i-1;
+										}						
+									}
 									OwnMethods.WriteFile(resultpath, true, time_georeach_partial/experiment_node_count+"\t");
 									
 									//SpaReach
@@ -442,12 +442,18 @@ public class Experiment_9_27 {
 								for(int i = 0;i<experiment_node_count;i++)
 								{
 //									if(geo_RMBR_result.get(i)!=geo_full_result.get(i)||geo_RMBR_result.get(i)!=geo_partial_result.get(i)||geo_RMBR_result.get(i)!=spareach_result.get(i))
-									if(geo_full_result.get(i)!=geo_multilevel2_result.get(i)||geo_full_result.get(i)!=geo_multilevel3_result.get(i))
+									//if(geo_full_result.get(i)!=geo_multilevel2_result.get(i)||geo_full_result.get(i)!=geo_multilevel3_result.get(i))
+									if(geo_RMBR_result.get(i)!=geo_full_result.get(i)||geo_RMBR_result.get(i)!=geo_partial_result.get(i)||geo_RMBR_result.get(i)!=geo_multilevel2_result.get(i)||geo_RMBR_result.get(i)!=geo_multilevel3_result.get(i))
 									{
 										System.out.println(al.get(i));
 										System.out.println(a_x.get(i));
 										System.out.println(a_y.get(i));
 										System.out.println(rect_size);
+										System.out.println(geo_RMBR_result.get(i));
+										System.out.println(geo_full_result.get(i));
+										System.out.println(geo_partial_result.get(i));
+										System.out.println(geo_multilevel2_result.get(i));
+										System.out.println(geo_multilevel3_result.get(i));
 										isbreak = true;
 										String break_log = "/home/yuhansun/Documents/Real_data/break"+suffix+".log";
 										OwnMethods.WriteFile(break_log, true, ""+al.get(i)+"\t"+a_x.get(i)+"\t"+a_y.get(i)+"\t"+rect_size+"\n");

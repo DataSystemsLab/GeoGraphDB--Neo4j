@@ -442,7 +442,7 @@ public class Index implements ReachabilityQuerySolver{
 		AddSpatialNodesToPointLayer("simplepointlayer");
 	}
 	
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect)
 	{
 		long start = System.currentTimeMillis();
 		//HashSet<Integer> hs = RangeQueryByRTree("simplepointlayer",rect);

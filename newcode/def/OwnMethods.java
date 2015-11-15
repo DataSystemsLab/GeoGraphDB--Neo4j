@@ -12,6 +12,53 @@ import com.sun.jersey.api.client.WebResource;
 
 public class OwnMethods {
 	
+	public static ArrayList<Long> ReadExperimentNode(String datasource)
+	{
+		String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/experiment_id.txt";
+		int offset = OwnMethods.GetNodeCount(datasource);
+		ArrayList<Long> al = new ArrayList<Long>();
+		BufferedReader reader  = null;
+		File file = null;
+		try
+		{
+			file = new File(filepath);
+			reader = new BufferedReader(new FileReader(file));
+			String temp = null;
+			while((temp = reader.readLine())!=null)
+			{
+				al.add(Long.parseLong(temp)+offset);
+			}
+			reader.close();
+		}
+		catch(Exception e)
+		{
+			
+			e.printStackTrace();
+		}
+		finally
+		{
+			if(reader!=null)
+			{
+				try
+				{
+					reader.close();
+				}
+				catch(IOException e)
+				{					
+				}
+			}
+		}
+		return al;
+	}
+	
+	//Print elements in an array
+	public static void PrintArray(String[] l)
+	{
+		for(int i = 0;i<l.length;i++)
+			System.out.print(l[i]+"\t");
+		System.out.print("\n");
+	}
+	
 	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
 	public static HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
 	{

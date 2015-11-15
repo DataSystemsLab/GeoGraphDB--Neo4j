@@ -348,6 +348,19 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		return jsonObject;
 	}
 	
+	public JsonArray GetVertexAttributes(long id, ArrayList<String> property_name_array)
+	{
+		String query = "match (n) where id(n) = "+id+" return ";
+		int i = 0;
+		for(;i<property_name_array.size()-1;i++)
+			query+=("n."+property_name_array.get(i)+",");
+		query+=("n."+property_name_array.get(i));
+		String result = Execute(query);
+		JsonArray jsonArr = GetExecuteResultDataASJsonArray(result);
+		jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
+		return jsonArr;
+	}
+	
 	public JsonArray GetVertexIDandAllAttributes(long id)
 	{
 		String query = "match (a) where id(a) = " +Long.toString(id) +" return id(a), a";

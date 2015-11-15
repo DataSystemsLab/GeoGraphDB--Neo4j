@@ -10,20 +10,25 @@ public class GeoReach_Integrated_test {
 
 	public static void main(String[] args) {
 		
-		String suffix = "_zipf";
+		String datasource = "citeseerx";
+		String suffix = "_random";
 		Traversal tra = new Traversal(suffix);
 		int ratio = 20;
-		int id = 8508563;
+//		int id = 12132840;
 		MyRectangle range_rect = new MyRectangle(0,0,1000,1000);
 		GeoReach_Integrate p_geo = new GeoReach_Integrate(range_rect, 128, ratio, suffix);
 		double x = 264.46316069473073, y = 802.0735049680968, size = 31.622776601683793;
 		MyRectangle rect = new MyRectangle(x,y,x+size, y+size);
-		System.out.println(tra.ReachabilityQuery(id, rect, ratio));
+//		System.out.println(tra.ReachabilityQuery(id, rect, ratio));
 //		System.out.println(p_geo.ReachabilityQuery_FullGrids(id, rect));
-	//	System.out.println(p_geo.ReachabilityQuery_Bitmap_MultiResolution(id, rect, 2));
+//		System.out.println(p_geo.ReachabilityQuery_Bitmap_MultiResolution(id, rect, 2));
 		//System.out.println(p_geo.ReachabilityQuery_Bitmap_MultiResolution(id, rect, 3));
 		
-		
+		ArrayList<Long> al = OwnMethods.ReadExperimentNode(datasource);
+		for(int i = 0;i<al.size();i++)
+		{
+			System.out.println(p_geo.ReachabilityQuery_Bitmap_Partial(al.get(i), rect));
+		}
 		
 //		int ratio = 20;
 //

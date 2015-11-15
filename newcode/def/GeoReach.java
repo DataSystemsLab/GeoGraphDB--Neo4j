@@ -26,21 +26,23 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	public long neo4j_time;
 	public long judge_time;
 	
-	public GeoReach(String p_suffix)
+	
+	public GeoReach(String p_suffix, int ratio)
 	{
 		p_neo4j_graph_store = new Neo4j_Graph_Store(p_suffix);
 		resource = p_neo4j_graph_store.GetCypherResource();
 		
 		Config config = new Config(p_suffix);
-		longitude_property_name = config.GetLongitudePropertyName();
-		latitude_property_name = config.GetLatitudePropertyName();
-		RMBR_minx_name = config.GetRMBR_minx_name();
-		RMBR_miny_name = config.GetRMBR_miny_name();
-		RMBR_maxx_name = config.GetRMBR_maxx_name();
-		RMBR_maxy_name = config.GetRMBR_maxy_name();
+		longitude_property_name = config.GetLongitudePropertyName()+"_"+ratio;
+		latitude_property_name = config.GetLatitudePropertyName()+"_"+ratio;
+		RMBR_minx_name = config.GetRMBR_minx_name()+"_"+ratio;
+		RMBR_miny_name = config.GetRMBR_miny_name()+"_"+ratio;
+		RMBR_maxx_name = config.GetRMBR_maxx_name()+"_"+ratio;
+		RMBR_maxy_name = config.GetRMBR_maxy_name()+"_"+ratio;
 		
 		neo4j_time = 0;
 		judge_time = 0;
+		
 	}
 	
 	// give a vertex id return a boolean value indicating whether it has RMBR
@@ -221,38 +223,31 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	
 	private boolean TraversalQuery(int start_id, MyRectangle rect)
 	{		
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+		String query = String.format("match (a)-->(b) where id(a) = %d return b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, id(b)", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name, longitude_property_name, latitude_property_name);
 		
 		long start = System.currentTimeMillis();
-		String result = Neo4j_Graph_Store.Execute(resource, query);
+		String result = p_neo4j_graph_store.Execute(query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		neo4j_time += System.currentTimeMillis() - start;
 		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
-
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
-			int id = row.get(0).getAsInt();
+			int id = row.get(6).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
 				false_count+=1;
 				continue;
 			}
 			
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			if(!row.get(4).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lon = row.get(4).getAsDouble();
+				double lat = row.get(5).getAsDouble();
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -260,13 +255,13 @@ public class GeoReach implements ReachabilityQuerySolver	{
 					return true;
 				}
 			}
-			if(jsonObject.has(RMBR_minx_name))
+			if(!row.get(0).isJsonNull())
 			{
 				MyRectangle RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
-				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
-				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
-				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
+				RMBR.min_x = row.get(0).getAsDouble();
+				RMBR.min_y = row.get(1).getAsDouble();
+				RMBR.max_x = row.get(2).getAsDouble();
+				RMBR.max_y = row.get(3).getAsDouble();
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
@@ -298,10 +293,10 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			start = System.currentTimeMillis();
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
-			int id = row.get(0).getAsInt();
+			int id = row.get(6).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
 				judge_time += System.currentTimeMillis() - start;
@@ -318,26 +313,28 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		return false;	
 	}
 	
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect)
 	{
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
-		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
+		String query = String.format("match (n) where id(n) = %d return n.%s, n.%s, n.%s, n.%s", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		
-		if(!all_attributes.has(RMBR_minx_name))
+		if(jsonArr.get(0).isJsonNull())
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
-		String minx_s = String.valueOf(all_attributes.get(RMBR_minx_name));
-		String miny_s = String.valueOf(all_attributes.get(RMBR_miny_name));
-		String maxx_s = String.valueOf(all_attributes.get(RMBR_maxx_name));
-		String maxy_s = String.valueOf(all_attributes.get(RMBR_maxy_name));
-		
+		String minx_s = (jsonArr.get(0).getAsString());
+		String miny_s = (jsonArr.get(1).getAsString());
+		String maxx_s = (jsonArr.get(2).getAsString());
+		String maxy_s = (jsonArr.get(3).getAsString());
+				
 		MyRectangle RMBR = new MyRectangle();
 										
 		RMBR.min_x = Double.parseDouble(minx_s);
@@ -360,36 +357,30 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
-		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
-		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
+		query = String.format("match (a)-->(b) where id(a) = %d return b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, id(b)", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name, longitude_property_name, latitude_property_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		neo4j_time += System.currentTimeMillis() - start;		
 		
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
-			int id = row.get(0).getAsInt();
+			int id = row.get(6).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
 				false_count+=1;
 				continue;
 			}
 		
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			if(!row.get(4).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lon = row.get(4).getAsDouble();
+				double lat = row.get(5).getAsDouble();
+
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -397,13 +388,13 @@ public class GeoReach implements ReachabilityQuerySolver	{
 					return true;
 				}
 			}
-			if(jsonObject.has(RMBR_minx_name))
+			if(!row.get(0).isJsonNull())
 			{
 				RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
-				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
-				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
-				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
+				RMBR.min_x = row.get(0).getAsDouble();
+				RMBR.min_y = row.get(1).getAsDouble();
+				RMBR.max_x = row.get(2).getAsDouble();
+				RMBR.max_y = row.get(3).getAsDouble();
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
@@ -434,10 +425,10 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
-			int id = row.get(0).getAsInt();
+			int id = row.get(6).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
 				judge_time += System.currentTimeMillis() - start;
@@ -445,7 +436,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			}
 			VisitedVertices.add(id);
 			judge_time += System.currentTimeMillis() - start;
-			boolean reachable = TraversalQuery(id, rect);
+ 			boolean reachable = TraversalQuery(id, rect);
 			
 			if(reachable)
 				return true;

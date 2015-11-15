@@ -320,14 +320,14 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				String tempString = null;
 				tempString = reader.readLine();
 				node_count = OwnMethods.GetNodeCount(datasource);
-				long offset = ratio / 20 * node_count;
+				long offset = node_count;
 				while((tempString = reader.readLine())!=null)
 				{
 					if(tempString.endsWith(" "))
 						tempString = tempString.substring(0, tempString.length()-1);
 					String[] l = tempString.split("\t");
 					int id = Integer.parseInt(l[0]);
-					inserter.setNodeProperty(id + offset, "HasBitmap_"+split_pieces+"_"+threshold+suffix, true);
+					inserter.setNodeProperty(id + offset, "HasBitmap_"+split_pieces+"_"+threshold+suffix+"_"+ratio, true);
 				}
 				reader.close();					
 			}
@@ -507,7 +507,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;	
 	}
 	
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect) 
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect) 
 	{
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
@@ -611,7 +611,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
 		neo4j_time += System.currentTimeMillis() - start;
 		
@@ -763,27 +763,22 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	}
 	
 	private boolean TraversalQuery_FullGrids(int start_id, MyRectangle rect, int ratio, int lb_x, int lb_y, int rt_x, int rt_y)
-	{		
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+	{
+		String bitmap_name = "Bitmap_"+split_pieces+suffix+"_"+ratio;
+		String query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s", start_id, bitmap_name, longitude_property_name, latitude_property_name);
 		
 		long start = System.currentTimeMillis();
 		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
-		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
 
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -793,11 +788,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				continue;
 			}
 			
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			if(!row.get(2).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lat = row.get(3).getAsDouble();
+				double lon = row.get(2).getAsDouble();
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -805,10 +799,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					return true;
 				}
 			}
-			if(jsonObject.has("Bitmap_"+split_pieces+suffix+"_"+ratio))
+			if(!row.get(1).isJsonNull())
 			{
-				
-				String ser = jsonObject.get("Bitmap_"+split_pieces+suffix+"_"+ratio).getAsString();
+				String ser = row.get(1).getAsString();
 				ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 				ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
 							
@@ -873,7 +866,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			start = System.currentTimeMillis();
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -896,22 +889,26 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	public boolean ReachabilityQuery_FullGrids(long start_id, MyRectangle rect)
 	{
 		VisitedVertices.clear();
+		String bitmap_name = "Bitmap_"+split_pieces+suffix+"_"+ratio;
 		long start = System.currentTimeMillis();
-		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
+		String query = String.format("match (n) where id(n) = %d return n.%s", start_id, bitmap_name);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
 		start = System.currentTimeMillis();
 		
-		if(!all_attributes.has("Bitmap_"+split_pieces+suffix+"_"+ratio))
+		if(jsonArr.get(0).isJsonNull())
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
 		//Grid Section
-		String ser = all_attributes.get("Bitmap_"+split_pieces+suffix+"_"+ratio).getAsString();
+		String ser = jsonArr.get(0).getAsString();
 		ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 		ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
 		
@@ -967,24 +964,18 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
-		String result = Neo4j_Graph_Store.Execute(resource, query);
+		query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s", start_id, bitmap_name, longitude_property_name, latitude_property_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
-		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
 		
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -994,11 +985,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				continue;
 			}
 		
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			if(!row.get(2).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lat = row.get(3).getAsDouble();
+				double lon = row.get(2).getAsDouble();
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -1007,9 +997,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				}
 			}
 			
-			if(jsonObject.has("Bitmap_"+split_pieces+suffix+"_"+ratio))
+			if(!row.get(1).isJsonNull())
 			{
-				ser = jsonObject.get("Bitmap_"+split_pieces+suffix+"_"+ratio).getAsString();
+				ser = row.get(1).getAsString();
 				newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 				reachgrid = new ImmutableRoaringBitmap(newbb);
 				
@@ -1076,7 +1066,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			start = System.currentTimeMillis();
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1098,27 +1088,22 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	}
 	
 	private boolean TraversalQuery_Bitmap_MultiResolution(int start_id, MyRectangle rect, int merge_ratio, HashMap<Integer,Integer> lb_x_hash, HashMap<Integer,Integer> lb_y_hash, HashMap<Integer,Integer> rt_x_hash, HashMap<Integer,Integer> rt_y_hash)
-	{		
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+	{	
+		String bitmap_name = String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio);
 		
 		long start = System.currentTimeMillis();
+		String query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s", start_id, bitmap_name, longitude_property_name, latitude_property_name);
 		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
-
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1128,11 +1113,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				continue;
 			}
 			
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			if(!row.get(2).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lat = row.get(3).getAsDouble();
+				double lon = row.get(2).getAsDouble();
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -1140,11 +1124,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					return true;
 				}
 			}
-			if(jsonObject.has(String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio)))
+			if(!row.get(1).isJsonNull())
 			{
-//				if(jsonObject.has("HasBitmap"+suffix))
 				{
-					String ser = jsonObject.get(String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio)).getAsString();
+					String ser = row.get(1).getAsString();
 					ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 				    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
 
@@ -1225,7 +1208,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			start = System.currentTimeMillis();
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1245,18 +1228,22 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;
 	}
 	
-	public boolean ReachabilityQuery_Bitmap_MultiResolution(long start_id, MyRectangle rect, int merge_ratio) 
+	public boolean ReachabilityQuery_Bitmap_MultiResolution(long start_id, MyRectangle rect, int merge_ratio)
 	{
+		String bitmap_name = String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio);
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
-		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
+		String query = String.format("match (n) where id(n) = %d return n.%s", start_id, bitmap_name);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
 		start = System.currentTimeMillis();
 		
-		if(!all_attributes.has(String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio)))
+		if(jsonArr.get(0).isJsonNull())
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
@@ -1286,9 +1273,8 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	    }		
 		
 		//Grid Section
-//		if(all_attributes.has("HasBitmap"+suffix))
 		{
-			ser = all_attributes.get(String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio)).getAsString();
+			ser = jsonArr.get(0).getAsString(); 
 			newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 		    reachgrid = new ImmutableRoaringBitmap(newbb);
 
@@ -1358,24 +1344,18 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
-		String result = Neo4j_Graph_Store.Execute(resource, query);
+		query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s", start_id, bitmap_name, longitude_property_name, latitude_property_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
-		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
 		
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1385,11 +1365,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				continue;
 			}
 		
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			if(!row.get(3).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lat = row.get(3).getAsDouble();
+				double lon = row.get(2).getAsDouble();
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -1398,11 +1377,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				}
 			}
 			
-			if(jsonObject.has(String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio)))
+			if(!row.get(1).isJsonNull())
 			{
-//				if(jsonObject.has("HasBitmap"+suffix))
 				{
-					ser = jsonObject.get(String.format("MultilevelBitmap_%d_%d%s_%d", split_pieces, merge_ratio, suffix, ratio)).getAsString();
+					ser = row.get(1).getAsString();
 					newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 					reachgrid = new ImmutableRoaringBitmap(newbb);
 					
@@ -1484,7 +1462,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			start = System.currentTimeMillis();
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1507,26 +1485,21 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 	private boolean TraversalQuery_Bitmap_Partial(int start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
 	{		
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
-		
+		String hasbitmap_name = "HasBitmap_"+split_pieces+"_"+200+suffix+"_"+ratio;
+		String bitmap_name = "Bitmap_"+split_pieces+suffix+"_"+ratio;
 		long start = System.currentTimeMillis();
+		String query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s",  start_id,  hasbitmap_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name, longitude_property_name, latitude_property_name);
 		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
-
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1535,12 +1508,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				false_count+=1;
 				continue;
 			}
-			
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+
+			if(!row.get(7).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lon = row.get(7).getAsDouble();
+				double lat = row.get(8).getAsDouble();
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -1548,13 +1520,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					return true;
 				}
 			}
-			if(jsonObject.has(RMBR_minx_name))
+			if(!row.get(3).isJsonNull())
 			{
-				MyRectangle RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
-				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
-				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
-				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
+				MyRectangle RMBR = new MyRectangle(row.get(3).getAsDouble(), row.get(4).getAsDouble(), row.get(5).getAsDouble(), row.get(6).getAsDouble());
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
@@ -1569,9 +1537,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					continue;
 				}
 				
-				if(jsonObject.has("HasBitmap_"+split_pieces+"_"+200+suffix))
+				if(!row.get(1).isJsonNull())
 				{
-					String ser = jsonObject.get("Bitmap_"+split_pieces+suffix).getAsString();
+					String ser = row.get(2).getAsString();
 					ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 				    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
 
@@ -1639,7 +1607,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			start = System.currentTimeMillis();
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1659,35 +1627,30 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;	
 	}
 	
-	public boolean ReachabilityQuery_Bitmap_Partial(int start_id, MyRectangle rect) 
+	public boolean ReachabilityQuery_Bitmap_Partial(long start_id, MyRectangle rect) 
 	{
+		String hasbitmap_name = "HasBitmap_"+split_pieces+"_"+200+suffix+"_"+ratio;
+		String bitmap_name = "Bitmap_"+split_pieces+suffix+"_"+ratio;
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
-		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
+		String query = String.format("match (n) where id(n) = %d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", start_id,  hasbitmap_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
 		start = System.currentTimeMillis();
 		
-		if(!all_attributes.has(RMBR_minx_name))
+		if(jsonArr.get(2).isJsonNull())
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
-		
-		String minx_s = String.valueOf(all_attributes.get(RMBR_minx_name));
-		String miny_s = String.valueOf(all_attributes.get(RMBR_miny_name));
-		String maxx_s = String.valueOf(all_attributes.get(RMBR_maxx_name));
-		String maxy_s = String.valueOf(all_attributes.get(RMBR_maxy_name));
-		
-		MyRectangle RMBR = new MyRectangle();
-										
-		RMBR.min_x = Double.parseDouble(minx_s);
-		RMBR.min_y = Double.parseDouble(miny_s);
-		RMBR.max_x = Double.parseDouble(maxx_s);
-		RMBR.max_y = Double.parseDouble(maxy_s);
-		
+				
+		MyRectangle RMBR = new MyRectangle(jsonArr.get(2).getAsDouble(), jsonArr.get(3).getAsDouble(), jsonArr.get(4).getAsDouble(), jsonArr.get(5).getAsDouble());
+											
 		//RMBR No overlap case
 		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
 		{
@@ -1714,9 +1677,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		boolean flag = false;
 		
 		//Grid Section
-		if(all_attributes.has("HasBitmap_"+split_pieces+"_"+200+suffix))
+		if(!jsonArr.get(0).isJsonNull())
 		{
-			ser = all_attributes.get("Bitmap_"+split_pieces+suffix).getAsString();
+			ser = jsonArr.get(1).getAsString();
 			newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 		    reachgrid = new ImmutableRoaringBitmap(newbb);
 			
@@ -1769,24 +1732,18 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
-		String result = Neo4j_Graph_Store.Execute(resource, query);
+		query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s",  start_id,  hasbitmap_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name, longitude_property_name, latitude_property_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
-		
-		JsonParser jsonParser = new JsonParser();
-		JsonObject jsonObject = (JsonObject) jsonParser.parse(result);
-		
-		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-		jsonObject = (JsonObject) jsonArr.get(0);
-		jsonArr = (JsonArray) jsonObject.get("data");
 		
 		start = System.currentTimeMillis();
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1795,12 +1752,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				false_count+=1;
 				continue;
 			}
-		
-			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			
+			if(!row.get(7).isJsonNull())
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lon = row.get(7).getAsDouble();
+				double lat = row.get(8).getAsDouble();
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					judge_time += System.currentTimeMillis() - start;
@@ -1809,13 +1765,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				}
 			}
 			
-			if(jsonObject.has(RMBR_minx_name))
+			if(!row.get(3).isJsonNull())
 			{
-				RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
-				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
-				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
-				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
+				RMBR = new MyRectangle(row.get(3).getAsDouble(), row.get(4).getAsDouble(), row.get(5).getAsDouble(), row.get(6).getAsDouble());
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
@@ -1829,9 +1781,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					continue;
 				}
 				
-				if(jsonObject.has("HasBitmap_"+split_pieces+"_"+200+suffix))
+				if(!row.get(1).isJsonNull())
 				{
-					ser = jsonObject.get("Bitmap_"+split_pieces+suffix).getAsString();
+					ser = row.get(2).getAsString();
 					newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 					reachgrid = new ImmutableRoaringBitmap(newbb);
 					
@@ -1900,7 +1852,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		for(int i = 0;i<jsonArr.size();i++)
 		{
 			start = System.currentTimeMillis();
-			jsonObject = (JsonObject)jsonArr.get(i);
+			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
