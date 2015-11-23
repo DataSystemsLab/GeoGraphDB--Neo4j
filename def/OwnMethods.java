@@ -12,6 +12,16 @@ import com.sun.jersey.api.client.WebResource;
 
 public class OwnMethods {
 	
+	
+	
+	//Print elements in an array
+	public static void PrintArray(String[] l)
+	{
+		for(int i = 0;i<l.length;i++)
+			System.out.print(l[i]+"\t");
+		System.out.print("\n");
+	}
+	
 	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
 	public static HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
 	{

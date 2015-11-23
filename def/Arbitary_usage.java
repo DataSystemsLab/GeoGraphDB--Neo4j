@@ -9,23 +9,30 @@ import java.util.Map;
 import java.util.Random;
 
 import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.roaringbitmap.RoaringBitmap;
 
 public class Arbitary_usage {
 
 	public static void main(String[] args) {
 		
-		ArrayList<String> datasource_a = new ArrayList<String>();
-		datasource_a.add("citeseerx");
-		datasource_a.add("go_uniprot");
-		datasource_a.add("Patents");
-		datasource_a.add("uniprotenc_22m");
-		datasource_a.add("uniprotenc_100m");
-		datasource_a.add("uniprotenc_150m");
-		for(int name_index = 0;name_index<datasource_a.size();name_index++)
-		{
-			String datasource = datasource_a.get(name_index);
-			SpatialIndex.DropTable(datasource, "_zipf");
-		}
+		RoaringBitmap r = new RoaringBitmap();
+		r.add(2);
+		r.add(3);
+		System.out.println(r);
+		System.out.println(r.getCardinality());
+		
+//		ArrayList<String> datasource_a = new ArrayList<String>();
+//		datasource_a.add("citeseerx");
+//		datasource_a.add("go_uniprot");
+//		datasource_a.add("Patents");
+//		datasource_a.add("uniprotenc_22m");
+//		datasource_a.add("uniprotenc_100m");
+//		datasource_a.add("uniprotenc_150m");
+//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
+//		{
+//			String datasource = datasource_a.get(name_index);
+//			SpatialIndex.DropTable(datasource, "_zipf");
+//		}
 		
 //		String datasource = "Patents";
 //		BatchInserter inserter = null;

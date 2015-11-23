@@ -318,9 +318,9 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 	
 	//get all attributes as json format string by a given id
-	public JsonObject GetVertexAllAttributes(int id)
+	public JsonObject GetVertexAllAttributes(long start_id)
 	{		
-		String query = "match (a) where id(a) = " +Integer.toString(id) +" return a";
+		String query = "match (a) where id(a) = " +Long.toString(start_id) +" return a";
 		
 		String result = Execute(resource, query);
 		

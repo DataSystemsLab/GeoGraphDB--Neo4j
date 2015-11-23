@@ -8,7 +8,7 @@ public interface Graph_Store_Operation {
 	
 	ArrayList<Integer> GetAllVertices();
 	ArrayList<Integer> GetSpatialVertices();
-	JsonObject GetVertexAllAttributes(int id);	
+	JsonObject GetVertexAllAttributes(long id);	
 	String GetVertexAttributeValue(int id, String attributename);//given a vertex id and name of its attribute, return the attribute value
 	ArrayList<Integer> GetOutNeighbors(int id);	
 	ArrayList<Integer> GetInNeighbors(int id);//get all in neighbors of a vertex with its given id	

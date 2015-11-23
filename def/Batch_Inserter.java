@@ -24,18 +24,18 @@ import com.sun.jersey.api.client.WebResource;
 
 public class Batch_Inserter {
 	
-	public static int node_count = 0;
 	private String longitude_property_name;
 	private String latitude_property_name;
 	private String RMBR_minx_name;
 	private String RMBR_miny_name;
 	private String RMBR_maxx_name;
 	private String RMBR_maxy_name;
+	public String suffix;
 	
 	public Batch_Inserter()
 	{
 		Config config = new Config();
-//		suffix = config.GetSuffix();
+		suffix = config.GetSuffix();
 		longitude_property_name = config.GetLongitudePropertyName();
 		latitude_property_name = config.GetLatitudePropertyName();
 		RMBR_minx_name = config.GetRMBR_minx_name();
@@ -44,26 +44,25 @@ public class Batch_Inserter {
 		RMBR_maxy_name = config.GetRMBR_maxy_name();
 	}
 	
-	public void SetLocationRMBR(String type, String datasource, int ratio)
+	public void SetLocationRMBR(String datasource, String filesuffix, int ratio)
 	{
 		BatchInserter inserter = null;
 		BufferedReader reader = null;
 		File file = null;
 		Map<String, String> config = new HashMap<String, String>();
-		config.put("dbms.pagecache.memory", "10g");
+		config.put("dbms.pagecache.memory", "6g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
-		node_count = OwnMethods.GetNodeCount(datasource);
+		int node_count = OwnMethods.GetNodeCount(datasource);
 		//for(int ratio = 20;ratio<100;ratio+=20)
 		//int ratio = 80;
 		{
 			long offset = ratio / 20 * node_count;
-			long size = OwnMethods.getDirSize(new File(db_path));
 			try
 			{
 				int setcount = 0;
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
 
-				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+type+"/"+ratio;
+				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+filesuffix+"/"+ratio;
 							
 				file = new File(filepath + "/entity.txt");	
 				
@@ -132,7 +131,7 @@ public class Batch_Inserter {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put("dbms.pagecache.memory", "6g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
-		node_count = OwnMethods.GetNodeCount(datasource);
+		int node_count = OwnMethods.GetNodeCount(datasource);
 		//for(int ratio = 20;ratio<100;ratio+=20)
 		{
 			long offset = ratio / 20 * node_count;
@@ -215,7 +214,7 @@ public class Batch_Inserter {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put("dbms.pagecache.memory", "4096M");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
-		node_count = OwnMethods.GetNodeCount(datasource);
+		int node_count = OwnMethods.GetNodeCount(datasource);
 		//for(int ratio = 20;ratio<100;ratio+=20)
 		{
 			long offset = ratio / 20 * node_count;
@@ -304,7 +303,7 @@ public class Batch_Inserter {
 		Map<String, String> config = new HashMap<String, String>();
 		config.put("dbms.pagecache.memory", "4096M");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
-		node_count = OwnMethods.GetNodeCount(datasource);
+		int node_count = OwnMethods.GetNodeCount(datasource);
 		//for(int ratio = 20;ratio<100;ratio+=20)
 		{
 			long offset = ratio / 20 * node_count;
@@ -387,6 +386,7 @@ public class Batch_Inserter {
 	{
 		File file = null;
 		BufferedReader reader = null;
+		int node_count = 0;
 		try
 		{
 			file = new File("/home/yuhansun/Documents/Real_data/"+datasource+"/graph.txt");
@@ -483,7 +483,8 @@ public class Batch_Inserter {
 
 		for(int ratio = 20;ratio<100;ratio+=20)
 		{
-			int offset = ratio / 20 * node_count;
+			int node_count = OwnMethods.GetNodeCount(datasource);
+			int offset = ratio / 20 * node_count ;
 			try
 			{
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(), config);
@@ -791,7 +792,7 @@ public class Batch_Inserter {
 		}
 	}
 	
-	public static void SetRMBR(String datasource)
+	public void SetRMBR(String datasource, int ratio, String filesuffix)
 	{
 		BatchInserter inserter = null;
 		BufferedReader reader = null;
@@ -799,18 +800,19 @@ public class Batch_Inserter {
 		config.put("dbms.pagecache.memory", "5g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
 		
-		OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/" + datasource + "/RMBR_Index_Size.txt", true, "ratio\tsize\n");
+//		OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/" + datasource + "/RMBR_Index_Size.txt", true, "ratio\tsize\n");
 		
-		for(int ratio = 20;ratio<100;ratio+=20)
+//		for(int ratio = 20;ratio<100;ratio+=20)
 		{
-			long offset = ratio / 20 * node_count;
-			long size = OwnMethods.getDirSize(new File(db_path));
+			int node_count = OwnMethods.GetNodeCount(datasource);
+			long offset = ratio / 20 * node_count ;
+//			long size = OwnMethods.getDirSize(new File(db_path));
 			try
 			{
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
 				
 				File file = null;
-				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/"+ratio;
+				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+filesuffix+"/"+ratio;
 							
 				file = new File(filepath + "/entity.txt");	
 				
@@ -827,10 +829,10 @@ public class Batch_Inserter {
 					double maxx = Double.parseDouble(l[8]);
 					double maxy = Double.parseDouble(l[9]);
 					int id = Integer.parseInt(l[0]);
-					inserter.setNodeProperty(id + offset, "RMBR_minx", minx);
-					inserter.setNodeProperty(id + offset, "RMBR_miny", miny);
-					inserter.setNodeProperty(id + offset, "RMBR_maxx", maxx);
-					inserter.setNodeProperty(id + offset, "RMBR_maxy", maxy);
+					inserter.setNodeProperty(id + offset, RMBR_minx_name, minx);
+					inserter.setNodeProperty(id + offset, RMBR_miny_name, miny);
+					inserter.setNodeProperty(id + offset, RMBR_maxx_name, maxx);
+					inserter.setNodeProperty(id + offset, RMBR_maxy_name, maxy);
 				}
 				reader.close();
 			}
@@ -852,8 +854,8 @@ public class Batch_Inserter {
 					{					
 					}
 				}
-				size = OwnMethods.getDirSize(new File(db_path)) - size;
-				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/RMBR_Index_Size.txt", true, ratio+"\t"+size+"\n");
+//				size = OwnMethods.getDirSize(new File(db_path)) - size;
+//				OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/RMBR_Index_Size.txt", true, ratio+"\t"+size+"\n");
 			}
 		}
 			
@@ -894,7 +896,6 @@ public class Batch_Inserter {
 			Label Reach_Index_Label = DynamicLabel.label("Reachability_Index");
 			while(((str_reachFrom = reader_reachFrom.readLine())!=null)&&((str_reachTo = reader_reachTo.readLine())!=null))
 			{
-				node_count+=1;
 				String[] l_rF = str_reachFrom.split("\t");
 				String[] l_rT = str_reachTo.split("\t");
 				int scc_id = Integer.parseInt(l_rF[0]);
@@ -919,7 +920,6 @@ public class Batch_Inserter {
 				}
 				inserter.createNode(scc_id, properties, Reach_Index_Label);
 			}
-			System.out.println(node_count);
 		}
 		catch(IOException e)
 		{
@@ -964,7 +964,7 @@ public class Batch_Inserter {
 		}
 	}
 	
-	public static void LoadGraph(String datasource)
+	public void LoadGraph(String datasource, int ratio, String filesuffix)
 	{
 		BatchInserter inserter = null;
 		BufferedReader reader = null;
@@ -973,8 +973,7 @@ public class Batch_Inserter {
 		config.put("dbms.pagecache.memory", "6g");
 		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
 		//for(int ratio = 20;ratio<100;ratio+=20)
-		node_count = OwnMethods.GetNodeCount(datasource);
-		int ratio = 80;
+		int node_count = OwnMethods.GetNodeCount(datasource);
 		{
 			int offset = ratio / 20 * node_count;
 			RelationshipType graph_rel = DynamicRelationshipType.withName("LINK");
@@ -983,9 +982,9 @@ public class Batch_Inserter {
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(), config);
 				//inserter = BatchInserters.inserter(new File("/home/yuhansun/Documents/Real_data/test/neo4j-community-2.2.3/data/test.db").getAbsolutePath(), config);
 				
-				Label graph_label = DynamicLabel.label("Graph_Random_" + ratio);
+				Label graph_label = DynamicLabel.label("Graph_Random_" + ratio+suffix);
 				
-				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/Random_spatial_distributed/" + ratio;
+				String filepath = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+filesuffix+"/" + ratio;
 				reader = null;
 				file = null;
 				
@@ -1005,8 +1004,8 @@ public class Batch_Inserter {
 					{
 						double lon = Double.parseDouble(l[2]);
 						double lat = Double.parseDouble(l[3]);
-						properties.put("longitude", lon);
-						properties.put("latitude", lat); 
+						properties.put(longitude_property_name, lon);
+						properties.put(latitude_property_name, lat); 
 					}
 					
 					inserter.createNode(id + offset, properties, graph_label);									
@@ -1144,22 +1143,45 @@ public class Batch_Inserter {
 	{	
 		try
 		{
-			String datasource = args[0];
-			int ratio = Integer.parseInt(args[1]);
-			//String datasource = "uniprotenc_150m";
-			//int ratio = 20;
-			
-//			String datasource = "uniprotenc_150m";
-			System.out.println(datasource+"\t"+ratio);
-			Batch_Inserter bi = new Batch_Inserter();
-			//bi.SetUselessNull("Zipf_distributed", datasource, ratio);
-//			bi.SetLocationRMBRNull("Zipf_distributed", datasource, ratio);
-			bi.SetLocationRMBR("Zipf_distributed", datasource, ratio);
+			OwnMethods.PrintArray(args);
+			Batch_Inserter p_batch = new Batch_Inserter();
+			if(args[0].equals("LoadGraph"))
+			{
+				String datasource = args[1];
+				int ratio = Integer.parseInt(args[2]);
+				String filesuffix = args[3];
+				p_batch.LoadGraph(datasource, ratio, filesuffix);
+			}
+			if(args[0].equals("SetRMBR"))
+			{
+				String datasource = args[1];
+				int ratio = Integer.parseInt(args[2]);
+				String filesuffix = args[3];
+				p_batch.SetRMBR(datasource, ratio, filesuffix);
+			}
 		}
 		catch(Exception e)
 		{
 			e.printStackTrace();
 		}
+//		try
+//		{
+//			String datasource = args[0];
+//			int ratio = Integer.parseInt(args[1]);
+//			//String datasource = "uniprotenc_150m";
+//			//int ratio = 20;
+//			
+////			String datasource = "uniprotenc_150m";
+//			System.out.println(datasource+"\t"+ratio);
+//			Batch_Inserter bi = new Batch_Inserter();
+//			//bi.SetUselessNull("Zipf_distributed", datasource, ratio);
+////			bi.SetLocationRMBRNull("Zipf_distributed", datasource, ratio);
+//			bi.SetLocationRMBR("Zipf_distributed", datasource, ratio);
+//		}
+//		catch(Exception e)
+//		{
+//			e.printStackTrace();
+//		}
 		
 //		ArrayList<String> properties = new ArrayList();
 //		properties.add(bi.longitude_property_name);

@@ -162,6 +162,126 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			}
 		}	
 	}
+	
+	public void LoadPartialCompresedBitmap(int split_pieces, String datasource, String filesuffix,int ratio, int threshold)
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "5g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		int node_count = OwnMethods.GetNodeCount(datasource);
+		
+//		for(int ratio = 20;ratio<=80;ratio+=20)
+		//int ratio = 60;
+		{
+			long offset = ratio / 20 * node_count;
+			try
+			{
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+filesuffix+"/Bitmap_"+ratio+"_partial.txt");
+				reader = new BufferedReader(new FileReader(file));
+				reader.readLine();
+				String tempString = null;
+				while((tempString = reader.readLine())!=null)
+				{
+					if(tempString.endsWith(" "))
+						tempString = tempString.substring(0, tempString.length()-1);
+					String[] l = tempString.split("\t");
+					int id = Integer.parseInt(l[0]);
+					String bitmap = l[1];
+										
+					inserter.setNodeProperty(id + offset, "Bitmap_"+split_pieces+suffix, bitmap);
+					inserter.setNodeProperty(id+offset, "HasBitmap_"+split_pieces+"_"+threshold+suffix, true);
+				}
+				reader.close();
+			}
+			catch(IOException e)
+			{
+				e.printStackTrace();
+				if(inserter!=null)
+					inserter.shutdown();
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+		}	
+	}
+	
+	public void LoadMultilevelBitmap(int split_pieces, String datasource, String filesuffix,int ratio, int merge_count)
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader = null;
+		File file = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "5g");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		int node_count = OwnMethods.GetNodeCount(datasource);
+		int id = 0;
+		
+//		for(int ratio = 20;ratio<=80;ratio+=20)
+		//int ratio = 60;
+		{
+			String tempString = null;
+			long offset = ratio / 20 * node_count;
+			try
+			{
+				String filename = String.format("/home/yuhansun/Documents/Real_data/%s/GeoReachGrid_%d/%s/Bitmap_%d_multilevelfull_%d.txt", datasource, split_pieces, filesuffix, ratio,merge_count);
+				file = new File(filename);
+				reader = new BufferedReader(new FileReader(file));
+				reader.readLine();
+				tempString = null;
+				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+				while((tempString = reader.readLine())!=null)
+				{
+					if(tempString.endsWith(" "))
+						tempString = tempString.substring(0, tempString.length()-1);
+					String[] l = tempString.split("\t");
+					id = Integer.parseInt(l[0]);
+					String bitmap = l[1];
+										
+					inserter.setNodeProperty(id + offset, "MultilevelBitmap_"+split_pieces+"_"+merge_count+suffix, bitmap);
+				}
+				reader.close();
+			}
+			catch(Exception e)
+			{
+				e.printStackTrace();
+				if(inserter!=null)
+					inserter.shutdown();
+				System.out.println(id);
+				System.out.println(tempString);
+			}
+			finally
+			{
+				if(inserter!=null)
+					inserter.shutdown();
+				if(reader!=null)
+				{
+					try
+					{
+						reader.close();
+					}
+					catch(IOException e)
+					{					
+					}
+				}
+			}
+		}	
+	}
 
 	public void Set_HasBitmap_Boolean_Counting(String datasource,int split_pieces,int threshold, String type)
 	{
@@ -232,7 +352,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		}
 	}
 	
-	public void Set_HasBitmap_Boolean_Reading(String datasource,int split_pieces, int threshold, String filepath,int ratio)
+	public void Set_HasBitmap_Boolean_Reading(String datasource,int split_pieces, int threshold, String filesuffix,int ratio)
 	{
 		long node_count;
 		BatchInserter inserter = null;
@@ -248,7 +368,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			try
 			{
 				inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
-				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+filepath+"/Bitmap_"+ratio+"_partial.txt");
+				file = new File("/home/yuhansun/Documents/Real_data/" + datasource + "/GeoReachGrid_"+split_pieces+"/"+filesuffix+"/Bitmap_"+ratio+"_partial.txt");
 				reader = new BufferedReader(new FileReader(file));
 				String tempString = null;
 				tempString = reader.readLine();
@@ -1032,11 +1152,12 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;
 	}
 	
-	private boolean TraversalQuery_Bitmap_MultiResolution(int start_id, MyRectangle rect, HashMap<Integer,Integer> lb_x_hash, HashMap<Integer,Integer> lb_y_hash, HashMap<Integer,Integer> rt_x_hash, HashMap<Integer,Integer> rt_y_hash)
-	{		
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+	private boolean TraversalQuery_Bitmap_MultiResolution(int start_id, MyRectangle rect, int merge_ratio, HashMap<Integer,Integer> lb_x_hash, HashMap<Integer,Integer> lb_y_hash, HashMap<Integer,Integer> rt_x_hash, HashMap<Integer,Integer> rt_y_hash)
+	{	
+		String bitmap_name = String.format("MultilevelBitmap_%d_%d%s", split_pieces, merge_ratio, suffix);
 		
 		long start = System.currentTimeMillis();
+		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
 		neo4j_time += System.currentTimeMillis() - start;
 		
@@ -1048,12 +1169,12 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		JsonArray jsonArr = (JsonArray) jsonObject.get("results");
 		jsonObject = (JsonObject) jsonArr.get(0);
 		jsonArr = (JsonArray) jsonObject.get("data");
-
+		
 		start = System.currentTimeMillis();
 		int false_count = 0;
-		for(int i = 0;i<jsonArr.size();i++)
+		for(int json_index = 0;json_index<jsonArr.size();json_index++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			jsonObject = (JsonObject)jsonArr.get(json_index);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1062,7 +1183,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				false_count+=1;
 				continue;
 			}
-			
+		
 			jsonObject = (JsonObject)row.get(1);
 			if(jsonObject.has(longitude_property_name))
 			{
@@ -1075,51 +1196,34 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					return true;
 				}
 			}
-			if(jsonObject.has(RMBR_minx_name))
+			
+			if(jsonObject.has(String.format(bitmap_name)))
 			{
-				MyRectangle RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
-				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
-				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
-				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
+				String ser = jsonObject.get(String.format("MultilevelBitmap_%d_%d%s", split_pieces, merge_ratio, suffix)).getAsString();
+				ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+				ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
 				
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
+				int outside_count = 0;
+				for(int level_pieces = split_pieces;level_pieces >=2;level_pieces/=2)
 				{
-					judge_time += System.currentTimeMillis() - start;
-					return true;
-				}
-				
-				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-				{
-					false_count+=1;
-					VisitedVertices.add(id);
-					continue;
-				}
-				
-				if(jsonObject.has("HasBitmap"+suffix))
-				{
-					String ser = jsonObject.get("Bitmap_"+split_pieces+suffix).getAsString();
-					ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
-				    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
-
-				    int outside_count = 0;
-				    for(int level_pieces = 2;level_pieces <= 128;level_pieces*=2)
-				    {
-				    	int lb_x = lb_x_hash.get(level_pieces);
-						int lb_y = lb_y_hash.get(level_pieces);
-						int rt_x = rt_x_hash.get(level_pieces);
-						int rt_y = rt_y_hash.get(level_pieces);
-						
-						int offset = multi_offset.get(level_pieces);
-						
+					int lb_x = lb_x_hash.get(level_pieces);
+					int lb_y = lb_y_hash.get(level_pieces);
+					int rt_x = rt_x_hash.get(level_pieces);
+					int rt_y = rt_y_hash.get(level_pieces);
+					
+					int offset = multi_offset.get(level_pieces);
+					int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
+					int card = reachgrid.getCardinality();
+					if(card>query_rec_grid_count)
+					{
 						//ReachGrid totally Lie In query rectangle
 						if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 						{
-							for(int k = lb_x+1;k<rt_x;k++)
+							for(int i = lb_x+1;i<rt_x;i++)
 							{
 								for(int j = lb_y+1;j<rt_y;j++)
 								{
-									int grid_id = k*split_pieces+j;
+									int grid_id = i*level_pieces+j;
 									if(reachgrid.contains(grid_id+offset))
 									{
 										judge_time += System.currentTimeMillis() - start;
@@ -1131,35 +1235,66 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 
 						//ReachGrid No overlap with query rectangle
 						boolean flag = false;
-						for(int j = lb_y;j<=rt_y;j++)
+						for(int i = lb_y;i<=rt_y;i++)
 						{
-							int grid_id = lb_x*level_pieces+j;
+							int grid_id = lb_x*level_pieces+i;
 							if(reachgrid.contains(grid_id+offset))
 								flag = true;
-							grid_id = rt_x*level_pieces+j;
+							grid_id = rt_x*level_pieces+i;
 							if(reachgrid.contains(grid_id+offset))
 								flag = true;
 						}
-						for(int j = lb_x+1;j<rt_x;j++)
+						for(int i = lb_x+1;i<rt_x;i++)
 						{
-							int grid_id = j*level_pieces+lb_y;
+							int grid_id = i*level_pieces+lb_y;
 							if(reachgrid.contains(grid_id+offset))
 								flag = true;
-							grid_id = j*level_pieces+rt_y;
+							grid_id = i*level_pieces+rt_y;
 							if(reachgrid.contains(grid_id+offset))
 								flag = true;
 						}
 						if(flag == false)
 						{
-							outside_count+=1;
+							outside_count++;
 						}
+						else
+							break;
 					}
-				    if(outside_count == level_count)
-				    {
-						false_count+=1;
-						VisitedVertices.add(id);
-				    }
-				}				
+					else
+					{
+						Iterator<Integer> iter = reachgrid.iterator();
+						while(iter.hasNext())
+						{
+							int grid_id = iter.next() - offset;
+							int row_index = (int) (grid_id/level_pieces);
+							int col_index = (grid_id - row_index*level_pieces);
+							//ReachGrid totally Lie In query rectangle
+							if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
+							{
+								judge_time += System.currentTimeMillis() - start;
+								return true;
+							}
+							
+							//ReachGrid No overlap with query rectangle
+							boolean flag = false;
+							if(row_index>rt_x||row_index<lb_x||col_index>rt_y||col_index<lb_y)
+							{
+								flag = true;
+							}
+							if(flag == false)
+							{
+								outside_count++;
+							}
+							else
+								break;
+						}
+					}					
+				}
+				if(outside_count == level_count)
+				{
+					false_count+=1;
+					VisitedVertices.add(id);
+				}
 			}
 			else
 			{
@@ -1167,14 +1302,15 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				VisitedVertices.add(id);
 			}
 		}
-	
+		
 		if(false_count == jsonArr.size())
 		{
 			judge_time += System.currentTimeMillis() - start;
+			false_all+=1;
 			return false;
 		}
-		
 		judge_time += System.currentTimeMillis() - start;
+		
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
@@ -1190,16 +1326,19 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			}
 			VisitedVertices.add(id);
 			judge_time += System.currentTimeMillis() - start;
-			boolean reachable = TraversalQuery_Bitmap_MultiResolution(id, rect, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
+			boolean reachable = TraversalQuery_Bitmap_MultiResolution(id, rect, merge_ratio, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
 			
 			if(reachable)
-				return true;		
+				return true;
+			
 		}
-		
+		false_inside+=1;
 		return false;
 	}
+
+
 	
-	public boolean ReachabilityQuery_Bitmap_MultiResolution(int start_id, MyRectangle rect,int merge_ratio) 
+	public boolean ReachabilityQuery_Bitmap_MultiResolution(long start_id, MyRectangle rect, int merge_ratio) 
 	{
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
@@ -1210,36 +1349,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		start = System.currentTimeMillis();
 		
-		if(!all_attributes.has(RMBR_minx_name))
+		if(!all_attributes.has(String.format("MultilevelBitmap_%d_%d%s", split_pieces, merge_ratio, suffix)))
 		{
 			judge_time += System.currentTimeMillis() - start;
 			return false;
-		}
-		
-		String minx_s = String.valueOf(all_attributes.get(RMBR_minx_name));
-		String miny_s = String.valueOf(all_attributes.get(RMBR_miny_name));
-		String maxx_s = String.valueOf(all_attributes.get(RMBR_maxx_name));
-		String maxy_s = String.valueOf(all_attributes.get(RMBR_maxy_name));
-		
-		MyRectangle RMBR = new MyRectangle();
-										
-		RMBR.min_x = Double.parseDouble(minx_s);
-		RMBR.min_y = Double.parseDouble(miny_s);
-		RMBR.max_x = Double.parseDouble(maxx_s);
-		RMBR.max_y = Double.parseDouble(maxy_s);
-		
-		//RMBR No overlap case
-		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-		{
-			judge_time += System.currentTimeMillis() - start;
-			return false;
-		}
-		
-		//RMBR Contain case
-		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
-		{
-			judge_time += System.currentTimeMillis() - start;
-			return true;
 		}
 		
 		String ser = null;
@@ -1266,14 +1379,14 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	    }		
 		
 		//Grid Section
-		if(all_attributes.has("HasBitmap"+suffix))
+//		if(all_attributes.has("HasBitmap"+suffix))
 		{
-			ser = all_attributes.get("Bitmap_"+split_pieces+"_"+merge_ratio+suffix).getAsString();
+			ser = all_attributes.get(String.format("MultilevelBitmap_%d_%d%s", split_pieces, merge_ratio, suffix)).getAsString();
 			newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 		    reachgrid = new ImmutableRoaringBitmap(newbb);
 
 			int	outside_count = 0;
-		    for(int level_pieces = 2;level_pieces <= 128;level_pieces*=2)
+		    for(int level_pieces = split_pieces;level_pieces >=2;level_pieces/=2)
 		    {
 		    	int lb_x = lb_x_hash.get(level_pieces);
 				int lb_y = lb_y_hash.get(level_pieces);
@@ -1281,47 +1394,85 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				int rt_y = rt_y_hash.get(level_pieces);
 				
 				int offset = multi_offset.get(level_pieces);
-				
-				//ReachGrid totally Lie In query rectangle
-				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+				int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
+				int card = reachgrid.getCardinality();
+				if(card>query_rec_grid_count)
 				{
-					for(int i = lb_x+1;i<rt_x;i++)
+					//ReachGrid totally Lie In query rectangle
+					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 					{
-						for(int j = lb_y+1;j<rt_y;j++)
+						for(int i = lb_x+1;i<rt_x;i++)
 						{
-							int grid_id = i*level_pieces+j;
-							if(reachgrid.contains(grid_id+offset))
+							for(int j = lb_y+1;j<rt_y;j++)
 							{
-								judge_time += System.currentTimeMillis() - start;
-								return true;
+								int grid_id = i*level_pieces+j;
+								if(reachgrid.contains(grid_id+offset))
+								{
+									judge_time += System.currentTimeMillis() - start;
+									return true;
+								}
 							}
 						}
 					}
-				}
 
-				//ReachGrid No overlap with query rectangle
-				boolean flag = false;
-				for(int i = lb_y;i<=rt_y;i++)
-				{
-					int grid_id = lb_x*level_pieces+i;
-					if(reachgrid.contains(grid_id+offset))
-						flag = true;
-					grid_id = rt_x*level_pieces+i;
-					if(reachgrid.contains(grid_id+offset))
-						flag = true;
+					//ReachGrid No overlap with query rectangle
+					boolean flag = false;
+					for(int i = lb_y;i<=rt_y;i++)
+					{
+						int grid_id = lb_x*level_pieces+i;
+						if(reachgrid.contains(grid_id+offset))
+							flag = true;
+						grid_id = rt_x*level_pieces+i;
+						if(reachgrid.contains(grid_id+offset))
+							flag = true;
+					}
+					for(int i = lb_x+1;i<rt_x;i++)
+					{
+						int grid_id = i*level_pieces+lb_y;
+						if(reachgrid.contains(grid_id+offset))
+							flag = true;
+						grid_id = i*level_pieces+rt_y;
+						if(reachgrid.contains(grid_id+offset))
+							flag = true;
+					}
+					if(flag == false)
+					{
+						outside_count++;
+					}
+					else
+						break;
 				}
-				for(int i = lb_x+1;i<rt_x;i++)
+				else
 				{
-					int grid_id = i*level_pieces+lb_y;
-					if(reachgrid.contains(grid_id+offset))
-						flag = true;
-					grid_id = i*level_pieces+rt_y;
-					if(reachgrid.contains(grid_id+offset))
-						flag = true;
-				}
-				if(flag == false)
-				{
-					outside_count++;
+					Iterator<Integer> iter = reachgrid.iterator();
+					boolean flag = false;
+					while(iter.hasNext())
+					{
+						int grid_id = iter.next() - offset;
+						int row_index = (int) (grid_id/level_pieces);
+						int col_index = (grid_id - row_index*level_pieces);
+						//ReachGrid totally Lie In query rectangle
+						if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
+						{
+							judge_time += System.currentTimeMillis() - start;
+							return true;
+						}
+						
+						//ReachGrid No overlap with query rectangle
+						
+						if(row_index>rt_x||row_index<lb_x||col_index>rt_y||col_index<lb_y)
+						{
+							flag = false;
+						}
+						else
+							flag = true;
+					}
+					if(flag == false)
+					{
+						outside_count++;
+					}
+					else
+						break;
 				}
 		    }
 		    if(outside_count == level_count)
@@ -1336,7 +1487,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
 		neo4j_time += System.currentTimeMillis() - start;
 		
@@ -1351,9 +1502,9 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		start = System.currentTimeMillis();
 		int false_count = 0;
-		for(int i = 0;i<jsonArr.size();i++)
+		for(int json_index = 0;json_index<jsonArr.size();json_index++)
 		{			
-			jsonObject = (JsonObject)jsonArr.get(i);
+			jsonObject = (JsonObject)jsonArr.get(json_index);
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
@@ -1376,34 +1527,16 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				}
 			}
 			
-			if(jsonObject.has(RMBR_minx_name))
+			if(jsonObject.has(String.format("MultilevelBitmap_%d_%d%s", split_pieces, merge_ratio, suffix)))
 			{
-				RMBR = new MyRectangle();
-				RMBR.min_x = jsonObject.get(RMBR_minx_name).getAsDouble();
-				RMBR.min_y = jsonObject.get(RMBR_miny_name).getAsDouble();
-				RMBR.max_x = jsonObject.get(RMBR_maxx_name).getAsDouble();
-				RMBR.max_y = jsonObject.get(RMBR_maxy_name).getAsDouble();
-				
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
+//				if(jsonObject.has("HasBitmap"+suffix))
 				{
-					judge_time += System.currentTimeMillis() - start;
-					return true;
-				}
-				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-				{
-					false_count+=1;
-					VisitedVertices.add(id);
-					continue;
-				}
-				
-				if(jsonObject.has("HasBitmap"+suffix))
-				{
-					ser = jsonObject.get("Bitmap_"+split_pieces+suffix).getAsString();
+					ser = jsonObject.get(String.format("MultilevelBitmap_%d_%d%s", split_pieces, merge_ratio, suffix)).getAsString();
 					newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
 					reachgrid = new ImmutableRoaringBitmap(newbb);
 					
 					int outside_count = 0;
-					for(int level_pieces = 2;level_pieces<=128;level_pieces*=2)
+					for(int level_pieces = split_pieces;level_pieces >=2;level_pieces/=2)
 					{
 						int lb_x = lb_x_hash.get(level_pieces);
 						int lb_y = lb_y_hash.get(level_pieces);
@@ -1411,48 +1544,83 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 						int rt_y = rt_y_hash.get(level_pieces);
 						
 						int offset = multi_offset.get(level_pieces);
-						
-						//ReachGrid totally Lie In query rectangle
-						if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+						int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
+						int card = reachgrid.getCardinality();
+						if(card>query_rec_grid_count)
 						{
-							for(int k = lb_x+1;k<rt_x;k++)
+							//ReachGrid totally Lie In query rectangle
+							if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 							{
-								for(int j = lb_y+1;j<rt_y;j++)
+								for(int i = lb_x+1;i<rt_x;i++)
 								{
-									int grid_id = k*level_pieces+j;
-									if(reachgrid.contains(grid_id+offset))
+									for(int j = lb_y+1;j<rt_y;j++)
 									{
-										judge_time += System.currentTimeMillis() - start;
-										return true;
+										int grid_id = i*level_pieces+j;
+										if(reachgrid.contains(grid_id+offset))
+										{
+											judge_time += System.currentTimeMillis() - start;
+											return true;
+										}
 									}
 								}
 							}
+
+							//ReachGrid No overlap with query rectangle
+							boolean flag = false;
+							for(int i = lb_y;i<=rt_y;i++)
+							{
+								int grid_id = lb_x*level_pieces+i;
+								if(reachgrid.contains(grid_id+offset))
+									flag = true;
+								grid_id = rt_x*level_pieces+i;
+								if(reachgrid.contains(grid_id+offset))
+									flag = true;
+							}
+							for(int i = lb_x+1;i<rt_x;i++)
+							{
+								int grid_id = i*level_pieces+lb_y;
+								if(reachgrid.contains(grid_id+offset))
+									flag = true;
+								grid_id = i*level_pieces+rt_y;
+								if(reachgrid.contains(grid_id+offset))
+									flag = true;
+							}
+							if(flag == false)
+							{
+								outside_count++;
+							}
+							else
+								break;
 						}
-						
-						//ReachGrid No overlap with query rectangle
-						boolean flag = false;
-						for(int j = lb_y;j<=rt_y;j++)
+						else
 						{
-							int grid_id = lb_x*level_pieces+j;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-							grid_id = rt_x*level_pieces+j;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-						}
-						for(int j = lb_x+1;j<rt_x;j++)
-						{
-							int grid_id = j*level_pieces+lb_y;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-							grid_id = j*level_pieces+rt_y;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-						}
-						if(flag == false)
-						{
-							outside_count++;
-						}					
+							Iterator<Integer> iter = reachgrid.iterator();
+							while(iter.hasNext())
+							{
+								int grid_id = iter.next() - offset;
+								int row_index = (int) (grid_id/level_pieces);
+								int col_index = (grid_id - row_index*level_pieces);
+								//ReachGrid totally Lie In query rectangle
+								if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
+								{
+									judge_time += System.currentTimeMillis() - start;
+									return true;
+								}
+								
+								//ReachGrid No overlap with query rectangle
+								boolean flag = false;
+								if(row_index>rt_x||row_index<lb_x||col_index>rt_y||col_index<lb_y)
+								{
+									flag = true;
+								}
+								if(flag == false)
+								{
+									outside_count++;
+								}
+								else
+									break;
+							}
+						}			
 					}
 					if(outside_count == level_count)
 					{
@@ -1491,7 +1659,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			}
 			VisitedVertices.add(id);
 			judge_time += System.currentTimeMillis() - start;
-			boolean reachable = TraversalQuery_Bitmap_MultiResolution(id, rect, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
+			boolean reachable = TraversalQuery_Bitmap_MultiResolution(id, rect, merge_ratio, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
 			
 			if(reachable)
 				return true;

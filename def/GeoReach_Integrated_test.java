@@ -9,39 +9,42 @@ public class GeoReach_Integrated_test {
 
 	public static void main(String[] args) {
 		
-		try
-		{
-			MyRectangle rect = new MyRectangle(0,0,1000,1000);
-			GeoReach_Integrate tt = new GeoReach_Integrate(rect,128);
-//			String datasource = "uniprotenc_150m";
-//			int ratio = 80;
-//			tt.LoadCompresedBitmap(128, datasource, "Clustered_distributed");
-			String datasource = args[0];
-			int ratio = Integer.parseInt(args[1]);
-			System.out.println(datasource+"\t"+ratio);
-			//tt.LoadCompresedBitmap(128, datasource, "Zipf_distributed", ratio);
-			tt.Set_HasBitmap_Boolean_Reading(datasource, 128, 200, "Zipf_distributed", ratio);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-		}
+//		try
+//		{
+//			MyRectangle rect = new MyRectangle(0,0,1000,1000);
+//			GeoReach_Integrate tt = new GeoReach_Integrate(rect,128);
+////			String datasource = "uniprotenc_150m";
+////			int ratio = 80;
+////			tt.LoadCompresedBitmap(128, datasource, "Clustered_distributed");
+//			String datasource = args[0];
+//			int ratio = Integer.parseInt(args[1]);
+//			System.out.println(datasource+"\t"+ratio);
+//			//tt.LoadCompresedBitmap(128, datasource, "Zipf_distributed", ratio);
+//			tt.Set_HasBitmap_Boolean_Reading(datasource, 128, 200, "Zipf_distributed", ratio);
+//		}
+//		catch(Exception e)
+//		{
+//			e.printStackTrace();
+//		}
 		
 
 
-//		MyRectangle range = new MyRectangle(0,0,1000,1000);
-//		
-//		GeoReach_Integrate p_geo = new GeoReach_Integrate(range, 128);
+		MyRectangle range = new MyRectangle(0,0,1000,1000);
+		
+		GeoReach_Integrate p_geo = new GeoReach_Integrate(range, 128);
 //		Traversal tra = new Traversal();
-//		
-//
-////		GeoReach_Integrate p_geo = new GeoReach_Integrate(range, 10);
-////		GeoReach_Integrate p_geo = new GeoReach_Integrate(range, 5);
-//		
-////		double x = 871.0048749159089;
-////		double y = 185.37284713093848;
-////		MyRectangle rect = new MyRectangle(x, y, x+100, y+100); 
-////		System.out.println(p_geo.ReachabilityQuery(5479369, rect));
+		
+
+//		GeoReach_Integrate p_geo = new GeoReach_Integrate(range, 10);
+//		GeoReach_Integrate p_geo = new GeoReach_Integrate(range, 5);
+		
+		double x = 0;
+		double y = 0;
+		double size = 1000.0;
+		MyRectangle rect = new MyRectangle(x, y, x+size, y+size);
+//		System.out.println(p_geo.ReachabilityQuery_Bitmap_MultiResolution(4188725, rect, 2));
+		System.out.println(p_geo.ReachabilityQuery_FullGrids(4188725, rect));
+//		System.out.println(p_geo.ReachabilityQuery(5479369, rect));
 //		
 //		String datasource = "Patents";
 //		//int graph_size = OwnMethods.GetNodeCount(datasource);
