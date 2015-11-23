@@ -1,0 +1,14 @@
+#!/bin/sh
+datasource="Patents"
+filesuffix="Zipf_distributed"
+
+#cp -r Documents/share/Real_data/$datasource/GeoReachGrid_128/$filesuffix Documents/Real_data/$datasource/GeoReachGrid_128/
+
+java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 20 $filesuffix
+java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 40 $filesuffix
+java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 60 $filesuffix
+java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrate_LoadData LoadCompresedBitmap $datasource 80 $filesuffix
+#rm -r Documents/Real_data/$datasource/GeoReachGrid_128/$filesuffix
+
+
+java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar experiment.Experiment_9_27
