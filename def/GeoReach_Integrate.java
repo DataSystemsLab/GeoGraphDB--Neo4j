@@ -55,6 +55,8 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 	public long neo4j_time;
 	public long judge_time;
+	public long judge_1_time;
+	public long judge_2_time;
 	
 	public int Neo4jAccessCount = 0;
 	public int false_inside = 0;
@@ -84,7 +86,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 		for(int i = 2;i<=split_pieces;i*=2)
 		{
-			multi_resolution.put(i,(total_range.max_x - total_range.min_x)/(i*i));
+			multi_resolution.put(i,(total_range.max_x - total_range.min_x)/(i));
 		}
 		
 		int sum = 0;
@@ -93,12 +95,14 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			multi_offset.put(i, sum);
 			sum+=i*i;
 		}
-		level_count = (int)Math.log(split_pieces);
+		level_count = (int)(Math.log(split_pieces)/(Math.log(2.0)));
 			
 		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();
 		neo4j_time = 0;
 		judge_time = 0;
+		judge_1_time = 0;
+		judge_2_time = 0;
 	}
 	
 	public void Preprocess() {
@@ -1212,57 +1216,62 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					int rt_y = rt_y_hash.get(level_pieces);
 					
 					int offset = multi_offset.get(level_pieces);
-					int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
-					int card = reachgrid.getCardinality();
-					if(card>query_rec_grid_count)
+//					int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
+//					int card = reachgrid.getCardinality();
+//					if(card>query_rec_grid_count)
+//					{
+//						long p_start = System.currentTimeMillis();
+//						//ReachGrid totally Lie In query rectangle
+//						if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+//						{
+//							for(int i = lb_x+1;i<rt_x;i++)
+//							{
+//								for(int j = lb_y+1;j<rt_y;j++)
+//								{
+//									int grid_id = i*level_pieces+j;
+//									if(reachgrid.contains(grid_id+offset))
+//									{
+//										judge_1_time+=System.currentTimeMillis() - p_start;
+//										judge_time += System.currentTimeMillis() - start;
+//										return true;
+//									}
+//								}
+//							}
+//						}
+//
+//						//ReachGrid No overlap with query rectangle
+//						boolean flag = false;
+//						for(int i = lb_y;i<=rt_y;i++)
+//						{
+//							int grid_id = lb_x*level_pieces+i;
+//							if(reachgrid.contains(grid_id+offset))
+//								flag = true;
+//							grid_id = rt_x*level_pieces+i;
+//							if(reachgrid.contains(grid_id+offset))
+//								flag = true;
+//						}
+//						for(int i = lb_x+1;i<rt_x;i++)
+//						{
+//							int grid_id = i*level_pieces+lb_y;
+//							if(reachgrid.contains(grid_id+offset))
+//								flag = true;
+//							grid_id = i*level_pieces+rt_y;
+//							if(reachgrid.contains(grid_id+offset))
+//								flag = true;
+//						}
+//						judge_1_time+=System.currentTimeMillis() - p_start;
+//						if(flag == false)
+//						{
+//							outside_count++;
+//						}
+//						else
+//							break;
+//					}
+//					else
 					{
-						//ReachGrid totally Lie In query rectangle
-						if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
-						{
-							for(int i = lb_x+1;i<rt_x;i++)
-							{
-								for(int j = lb_y+1;j<rt_y;j++)
-								{
-									int grid_id = i*level_pieces+j;
-									if(reachgrid.contains(grid_id+offset))
-									{
-										judge_time += System.currentTimeMillis() - start;
-										return true;
-									}
-								}
-							}
-						}
-
-						//ReachGrid No overlap with query rectangle
-						boolean flag = false;
-						for(int i = lb_y;i<=rt_y;i++)
-						{
-							int grid_id = lb_x*level_pieces+i;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-							grid_id = rt_x*level_pieces+i;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-						}
-						for(int i = lb_x+1;i<rt_x;i++)
-						{
-							int grid_id = i*level_pieces+lb_y;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-							grid_id = i*level_pieces+rt_y;
-							if(reachgrid.contains(grid_id+offset))
-								flag = true;
-						}
-						if(flag == false)
-						{
-							outside_count++;
-						}
-						else
-							break;
-					}
-					else
-					{
+						long p_start = System.currentTimeMillis();
 						Iterator<Integer> iter = reachgrid.iterator();
+						boolean flag = false;
 						while(iter.hasNext())
 						{
 							int grid_id = iter.next() - offset;
@@ -1271,23 +1280,30 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 							//ReachGrid totally Lie In query rectangle
 							if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
 							{
+								judge_2_time+=System.currentTimeMillis() - p_start;
 								judge_time += System.currentTimeMillis() - start;
 								return true;
 							}
 							
 							//ReachGrid No overlap with query rectangle
-							boolean flag = false;
+							
 							if(row_index>rt_x||row_index<lb_x||col_index>rt_y||col_index<lb_y)
 							{
-								flag = true;
-							}
-							if(flag == false)
-							{
-								outside_count++;
+								flag = false;
 							}
 							else
+							{
+								flag = true;
 								break;
+							}
 						}
+						judge_2_time+=System.currentTimeMillis() - p_start;
+						if(flag == false)
+						{
+							outside_count++;
+						}
+						else
+							break;
 					}					
 				}
 				if(outside_count == level_count)
@@ -1394,56 +1410,60 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				int rt_y = rt_y_hash.get(level_pieces);
 				
 				int offset = multi_offset.get(level_pieces);
-				int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
-				int card = reachgrid.getCardinality();
-				if(card>query_rec_grid_count)
+//				int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
+//				int card = reachgrid.getCardinality();
+//				if(card>query_rec_grid_count)
+//				{
+//					long p_start = System.currentTimeMillis();
+//					//ReachGrid totally Lie In query rectangle
+//					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+//					{
+//						for(int i = lb_x+1;i<rt_x;i++)
+//						{
+//							for(int j = lb_y+1;j<rt_y;j++)
+//							{
+//								int grid_id = i*level_pieces+j;
+//								if(reachgrid.contains(grid_id+offset))
+//								{
+//									judge_1_time+=System.currentTimeMillis() - p_start;
+//									judge_time += System.currentTimeMillis() - start;
+//									return true;
+//								}
+//							}
+//						}
+//					}
+//
+//					//ReachGrid No overlap with query rectangle
+//					boolean flag = false;
+//					for(int i = lb_y;i<=rt_y;i++)
+//					{
+//						int grid_id = lb_x*level_pieces+i;
+//						if(reachgrid.contains(grid_id+offset))
+//							flag = true;
+//						grid_id = rt_x*level_pieces+i;
+//						if(reachgrid.contains(grid_id+offset))
+//							flag = true;
+//					}
+//					for(int i = lb_x+1;i<rt_x;i++)
+//					{
+//						int grid_id = i*level_pieces+lb_y;
+//						if(reachgrid.contains(grid_id+offset))
+//							flag = true;
+//						grid_id = i*level_pieces+rt_y;
+//						if(reachgrid.contains(grid_id+offset))
+//							flag = true;
+//					}
+//					judge_1_time+=System.currentTimeMillis() - p_start;
+//					if(flag == false)
+//					{
+//						outside_count++;
+//					}
+//					else
+//						break;
+//				}
+//				else
 				{
-					//ReachGrid totally Lie In query rectangle
-					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
-					{
-						for(int i = lb_x+1;i<rt_x;i++)
-						{
-							for(int j = lb_y+1;j<rt_y;j++)
-							{
-								int grid_id = i*level_pieces+j;
-								if(reachgrid.contains(grid_id+offset))
-								{
-									judge_time += System.currentTimeMillis() - start;
-									return true;
-								}
-							}
-						}
-					}
-
-					//ReachGrid No overlap with query rectangle
-					boolean flag = false;
-					for(int i = lb_y;i<=rt_y;i++)
-					{
-						int grid_id = lb_x*level_pieces+i;
-						if(reachgrid.contains(grid_id+offset))
-							flag = true;
-						grid_id = rt_x*level_pieces+i;
-						if(reachgrid.contains(grid_id+offset))
-							flag = true;
-					}
-					for(int i = lb_x+1;i<rt_x;i++)
-					{
-						int grid_id = i*level_pieces+lb_y;
-						if(reachgrid.contains(grid_id+offset))
-							flag = true;
-						grid_id = i*level_pieces+rt_y;
-						if(reachgrid.contains(grid_id+offset))
-							flag = true;
-					}
-					if(flag == false)
-					{
-						outside_count++;
-					}
-					else
-						break;
-				}
-				else
-				{
+					long p_start = System.currentTimeMillis();
 					Iterator<Integer> iter = reachgrid.iterator();
 					boolean flag = false;
 					while(iter.hasNext())
@@ -1455,6 +1475,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 						if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
 						{
 							judge_time += System.currentTimeMillis() - start;
+							judge_2_time+=System.currentTimeMillis() -  p_start;
 							return true;
 						}
 						
@@ -1465,8 +1486,12 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 							flag = false;
 						}
 						else
+						{
 							flag = true;
+							break;
+						}
 					}
+					judge_2_time+=System.currentTimeMillis() -  p_start;
 					if(flag == false)
 					{
 						outside_count++;
@@ -1544,57 +1569,62 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 						int rt_y = rt_y_hash.get(level_pieces);
 						
 						int offset = multi_offset.get(level_pieces);
-						int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
-						int card = reachgrid.getCardinality();
-						if(card>query_rec_grid_count)
+//						int query_rec_grid_count = (rt_y - lb_y)*(rt_x - lb_y);
+//						int card = reachgrid.getCardinality();
+////						if(card>query_rec_grid_count)
+////						{
+//							long p_start = System.currentTimeMillis();
+//							//ReachGrid totally Lie In query rectangle
+//							if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+//							{
+//								for(int i = lb_x+1;i<rt_x;i++)
+//								{
+//									for(int j = lb_y+1;j<rt_y;j++)
+//									{
+//										int grid_id = i*level_pieces+j;
+//										if(reachgrid.contains(grid_id+offset))
+//										{
+//											judge_1_time += System.currentTimeMillis() - p_start;
+//											judge_time += System.currentTimeMillis() - start;
+//											return true;
+//										}
+//									}
+//								}
+//							}
+//
+//							//ReachGrid No overlap with query rectangle
+//							boolean flag = false;
+//							for(int i = lb_y;i<=rt_y;i++)
+//							{
+//								int grid_id = lb_x*level_pieces+i;
+//								if(reachgrid.contains(grid_id+offset))
+//									flag = true;
+//								grid_id = rt_x*level_pieces+i;
+//								if(reachgrid.contains(grid_id+offset))
+//									flag = true;
+//							}
+//							for(int i = lb_x+1;i<rt_x;i++)
+//							{
+//								int grid_id = i*level_pieces+lb_y;
+//								if(reachgrid.contains(grid_id+offset))
+//									flag = true;
+//								grid_id = i*level_pieces+rt_y;
+//								if(reachgrid.contains(grid_id+offset))
+//									flag = true;
+//							}
+//							judge_1_time += System.currentTimeMillis() - p_start;
+//							if(flag == false)
+//							{
+//								outside_count++;
+//							}
+//							else
+//								break;
+//						}
+//						else
 						{
-							//ReachGrid totally Lie In query rectangle
-							if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
-							{
-								for(int i = lb_x+1;i<rt_x;i++)
-								{
-									for(int j = lb_y+1;j<rt_y;j++)
-									{
-										int grid_id = i*level_pieces+j;
-										if(reachgrid.contains(grid_id+offset))
-										{
-											judge_time += System.currentTimeMillis() - start;
-											return true;
-										}
-									}
-								}
-							}
-
-							//ReachGrid No overlap with query rectangle
-							boolean flag = false;
-							for(int i = lb_y;i<=rt_y;i++)
-							{
-								int grid_id = lb_x*level_pieces+i;
-								if(reachgrid.contains(grid_id+offset))
-									flag = true;
-								grid_id = rt_x*level_pieces+i;
-								if(reachgrid.contains(grid_id+offset))
-									flag = true;
-							}
-							for(int i = lb_x+1;i<rt_x;i++)
-							{
-								int grid_id = i*level_pieces+lb_y;
-								if(reachgrid.contains(grid_id+offset))
-									flag = true;
-								grid_id = i*level_pieces+rt_y;
-								if(reachgrid.contains(grid_id+offset))
-									flag = true;
-							}
-							if(flag == false)
-							{
-								outside_count++;
-							}
-							else
-								break;
-						}
-						else
-						{
+							long p_start = System.currentTimeMillis();
 							Iterator<Integer> iter = reachgrid.iterator();
+							boolean flag = false;
 							while(iter.hasNext())
 							{
 								int grid_id = iter.next() - offset;
@@ -1603,23 +1633,30 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 								//ReachGrid totally Lie In query rectangle
 								if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
 								{
+									judge_2_time+=System.currentTimeMillis() - p_start;
 									judge_time += System.currentTimeMillis() - start;
 									return true;
 								}
 								
 								//ReachGrid No overlap with query rectangle
-								boolean flag = false;
 								if(row_index>rt_x||row_index<lb_x||col_index>rt_y||col_index<lb_y)
 								{
-									flag = true;
-								}
-								if(flag == false)
-								{
-									outside_count++;
+									flag = false;
 								}
 								else
+								{
+									flag = true;
 									break;
+								}
 							}
+							judge_2_time+=System.currentTimeMillis() - p_start;
+
+							if(flag == false)
+							{
+								outside_count++;
+							}
+							else
+								break;
 						}			
 					}
 					if(outside_count == level_count)

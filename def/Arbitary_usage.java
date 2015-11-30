@@ -10,14 +10,17 @@ import java.util.Random;
 
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.roaringbitmap.RoaringBitmap;
+import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 public class Arbitary_usage {
 
 	public static void main(String[] args) {
 		
-		RoaringBitmap r = new RoaringBitmap();
-		r.add(2);
-		r.add(3);
+		String str = "OjAAAAEAAAAAAI0AEAAAABQAIQAkAC4ANAA8AD8AQABMAE8AWgBhAGUAZwBoAG8AcgB3AHoA/AA8AUQBtQHgAesB+wF7ArMCEwM2A8oDdASgBKQEvgXIBi0HjwiICQwKiQoYDIAMggySDOIMEQ01DWANlA2cDasNGw4FDwwPig+QD4MQlxCFEZsRARIcEoIShxKIEpASABMzFJQVkxcAGDMZABphGpYagBuAHAsdxB2AHgAfCx9ZHwAggyC6IAIjkCOAJAAmACiAKb8pACoALBcsgC3HLgYvgC8DMA42ADgCOIA6iTsAPAA9gD4APwtAEUATQBZAG0AjQCVAL0AxQDVASkJAQ8BDAERARkBHQEjASEBMgEzATcBOBFAKUAxQDlAVUANUIFRQVABV";
+//		RoaringBitmap r = new RoaringBitmap();
+//		r.add(2);
+//		r.add(3);
+		ImmutableRoaringBitmap r = OwnMethods.Deserialize_String_ToRoarBitmap(str);
 		System.out.println(r);
 		System.out.println(r.getCardinality());
 		
