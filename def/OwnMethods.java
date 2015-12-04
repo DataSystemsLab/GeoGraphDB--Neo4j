@@ -12,7 +12,10 @@ import com.sun.jersey.api.client.WebResource;
 
 public class OwnMethods {
 	
-	
+	public static void Println(Object o)
+	{
+		System.out.println(o);
+	}
 	
 	//Print elements in an array
 	public static void PrintArray(String[] l)

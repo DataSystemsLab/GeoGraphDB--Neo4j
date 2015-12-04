@@ -3,8 +3,10 @@ package def;
 import java.util.*;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.sun.jersey.api.client.WebResource;
 
 public class GeoReach implements ReachabilityQuerySolver	{
@@ -117,7 +119,31 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			return rec;
 		else
 			return null;
-	}	
+	}
+	
+	public MyRectangle MBR(MyRectangle start_rect, MyRectangle end_rect)
+	{
+		if(start_rect == null)
+			return end_rect;
+		else
+		{
+			if(end_rect == null)
+				return start_rect;
+			else
+			{
+				if(end_rect.min_x<start_rect.min_x)
+					start_rect.min_x = end_rect.min_x;
+				if(end_rect.min_y<start_rect.min_y)
+					start_rect.min_y = end_rect.min_y;
+				if(end_rect.max_x>start_rect.max_x)
+					start_rect.max_x = end_rect.max_x;
+				if(end_rect.max_y>start_rect.max_y)
+					start_rect.max_y = end_rect.max_y;
+				return start_rect;
+			}
+		}
+		
+	}
 	
 	public void Preprocess()
 	{	
@@ -453,5 +479,383 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		}
 		
 		return false;
+	}
+	
+	public void UpdateTraverse(long end_id, JsonArray jArr_end)
+	{
+		String query = null;
+		String result = null;
+				
+		query = String.format("match (n)-->(b) where id(b) = %d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s, id(n)", end_id, longitude_property_name, latitude_property_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		
+		for(int j_index = 0;j_index<jsonArr.size();j_index++)
+		{
+			JsonArray jArr_start = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray();
+			long start_id = jArr_start.get(6).getAsLong();
+			boolean flag = false;
+			
+			MyRectangle update_RMBR = null;
+			//start node has no RMBR
+			if(jArr_start.get(2).isJsonNull())
+			{
+				//end node has location
+				if(!jArr_end.get(0).isJsonNull())
+				{
+					flag = true;
+					double lon = jArr_end.get(0).getAsDouble();
+					double lat = jArr_end.get(1).getAsDouble();
+					
+					update_RMBR = new MyRectangle(lon, lat, lon, lat);
+					
+					//end node has RMBR
+					if(!jArr_end.get(2).isJsonNull())
+					{
+						MyRectangle end_RMBR = new MyRectangle(jArr_end.get(2).getAsDouble(),jArr_end.get(3).getAsDouble(),jArr_end.get(4).getAsDouble(),jArr_end.get(5).getAsDouble());
+						if(lon<end_RMBR.max_x)
+							update_RMBR.max_x = end_RMBR.max_x;
+						if(lon>end_RMBR.min_x)
+							update_RMBR.min_x = end_RMBR.min_x;
+						if(lat<end_RMBR.max_y)
+							update_RMBR.max_y = end_RMBR.max_y;
+						if(lat>end_RMBR.min_y)
+							update_RMBR.min_y = end_RMBR.min_y;
+					}
+					
+				}
+				//end node has no location
+				else
+				{
+					//end node has RMBR
+					if(!jArr_end.get(2).isJsonNull())
+					{
+						flag = true;
+						update_RMBR = new MyRectangle(jArr_end.get(2).getAsDouble(),jArr_end.get(3).getAsDouble(),jArr_end.get(4).getAsDouble(),jArr_end.get(5).getAsDouble());
+					}
+				}
+			}
+			//start node has RMBR
+			else
+			{
+				update_RMBR = new MyRectangle(jArr_start.get(2).getAsDouble(),jArr_start.get(3).getAsDouble(),jArr_start.get(4).getAsDouble(),jArr_start.get(5).getAsDouble());
+				if(!jArr_end.get(0).isJsonNull())
+				{
+					double lon = jArr_end.get(0).getAsDouble();
+					double lat = jArr_end.get(1).getAsDouble();
+					
+					if(lon>update_RMBR.max_x)
+					{
+						flag = true;
+						update_RMBR.max_x = lon;
+					}
+					if(lon<update_RMBR.min_x)
+					{
+						flag = true;
+						update_RMBR.min_x = lon;
+					}if(lat>update_RMBR.max_y)
+					{
+						flag = true;
+						update_RMBR.max_y = lat;
+					}if(lat<update_RMBR.min_y)
+					{
+						flag = true;
+						update_RMBR.min_y = lat;
+					}
+				}
+				if(!jArr_end.get(2).isJsonNull())
+				{
+					double minx = jArr_end.get(2).getAsDouble();
+					double miny = jArr_end.get(3).getAsDouble();
+					double maxx = jArr_end.get(4).getAsDouble();
+					double maxy = jArr_end.get(5).getAsDouble();
+					if(minx<update_RMBR.min_x)
+					{
+						flag = true;
+						update_RMBR.min_x = minx;
+					}
+					if(miny<update_RMBR.min_y)
+					{
+						flag = true;
+						update_RMBR.min_y = miny;
+					}
+					if(maxx>update_RMBR.max_x)
+					{
+						flag = true;
+						update_RMBR.max_x = maxx;
+					}
+					if(maxy>update_RMBR.max_y)
+					{
+						flag = true;
+						update_RMBR.max_y = maxy;
+					}
+				}
+			}
+			if(flag)
+			{
+				query = String.format("match (n) where id(n) = %d set n.%s = %.8f, n.%s=%.8f, n.%s=%.8f, n.%s=%.8f", start_id, RMBR_minx_name, update_RMBR.min_x, RMBR_miny_name, update_RMBR.min_y, RMBR_maxx_name, update_RMBR.max_x, RMBR_maxy_name, update_RMBR.max_y);
+				Neo4j_Graph_Store.Execute(resource, query);
+				System.out.println(query);
+				
+				jArr_start.set(2, new JsonPrimitive(update_RMBR.min_x));
+				jArr_start.set(3, new JsonPrimitive(update_RMBR.min_y));
+				jArr_start.set(4, new JsonPrimitive(update_RMBR.max_x));
+				jArr_start.set(5, new JsonPrimitive(update_RMBR.max_y));
+				UpdateTraverse(start_id, jArr_start);			
+			}
+		}
+	}
+	
+	public boolean UpdateAddEdge(long start_id, long end_id)
+	{
+		String query = String.format("match (a),(b) where id(a) = %d and id(b) = %d create (a)-[:Added_Edge]->(b)", start_id, end_id);
+		Neo4j_Graph_Store.Execute(resource, query);
+		
+		query = String.format("match (n) where id(n) in [%d,%d] return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", start_id, end_id, longitude_property_name, latitude_property_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		
+		JsonArray jArr_start = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
+		JsonArray jArr_end = jsonArr.get(1).getAsJsonObject().get("row").getAsJsonArray();
+		
+		boolean flag = false;
+		
+		MyRectangle update_RMBR = null;
+		//start node has no RMBR
+		if(jArr_start.get(2).isJsonNull())
+		{
+			//end node has location
+			if(!jArr_end.get(0).isJsonNull())
+			{
+				flag = true;
+				double lon = jArr_end.get(0).getAsDouble();
+				double lat = jArr_end.get(1).getAsDouble();
+				
+				update_RMBR = new MyRectangle(lon, lat, lon, lat);
+				
+				//end node has RMBR
+				if(!jArr_end.get(2).isJsonNull())
+				{
+					MyRectangle end_RMBR = new MyRectangle(jArr_end.get(2).getAsDouble(),jArr_end.get(3).getAsDouble(),jArr_end.get(4).getAsDouble(),jArr_end.get(5).getAsDouble());
+					if(lon<end_RMBR.max_x)
+						update_RMBR.max_x = end_RMBR.max_x;
+					if(lon>end_RMBR.min_x)
+						update_RMBR.min_x = end_RMBR.min_x;
+					if(lat<end_RMBR.max_y)
+						update_RMBR.max_y = end_RMBR.max_y;
+					if(lat>end_RMBR.min_y)
+						update_RMBR.min_y = end_RMBR.min_y;
+				}
+			}
+			//end node has no location
+			else
+			{
+				//end node has RMBR
+				if(!jArr_end.get(2).isJsonNull())
+				{
+					flag = true;
+					update_RMBR = new MyRectangle(jArr_end.get(2).getAsDouble(),jArr_end.get(3).getAsDouble(),jArr_end.get(4).getAsDouble(),jArr_end.get(5).getAsDouble());
+				}
+			}
+		}
+		//start node has RMBR
+		else
+		{
+			update_RMBR = new MyRectangle(jArr_start.get(2).getAsDouble(),jArr_start.get(3).getAsDouble(),jArr_start.get(4).getAsDouble(),jArr_start.get(5).getAsDouble());
+			if(!jArr_end.get(0).isJsonNull())
+			{
+				double lon = jArr_end.get(0).getAsDouble();
+				double lat = jArr_end.get(1).getAsDouble();
+				
+				if(lon>update_RMBR.max_x)
+				{
+					flag = true;
+					update_RMBR.max_x = lon;
+				}
+				if(lon<update_RMBR.min_x)
+				{
+					flag = true;
+					update_RMBR.min_x = lon;
+				}if(lat>update_RMBR.max_y)
+				{
+					flag = true;
+					update_RMBR.max_y = lat;
+				}if(lat<update_RMBR.min_y)
+				{
+					flag = true;
+					update_RMBR.min_y = lat;
+				}
+			}
+			if(!jArr_end.get(2).isJsonNull())
+			{
+				double minx = jArr_end.get(2).getAsDouble();
+				double miny = jArr_end.get(3).getAsDouble();
+				double maxx = jArr_end.get(4).getAsDouble();
+				double maxy = jArr_end.get(5).getAsDouble();
+				if(minx<update_RMBR.min_x)
+				{
+					flag = true;
+					update_RMBR.min_x = minx;
+				}
+				if(miny<update_RMBR.min_y)
+				{
+					flag = true;
+					update_RMBR.min_y = miny;
+				}
+				if(maxx>update_RMBR.max_x)
+				{
+					flag = true;
+					update_RMBR.max_x = maxx;
+				}
+				if(maxy>update_RMBR.max_y)
+				{
+					flag = true;
+					update_RMBR.max_y = maxy;
+				}
+			}
+		}
+		if(flag)
+		{
+			query = String.format("match (n) where id(n) = %d set n.%s = %.8f, n.%s=%.8f, n.%s=%.8f, n.%s=%.8f", start_id, RMBR_minx_name, update_RMBR.min_x, RMBR_miny_name, update_RMBR.min_y, RMBR_maxx_name, update_RMBR.max_x, RMBR_maxy_name, update_RMBR.max_y);
+			Neo4j_Graph_Store.Execute(resource, query);
+			
+			jArr_start.set(2, new JsonPrimitive(update_RMBR.min_x));
+			jArr_start.set(3, new JsonPrimitive(update_RMBR.min_y));
+			jArr_start.set(4, new JsonPrimitive(update_RMBR.max_x));
+			jArr_start.set(5, new JsonPrimitive(update_RMBR.max_y));
+			UpdateTraverse(start_id, jArr_start);			
+		}
+		return flag;
+	}
+	
+	public MyRectangle Reconstruct(long start_id)
+	{
+		String query = null;
+		String result = null;
+		MyRectangle update_rect = null;
+		
+		query = String.format("match (a)-->(n) where id(a) = %d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", start_id, longitude_property_name, latitude_property_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		for(int j_index = 0;j_index<jsonArr.size();j_index++)
+		{
+			JsonArray j_end = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray();
+			if(!j_end.get(0).isJsonNull())
+			{
+				MyRectangle rect = new MyRectangle(j_end.get(0).getAsDouble(), j_end.get(1).getAsDouble(), j_end.get(0).getAsDouble(), j_end.get(1).getAsDouble());
+				update_rect = MBR(update_rect, rect);
+			}
+			if(!j_end.get(2).isJsonNull())
+			{
+				MyRectangle rect = new MyRectangle(j_end.get(2).getAsDouble(), j_end.get(3).getAsDouble(), j_end.get(4).getAsDouble(), j_end.get(5).getAsDouble());
+				update_rect = MBR(update_rect, rect);
+			}
+		}
+		
+		return update_rect;
+	}
+	
+	public void UpdateDeleteEdge_Traverse(long end_id)
+	{
+		String query = null;
+		String result = null;
+		
+		query = String.format("match (a)-->(b) where id(b) = %d return a.%s, a.%s, a.%s, a.%s, id(a)", end_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		
+		for(int j_index = 0;j_index<jsonArr.size();j_index++)
+		{
+			JsonArray j_start = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray();
+			MyRectangle rect = new MyRectangle(j_start.get(0).getAsDouble(), j_start.get(1).getAsDouble(), j_start.get(2).getAsDouble(), j_start.get(3).getAsDouble());
+			long start_id = j_start.get(4).getAsLong();
+			MyRectangle update_RMBR = Reconstruct(start_id);
+			if(update_RMBR == null)
+			{
+				if(j_start.get(0).isJsonNull())
+					continue;
+				else
+				{
+					query = String.format("match (n) where id(n) = %d, remove n.%s, n.%s, n.%s, n.%s", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+					Neo4j_Graph_Store.Execute(resource, query);
+					UpdateDeleteEdge_Traverse(start_id);
+				}
+			}
+			else
+			{
+				double ori_minx = j_start.get(0).getAsDouble();
+				double ori_miny = j_start.get(1).getAsDouble();
+				double ori_maxx = j_start.get(2).getAsDouble();
+				double ori_maxy = j_start.get(3).getAsDouble();
+				if(Math.abs(update_RMBR.min_x-ori_minx)>0.00000001||Math.abs(update_RMBR.min_y-ori_miny)>0.00000001||Math.abs(update_RMBR.min_x-ori_maxx)>0.00000001||Math.abs(update_RMBR.min_x-ori_maxy)>0.00000001)
+				{
+					query = String.format("match (n) where id(n)=%d set n.%s = %.8f, n.%s=%.8f, n.%s=%.8f, n.%s=%.8f", start_id, RMBR_minx_name, update_RMBR.min_x, RMBR_miny_name, update_RMBR.min_y, RMBR_maxx_name, update_RMBR.max_x, RMBR_maxy_name, update_RMBR.max_y);
+					Neo4j_Graph_Store.Execute(resource, query);
+					UpdateDeleteEdge_Traverse(start_id);
+				}
+			}
+		}
+	}
+	
+	public void UpdateDeleteEdge(long start_id, long end_id)
+	{
+		String query = null;
+		String result = null;
+		query = String.format("match p = (a)-[r]->(b) where id(a) = %d and id(b) = %d delete r", start_id, end_id);
+		Neo4j_Graph_Store.Execute(resource, query);
+		
+		query = String.format("match (n) where id(n) in [%d,%d] return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", start_id, end_id, longitude_property_name, latitude_property_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		
+		JsonArray jArr_start = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
+		JsonArray jArr_end = jsonArr.get(1).getAsJsonObject().get("row").getAsJsonArray();
+			
+		if(!jArr_start.get(2).isJsonNull())
+		{
+			boolean flag = false;//a flag to represent whether the start vertex will be influenced by the deletion
+			double minx = jArr_start.get(2).getAsDouble();
+			double miny = jArr_start.get(3).getAsDouble();
+			double maxx = jArr_start.get(4).getAsDouble();
+			double maxy = jArr_start.get(5).getAsDouble();
+			
+			if(!jArr_end.get(0).isJsonNull())
+			{
+				double lon = jArr_end.get(0).getAsDouble();
+				double lat = jArr_end.get(1).getAsDouble();
+				
+				if(Math.abs(lon-minx)<0.00000001||Math.abs(lon-maxx)<0.00000001||Math.abs(lat-miny)<0.00000001||Math.abs(lat-maxy)<0.00000001)
+					flag = true;
+			}
+			if(!jArr_end.get(2).isJsonNull())
+			{
+				double minx_end = jArr_end.get(2).getAsDouble();
+				double miny_end = jArr_end.get(3).getAsDouble();
+				double maxx_end = jArr_end.get(4).getAsDouble();
+				double maxy_end = jArr_end.get(5).getAsDouble();
+				if(Math.abs(minx_end-minx)<0.00000001||Math.abs(maxx_end-maxx)<0.00000001||Math.abs(miny_end-miny)<0.00000001||Math.abs(maxy_end-maxy)<0.00000001)
+					flag = true;
+			}
+			if(flag)
+			{
+				MyRectangle update_RMBR = Reconstruct(start_id);
+				if(update_RMBR == null)
+				{
+					query = String.format("match (n) where id(n)=%d remove n.%s, n.%s, n.%s, n.%s", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
+					UpdateDeleteEdge_Traverse(start_id);
+				}
+				else
+				{
+					if(Math.abs(update_RMBR.min_x-minx)>0.00000001||Math.abs(update_RMBR.max_x-maxx)>0.00000001||Math.abs(update_RMBR.min_y-miny)>0.00000001||Math.abs(update_RMBR.max_y-maxy)>0.00000001)
+					{
+						query = String.format("match (n) where id(n)=%d set n.%s = %.8f, n.%s=%.8f, n.%s=%.8f, n.%s=%.8f", start_id, RMBR_minx_name, update_RMBR.min_x, RMBR_miny_name, update_RMBR.min_y, RMBR_maxx_name, update_RMBR.max_x, RMBR_maxy_name, update_RMBR.max_y);
+						UpdateDeleteEdge_Traverse(start_id);
+					}
+				}
+			}
+		}
+		
+		
+		
 	}
 }

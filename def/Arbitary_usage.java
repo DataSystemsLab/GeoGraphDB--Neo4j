@@ -5,6 +5,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
@@ -12,17 +13,82 @@ import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.roaringbitmap.RoaringBitmap;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+
 public class Arbitary_usage {
 
 	public static void main(String[] args) {
+		String query = null;
+		String result = null;
+		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+		query = String.format("match (a)-->(b) where id(b) = %d return id(a)",4040605);
+		result = p_neo.Execute(query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		
-		String str = "OjAAAAEAAAAAAI0AEAAAABQAIQAkAC4ANAA8AD8AQABMAE8AWgBhAGUAZwBoAG8AcgB3AHoA/AA8AUQBtQHgAesB+wF7ArMCEwM2A8oDdASgBKQEvgXIBi0HjwiICQwKiQoYDIAMggySDOIMEQ01DWANlA2cDasNGw4FDwwPig+QD4MQlxCFEZsRARIcEoIShxKIEpASABMzFJQVkxcAGDMZABphGpYagBuAHAsdxB2AHgAfCx9ZHwAggyC6IAIjkCOAJAAmACiAKb8pACoALBcsgC3HLgYvgC8DMA42ADgCOIA6iTsAPAA9gD4APwtAEUATQBZAG0AjQCVAL0AxQDVASkJAQ8BDAERARkBHQEjASEBMgEzATcBOBFAKUAxQDlAVUANUIFRQVABV";
-//		RoaringBitmap r = new RoaringBitmap();
-//		r.add(2);
-//		r.add(3);
-		ImmutableRoaringBitmap r = OwnMethods.Deserialize_String_ToRoarBitmap(str);
-		System.out.println(r);
-		System.out.println(r.getCardinality());
+		for(int j_index = 0;j_index<jsonArr.size();j_index++)
+		{
+			long id = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray().get(0).getAsLong();
+			OwnMethods.Println(id);
+		}
+//		MyRectangle rec = null;
+//		if(rec == null)
+//			OwnMethods.Println(true);
+		
+//		Config p_con = new Config();
+//		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+//		GeoReach p_geo = new GeoReach();
+//		long graph_size = OwnMethods.GetNodeCount("Patents");
+//		HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, 500);
+//		Iterator<String> iter = hs.iterator();
+//		while(iter.hasNext())
+//		{
+//			long id = 4*graph_size+Long.parseLong(iter.next());
+//			System.out.println(id);
+//			String query = String.format("match (n) where id(n) =%d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", id, p_con.GetLongitudePropertyName(), p_con.GetLatitudePropertyName(), p_con.GetRMBR_minx_name(), p_con.GetRMBR_miny_name(), p_con.GetRMBR_maxx_name(), p_con.GetRMBR_maxy_name());
+//			String result = p_neo.Execute(query);
+//			JsonArray jarr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+//			jarr = jarr.get(0).getAsJsonObject().get("row").getAsJsonArray();
+//			p_geo.UpdateTraverse(id, jarr);
+//		}
+		
+		
+//		Config p_con = new Config();
+//		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+//		String query = null;
+//		String result = null;
+//		query = String.format("match (n)-->(b) where id(b) = %d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", 5000000, p_con.GetLongitudePropertyName(), p_con.GetLatitudePropertyName(), p_con.GetRMBR_minx_name(), p_con.GetRMBR_miny_name(), p_con.GetRMBR_maxx_name(), p_con.GetRMBR_maxy_name());
+//		result = p_neo.Execute(query);
+//		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+//		
+//		for(int j_index = 0;j_index<jsonArr.size();j_index++)
+//		{
+//			JsonArray jArr_start = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray();
+//			System.out.println(jArr_start.toString());
+//		}
+		
+//		GeoReach p_geo = new GeoReach();
+//		p_geo.UpdateDeleteEdge(4000000, 5000000);
+//		double x = 1.000/3;
+//		double y = 1.00/3;
+//		System.out.println(x-y);
+//		if(x-y == 0)
+//			OwnMethods.Println(true);
+//		else
+//			OwnMethods.Println(false);
+//		System.out.println(x);
+//		String str = String.format("%.8f", x);
+//		System.out.println(str);
+		
+//		String str = "OjAAAAEAAAAAAI0AEAAAABQAIQAkAC4ANAA8AD8AQABMAE8AWgBhAGUAZwBoAG8AcgB3AHoA/AA8AUQBtQHgAesB+wF7ArMCEwM2A8oDdASgBKQEvgXIBi0HjwiICQwKiQoYDIAMggySDOIMEQ01DWANlA2cDasNGw4FDwwPig+QD4MQlxCFEZsRARIcEoIShxKIEpASABMzFJQVkxcAGDMZABphGpYagBuAHAsdxB2AHgAfCx9ZHwAggyC6IAIjkCOAJAAmACiAKb8pACoALBcsgC3HLgYvgC8DMA42ADgCOIA6iTsAPAA9gD4APwtAEUATQBZAG0AjQCVAL0AxQDVASkJAQ8BDAERARkBHQEjASEBMgEzATcBOBFAKUAxQDlAVUANUIFRQVABV";
+////		RoaringBitmap r = new RoaringBitmap();
+////		r.add(2);
+////		r.add(3);
+//		ImmutableRoaringBitmap r = OwnMethods.Deserialize_String_ToRoarBitmap(str);
+//		System.out.println(r);
+//		System.out.println(r.getCardinality());
+		
+		//OwnMethods.RestartNeo4jClearCache("Patents");
 		
 //		ArrayList<String> datasource_a = new ArrayList<String>();
 //		datasource_a.add("citeseerx");
