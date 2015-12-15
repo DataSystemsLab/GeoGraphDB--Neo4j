@@ -139,8 +139,8 @@ public class GeoReach_Comparison {
 					System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
 									
 					OwnMethods.WriteFile(result_file_path, true, (j/100.0)+"\t"+time_traversal/experiment_node_count+"\t"+time_spa/experiment_node_count+"\t"+time_spareach/experiment_node_count+"\t"+time_georeach_5/experiment_node_count+"\t"+time_georeach_10/experiment_node_count+"\t"+true_result_count_5+"\n");
-					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_5_composition.csv", true, (j/100.0)+"\t"+time_georeach_5/experiment_node_count+"\t"+georeach_5.neo4j_time/experiment_node_count+"\t"+georeach_5.judge_time/experiment_node_count+"\t"+true_result_count_5+"\n");
-					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_10_composition.csv", true, (j/100.0)+"\t"+time_georeach_10/experiment_node_count+"\t"+georeach_10.neo4j_time/experiment_node_count+"\t"+georeach_10.judge_time/experiment_node_count+"\t"+true_result_count_10+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_5_composition.csv", true, (j/100.0)+"\t"+time_georeach_5/experiment_node_count+"\t"+georeach_5.query_neo4j_time/experiment_node_count+"\t"+georeach_5.query_judge_time/experiment_node_count+"\t"+true_result_count_5+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/grid_10_composition.csv", true, (j/100.0)+"\t"+time_georeach_10/experiment_node_count+"\t"+georeach_10.query_neo4j_time/experiment_node_count+"\t"+georeach_10.query_judge_time/experiment_node_count+"\t"+true_result_count_10+"\n");
 					
 					
 					for(int i = 0;i<result_5.size();i++)

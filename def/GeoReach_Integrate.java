@@ -25,6 +25,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 import com.sun.jersey.api.client.WebResource;
 
@@ -50,11 +51,13 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	private String RMBR_miny_name;
 	private String RMBR_maxx_name;
 	private String RMBR_maxy_name;
+	
+	private String bitmap_name;
 		
 	private String suffix;
 	
-	public long neo4j_time;
-	public long judge_time;
+	public long query_neo4j_time;
+	public long query_judge_time;
 	public long judge_1_time;
 	public long judge_2_time;
 	
@@ -62,6 +65,12 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	public int false_inside = 0;
 	public int false_outside = 0;
 	public int false_all = 0;
+	
+	public long update_addedge_time;
+	public long update_deleteedge_time;
+	
+	public long update_neo4j_time;
+	public long update_inmemory_time;
 	
 	public GeoReach_Integrate(MyRectangle rect, int p_split_pieces)
 	{
@@ -73,6 +82,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		RMBR_miny_name = config.GetRMBR_miny_name();
 		RMBR_maxx_name = config.GetRMBR_maxx_name();
 		RMBR_maxy_name = config.GetRMBR_maxy_name();
+		bitmap_name = "Bitmap_"+split_pieces+suffix;
 		
 		total_range = new MyRectangle();
 		total_range.min_x = rect.min_x;
@@ -99,10 +109,15 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			
 		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();
-		neo4j_time = 0;
-		judge_time = 0;
+		query_neo4j_time = 0;
+		query_judge_time = 0;
 		judge_1_time = 0;
 		judge_2_time = 0;
+		
+		update_addedge_time = 0;
+		update_deleteedge_time = 0;
+		update_neo4j_time = 0;
+		update_inmemory_time = 0;
 	}
 	
 	public void Preprocess() {
@@ -417,7 +432,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		long start = System.currentTimeMillis();
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -449,7 +464,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -464,7 +479,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					return true;
 				}
 				
@@ -493,7 +508,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 							int grid_id = k*split_pieces+j;
 							if(reachgrid.contains(grid_id))
 							{
-								judge_time += System.currentTimeMillis() - start;
+								query_judge_time += System.currentTimeMillis() - start;
 								return true;
 							}
 						}
@@ -535,11 +550,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
@@ -550,11 +565,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -570,7 +585,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -578,7 +593,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(!all_attributes.has(RMBR_minx_name))
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
@@ -597,14 +612,14 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		//RMBR No overlap case
 		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
 		//RMBR Contain case
 		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return true;
 		}
 		
@@ -632,7 +647,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					int grid_id = i*split_pieces+j;
 					if(reachgrid.contains(grid_id))
 					{
-						judge_time += System.currentTimeMillis() - start;
+						query_judge_time += System.currentTimeMillis() - start;
 						return true;
 					}
 				}
@@ -661,17 +676,17 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		}
 		if(flag == false)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_outside+=1;
 			return false;
 		}
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -703,7 +718,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -719,7 +734,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					return true;
 				}
 				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
@@ -746,7 +761,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 							int grid_id = k*split_pieces+j;
 							if(reachgrid.contains(grid_id))
 							{
-								judge_time += System.currentTimeMillis() - start;
+								query_judge_time += System.currentTimeMillis() - start;
 								return true;
 							}
 						}
@@ -789,11 +804,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_all+=1;
 			return false;
 		}
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		
 		for(int i = 0;i<jsonArr.size();i++)
@@ -805,11 +820,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -826,7 +841,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		long start = System.currentTimeMillis();
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -858,7 +873,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -880,7 +895,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 							int grid_id = k*split_pieces+j;
 							if(reachgrid.contains(grid_id))
 							{
-								judge_time += System.currentTimeMillis() - start;
+								query_judge_time += System.currentTimeMillis() - start;
 								return true;
 							}
 						}
@@ -922,11 +937,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
@@ -937,11 +952,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_FullGrids(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -957,7 +972,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -965,7 +980,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(!all_attributes.has("Bitmap_"+split_pieces+suffix))
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
@@ -989,7 +1004,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 					int grid_id = i*split_pieces+j;
 					if(reachgrid.contains(grid_id))
 					{
-						judge_time += System.currentTimeMillis() - start;
+						query_judge_time += System.currentTimeMillis() - start;
 						return true;
 					}
 				}
@@ -1018,17 +1033,17 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		}
 		if(flag == false)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_outside+=1;
 			return false;
 		}
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -1060,7 +1075,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -1082,7 +1097,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 							int grid_id = k*split_pieces+j;
 							if(reachgrid.contains(grid_id))
 							{
-								judge_time += System.currentTimeMillis() - start;
+								query_judge_time += System.currentTimeMillis() - start;
 								return true;
 							}
 						}
@@ -1125,11 +1140,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_all+=1;
 			return false;
 		}
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		
 		for(int i = 0;i<jsonArr.size();i++)
@@ -1141,11 +1156,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_FullGrids(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -1163,7 +1178,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		long start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -1195,7 +1210,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -1281,7 +1296,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 							if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
 							{
 								judge_2_time+=System.currentTimeMillis() - p_start;
-								judge_time += System.currentTimeMillis() - start;
+								query_judge_time += System.currentTimeMillis() - start;
 								return true;
 							}
 							
@@ -1321,11 +1336,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_all+=1;
 			return false;
 		}
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		
 		for(int i = 0;i<jsonArr.size();i++)
@@ -1337,11 +1352,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_Bitmap_MultiResolution(id, rect, merge_ratio, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
 			
 			if(reachable)
@@ -1359,7 +1374,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -1367,7 +1382,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(!all_attributes.has(String.format("MultilevelBitmap_%d_%d%s", split_pieces, merge_ratio, suffix)))
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
@@ -1474,7 +1489,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 						//ReachGrid totally Lie In query rectangle
 						if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
 						{
-							judge_time += System.currentTimeMillis() - start;
+							query_judge_time += System.currentTimeMillis() - start;
 							judge_2_time+=System.currentTimeMillis() -  p_start;
 							return true;
 						}
@@ -1502,19 +1517,19 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		    }
 		    if(outside_count == level_count)
 		    {
-		    	judge_time += System.currentTimeMillis() - start;
+		    	query_judge_time += System.currentTimeMillis() - start;
 				false_outside+=1;
 				return false;
 		    }
 		}
 		
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -1546,7 +1561,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -1634,7 +1649,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 								if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
 								{
 									judge_2_time+=System.currentTimeMillis() - p_start;
-									judge_time += System.currentTimeMillis() - start;
+									query_judge_time += System.currentTimeMillis() - start;
 									return true;
 								}
 								
@@ -1675,11 +1690,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_all+=1;
 			return false;
 		}
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		
 		for(int i = 0;i<jsonArr.size();i++)
@@ -1691,11 +1706,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_Bitmap_MultiResolution(id, rect, merge_ratio, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
 			
 			if(reachable)
@@ -1712,7 +1727,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		long start = System.currentTimeMillis();
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -1744,7 +1759,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -1759,7 +1774,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					return true;
 				}
 				
@@ -1787,7 +1802,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 								int grid_id = k*split_pieces+j;
 								if(reachgrid.contains(grid_id))
 								{
-									judge_time += System.currentTimeMillis() - start;
+									query_judge_time += System.currentTimeMillis() - start;
 									return true;
 								}
 							}
@@ -1831,11 +1846,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
@@ -1846,11 +1861,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_Bitmap_Partial(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -1866,7 +1881,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -1874,7 +1889,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(!all_attributes.has(RMBR_minx_name))
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
@@ -1893,14 +1908,14 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		//RMBR No overlap case
 		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
 		//RMBR Contain case
 		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return true;
 		}
 		
@@ -1932,7 +1947,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 						int grid_id = i*split_pieces+j;
 						if(reachgrid.contains(grid_id))
 						{
-							judge_time += System.currentTimeMillis() - start;
+							query_judge_time += System.currentTimeMillis() - start;
 							return true;
 						}
 					}
@@ -1961,19 +1976,19 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			}
 			if(flag == false)
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				false_outside+=1;
 				return false;
 			}
 		}
 		
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -2005,7 +2020,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -2021,7 +2036,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					return true;
 				}
 				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
@@ -2047,7 +2062,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 								int grid_id = k*split_pieces+j;
 								if(reachgrid.contains(grid_id))
 								{
-									judge_time += System.currentTimeMillis() - start;
+									query_judge_time += System.currentTimeMillis() - start;
 									return true;
 								}
 							}
@@ -2092,11 +2107,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_all+=1;
 			return false;
 		}
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		
 		for(int i = 0;i<jsonArr.size();i++)
@@ -2108,11 +2123,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_Bitmap_Partial(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -2129,7 +2144,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		long start = System.currentTimeMillis();
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -2161,7 +2176,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -2176,7 +2191,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					return true;
 				}
 				
@@ -2204,7 +2219,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 								int grid_id = k*split_pieces+j;
 								if(reachgrid.contains(grid_id))
 								{
-									judge_time += System.currentTimeMillis() - start;
+									query_judge_time += System.currentTimeMillis() - start;
 									return true;
 								}
 							}
@@ -2248,11 +2263,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 	
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		for(int i = 0;i<jsonArr.size();i++)
 		{
@@ -2263,11 +2278,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_Bitmap_Total(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -2283,7 +2298,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		VisitedVertices.clear();
 		long start = System.currentTimeMillis();
 		JsonObject all_attributes = p_neo4j_graph_store.GetVertexAllAttributes(start_id);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -2291,7 +2306,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(!all_attributes.has(RMBR_minx_name))
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
@@ -2310,14 +2325,14 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		//RMBR No overlap case
 		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return false;
 		}
 		
 		//RMBR Contain case
 		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			return true;
 		}
 		
@@ -2349,7 +2364,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 						int grid_id = i*split_pieces+j;
 						if(reachgrid.contains(grid_id))
 						{
-							judge_time += System.currentTimeMillis() - start;
+							query_judge_time += System.currentTimeMillis() - start;
 							return true;
 						}
 					}
@@ -2378,19 +2393,19 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			}
 			if(flag == false)
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				false_outside+=1;
 				return false;
 			}
 		}
 		
 		
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		start = System.currentTimeMillis();
 		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
 		String result = Neo4j_Graph_Store.Execute(resource, query);
-		neo4j_time += System.currentTimeMillis() - start;
+		query_neo4j_time += System.currentTimeMillis() - start;
 		
 		Neo4jAccessCount+=1;
 		
@@ -2422,7 +2437,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					System.out.println(id);
 					return true;
 				}
@@ -2438,7 +2453,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 				
 				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
 				{
-					judge_time += System.currentTimeMillis() - start;
+					query_judge_time += System.currentTimeMillis() - start;
 					return true;
 				}
 				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
@@ -2464,7 +2479,7 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 								int grid_id = k*split_pieces+j;
 								if(reachgrid.contains(grid_id))
 								{
-									judge_time += System.currentTimeMillis() - start;
+									query_judge_time += System.currentTimeMillis() - start;
 									return true;
 								}
 							}
@@ -2509,11 +2524,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		
 		if(false_count == jsonArr.size())
 		{
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			false_all+=1;
 			return false;
 		}
-		judge_time += System.currentTimeMillis() - start;
+		query_judge_time += System.currentTimeMillis() - start;
 		
 		
 		for(int i = 0;i<jsonArr.size();i++)
@@ -2525,11 +2540,11 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 			int id = row.get(0).getAsInt();
 			if(VisitedVertices.contains(id))
 			{
-				judge_time += System.currentTimeMillis() - start;
+				query_judge_time += System.currentTimeMillis() - start;
 				continue;
 			}
 			VisitedVertices.add(id);
-			judge_time += System.currentTimeMillis() - start;
+			query_judge_time += System.currentTimeMillis() - start;
 			boolean reachable = TraversalQuery_Bitmap_Total(id, rect, lb_x, lb_y, rt_x, rt_y);
 			
 			if(reachable)
@@ -2540,4 +2555,229 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		return false;
 	}
 	
+	//used in UpdateAddEdge to recursively update changing of RMBR(the end_id must be changed if the function is called and jArr_end store end_id's location and RMBR in a jsonArray)
+	public void UpdateAddEdgeTraverse(long end_id, JsonArray jArr_end)
+	{
+		String query = null;
+		String result = null;
+				
+		long start = System.currentTimeMillis();
+		query = String.format("match (n)-->(b) where id(b) = %d return n.%s, n.%s, n.%s, id(n)", end_id, longitude_property_name, latitude_property_name, bitmap_name);
+		result = Neo4j_Graph_Store.Execute(resource, query);
+		update_neo4j_time+=System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		
+		for(int j_index = 0;j_index<jsonArr.size();j_index++)
+		{
+			JsonArray jArr_start = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray();
+			long start_id = jArr_start.get(3).getAsLong();
+			boolean flag = false;
+			
+			RoaringBitmap update_bitmap = null;
+			//start node has no bitmap
+			if(jArr_start.get(2).isJsonNull())
+			{
+				//end node has location
+				if(!jArr_end.get(0).isJsonNull())
+				{
+					flag = true;
+					double lon = jArr_end.get(0).getAsDouble();
+					double lat = jArr_end.get(1).getAsDouble();
+					
+					int grid_x = (int) ((lon - total_range.min_x)/resolution);
+					int grid_y = (int) ((lat - total_range.min_y)/resolution);
+					
+					int grid_id = grid_x*split_pieces+grid_y;
+					update_bitmap = new RoaringBitmap();
+					update_bitmap.add(grid_id);
+					
+					//end node has bitmap
+					if(!jArr_end.get(2).isJsonNull())
+					{
+						ImmutableRoaringBitmap end_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_end.get(2).toString());
+						Iterator<Integer> iter = end_bitmap.iterator();
+						while(iter.hasNext())
+							update_bitmap.add(iter.next());	
+					}
+				}
+				//end node has no location
+				else
+				{
+					//end node has bitmap
+					if(!jArr_end.get(2).isJsonNull())
+					{
+						flag = true;
+						update_bitmap = new RoaringBitmap();
+						ImmutableRoaringBitmap end_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_end.get(2).toString());
+						Iterator<Integer> iter = end_bitmap.iterator();
+						while(iter.hasNext())
+							update_bitmap.add(iter.next());	
+					}
+				}
+			}
+			//start node has bitmap
+			else
+			{
+				ImmutableRoaringBitmap start_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_start.get(2).getAsString());
+				update_bitmap = new RoaringBitmap();
+				Iterator<Integer> iter = start_bitmap.iterator();
+				while(iter.hasNext())
+					update_bitmap.add(iter.next());
+				if(!jArr_end.get(0).isJsonNull())
+				{
+					double lon = jArr_end.get(0).getAsDouble();
+					double lat = jArr_end.get(1).getAsDouble();
+					
+					int grid_x = (int) ((lon - total_range.min_x)/resolution);
+					int grid_y = (int) ((lat - total_range.min_y)/resolution);
+					
+					int grid_id = grid_x*split_pieces+grid_y;
+					if(update_bitmap.checkedAdd(grid_id))
+						flag = true;
+				}
+				if(!jArr_end.get(2).isJsonNull())
+				{
+					ImmutableRoaringBitmap end_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_end.get(2).getAsString());
+					iter = end_bitmap.iterator();
+					while(iter.hasNext())
+						if(update_bitmap.checkedAdd(iter.next()))
+							flag = true;
+				}
+			}
+			update_inmemory_time+=System.currentTimeMillis() - start;
+			
+			if(flag)
+			{
+				start = System.currentTimeMillis();
+				String bitmap = OwnMethods.Serialize_RoarBitmap_ToString(update_bitmap);
+				update_inmemory_time += System.currentTimeMillis() - start;
+				
+				start = System.currentTimeMillis();
+				query = String.format("match (n) where id(n) = %d set n.%s = %s", start_id, bitmap_name, bitmap);
+				Neo4j_Graph_Store.Execute(resource, query);
+				update_neo4j_time += System.currentTimeMillis() - start;
+				
+				start = System.currentTimeMillis();
+				jArr_start.set(2, new JsonPrimitive(bitmap));
+				update_inmemory_time += System.currentTimeMillis() - start;
+				
+				UpdateAddEdgeTraverse(start_id, jArr_start);			
+			}
+		}
+	}
+	
+	public boolean UpdateAddEdge(long start_id, long end_id)
+	{
+		long start = System.currentTimeMillis();
+		String query = String.format("match (a),(b) where id(a) = %d and id(b) = %d create (a)-[:Added_Edge]->(b)", start_id, end_id);
+		Neo4j_Graph_Store.Execute(resource, query);
+		update_addedge_time+=System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		query = String.format("match (n) where id(n) in [%d,%d] return n.%s, n.%s, n.%s", start_id, end_id, longitude_property_name, latitude_property_name, bitmap_name);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		update_neo4j_time+=System.currentTimeMillis() - start;
+		
+		start = System.currentTimeMillis();
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+		
+		JsonArray jArr_start = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
+		JsonArray jArr_end = jsonArr.get(1).getAsJsonObject().get("row").getAsJsonArray();
+		
+		boolean flag = false;
+		
+		RoaringBitmap update_bitmap = null;
+		//start node has no bitmap
+		if(jArr_start.get(2).isJsonNull())
+		{
+			//end node has location
+			if(!jArr_end.get(0).isJsonNull())
+			{
+				flag = true;
+				double lon = jArr_end.get(0).getAsDouble();
+				double lat = jArr_end.get(1).getAsDouble();
+				
+				int grid_x = (int) ((lon - total_range.min_x)/resolution);
+				int grid_y = (int) ((lat - total_range.min_y)/resolution);
+				
+				int grid_id = grid_x*split_pieces+grid_y;
+				update_bitmap = new RoaringBitmap();
+				update_bitmap.add(grid_id);
+								
+				//end node has bitmap
+				if(!jArr_end.get(2).isJsonNull())
+				{
+					ImmutableRoaringBitmap end_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_end.get(2).toString());
+					Iterator<Integer> iter = end_bitmap.iterator();
+					while(iter.hasNext())
+						update_bitmap.add(iter.next());	
+				}
+			}
+			//end node has no location
+			else
+			{
+				//end node has RMBR
+				if(!jArr_end.get(2).isJsonNull())
+				{
+					flag = true;
+					update_bitmap = new RoaringBitmap();
+					ImmutableRoaringBitmap end_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_end.get(2).toString());
+					Iterator<Integer> iter = end_bitmap.iterator();
+					while(iter.hasNext())
+						update_bitmap.add(iter.next());	
+				}
+			}
+		}
+		//start node has bitmap
+		else
+		{
+			ImmutableRoaringBitmap start_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_start.get(2).getAsString());
+			update_bitmap = new RoaringBitmap();
+			Iterator<Integer> iter = start_bitmap.iterator();
+			while(iter.hasNext())
+				update_bitmap.add(iter.next());
+			
+			if(!jArr_end.get(0).isJsonNull())
+			{
+				double lon = jArr_end.get(0).getAsDouble();
+				double lat = jArr_end.get(1).getAsDouble();
+				
+				int grid_x = (int) ((lon - total_range.min_x)/resolution);
+				int grid_y = (int) ((lat - total_range.min_y)/resolution);
+				
+				int grid_id = grid_x*split_pieces+grid_y;
+				if(update_bitmap.checkedAdd(grid_id))
+					flag = true;
+			}
+			if(!jArr_end.get(2).isJsonNull())
+			{
+				ImmutableRoaringBitmap end_bitmap = OwnMethods.Deserialize_String_ToRoarBitmap(jArr_end.get(2).getAsString());
+				iter = end_bitmap.iterator();
+				while(iter.hasNext())
+					if(update_bitmap.checkedAdd(iter.next()))
+						flag = true;
+			}
+		}
+		
+		update_inmemory_time+=System.currentTimeMillis() - start;
+		if(flag)
+		{
+			start = System.currentTimeMillis();
+			String bitmap = OwnMethods.Serialize_RoarBitmap_ToString(update_bitmap);
+			update_inmemory_time += System.currentTimeMillis() - start;
+			
+			start = System.currentTimeMillis();
+			query = String.format("match (n) where id(n) = %d set n.%s = %s", start_id, bitmap_name, bitmap);
+			Neo4j_Graph_Store.Execute(resource, query);
+			update_neo4j_time+=System.currentTimeMillis()-start;
+			
+			start = System.currentTimeMillis();
+			jArr_start.set(2, new JsonPrimitive(bitmap));
+			update_inmemory_time+=System.currentTimeMillis() - start;
+			UpdateAddEdgeTraverse(start_id, jArr_start);			
+		}
+		return flag;
+	}
 }

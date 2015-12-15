@@ -244,6 +244,22 @@ public class OwnMethods {
 	    return ir;
 	}
 	
+	public static RoaringBitmap GetRoaringBitmap(String serializedstring)
+	{
+		RoaringBitmap rb = new RoaringBitmap();
+		try
+		{
+		    byte[] nodeIds = serializedstring.getBytes();
+		    ByteArrayInputStream bais = new ByteArrayInputStream(nodeIds);
+		    rb.deserialize(new DataInputStream(bais));
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+	    return rb;
+	}
+	
 	public static void PrintNode(Node node)
 	{
 		Iterator<String> iter = node.getPropertyKeys().iterator();
@@ -254,5 +270,34 @@ public class OwnMethods {
 			properties.put(key, node.getProperty(key).toString());
 		}
 		System.out.println(properties.toString());
+	}
+	
+	public static ArrayList<Integer> ReadTopoSequence(String filepath)
+	{
+		ArrayList<Integer> seq = null;
+		File file = null;
+		BufferedReader reader = null;
+		try
+		{
+			file = new File(filepath);
+			reader = new BufferedReader(new FileReader(file));
+			String str = reader.readLine();
+			int size = Integer.parseInt(str);
+			seq = new ArrayList<Integer>(size);
+			for(int i = 0;i<size;i++)
+				seq.add(0);
+			while((str = reader.readLine())!=null)
+			{
+				String[] l = str.split("\t");
+				Integer index = Integer.parseInt(l[0]);
+				Integer id = Integer.parseInt(l[1]);
+				seq.set(id, index);
+			}
+		}
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
+		return seq;
 	}
 }

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Vector;
 
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.roaringbitmap.RoaringBitmap;
@@ -19,18 +20,29 @@ import com.google.gson.JsonElement;
 public class Arbitary_usage {
 
 	public static void main(String[] args) {
-		String query = null;
-		String result = null;
-		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-		query = String.format("match (a)-->(b) where id(b) = %d return id(a)",4040605);
-		result = p_neo.Execute(query);
-		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		
-		for(int j_index = 0;j_index<jsonArr.size();j_index++)
-		{
-			long id = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray().get(0).getAsLong();
-			OwnMethods.Println(id);
-		}
+		RoaringBitmap rb = new RoaringBitmap();
+		rb.add(0);
+		rb.add(1);
+		System.out.println(rb.checkedAdd(1));
+		System.out.println(rb.checkedAdd(2));
+		System.out.println(rb);
+		
+//		String filepath = "/home/yuhansun/Documents/share/Real_data/Patents/topology_sort.txt";
+//		ArrayList<Integer> al = OwnMethods.ReadTopoSequence(filepath);
+//		System.out.println(al.get(0));
+//		String query = null;
+//		String result = null;
+//		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+//		query = String.format("match (a)-->(b) where id(b) = %d return id(a)",4040605);
+//		result = p_neo.Execute(query);
+//		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+//		
+//		for(int j_index = 0;j_index<jsonArr.size();j_index++)
+//		{
+//			long id = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray().get(0).getAsLong();
+//			OwnMethods.Println(id);
+//		}
 //		MyRectangle rec = null;
 //		if(rec == null)
 //			OwnMethods.Println(true);

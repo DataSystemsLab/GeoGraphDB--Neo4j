@@ -434,7 +434,7 @@ public class Experiment_9_27 {
 //									OwnMethods.WriteFile(resultpath, true, "\t");
 								
 //								OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/record.txt", true, selectivity+"\t"+georeach_multilevel2.neo4j_time+"\t"+georeach_multilevel2.judge_time+"\t"+georeach_multilevel2.judge_1_time+"\t"+georeach_multilevel2.judge_2_time+"\n");
-								OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/record.txt", true, selectivity+"\t"+georeach_multilevel3.neo4j_time+"\t"+georeach_multilevel3.judge_time+"\t"+accessnodecount+"\t"+georeach_multilevel3.Neo4jAccessCount+"\n");
+								OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/record.txt", true, selectivity+"\t"+georeach_multilevel3.query_neo4j_time+"\t"+georeach_multilevel3.query_judge_time+"\t"+accessnodecount+"\t"+georeach_multilevel3.Neo4jAccessCount+"\n");
 							selectivity*=10;
 //							selectivity+=0.25;
 							for(int i = 0;i<experiment_node_count;i++)

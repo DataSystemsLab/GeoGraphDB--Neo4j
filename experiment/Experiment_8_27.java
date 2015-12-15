@@ -166,7 +166,7 @@ public class Experiment_8_27
 //				}
 //										
 //			}
-			OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/query_time_8_27.csv", true, time_georeach/experiment_node_count+"\t"+georeach.neo4j_time/experiment_node_count+"\t"+georeach.judge_time/experiment_node_count+"\t"+accessnodecount/experiment_node_count+"\t"+georeach.Neo4jAccessCount/experiment_node_count+"\t");
+			OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/query_time_8_27.csv", true, time_georeach/experiment_node_count+"\t"+georeach.query_neo4j_time/experiment_node_count+"\t"+georeach.query_judge_time/experiment_node_count+"\t"+accessnodecount/experiment_node_count+"\t"+georeach.Neo4jAccessCount/experiment_node_count+"\t");
 			Neo4j_Graph_Store.StopMyServer(datasource);
 			
 			OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/query_time_8_27.csv", true, true_count+"\t"+false_no_exist+"\t"+false_not_reach+"\n");

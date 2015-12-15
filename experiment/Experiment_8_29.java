@@ -96,7 +96,7 @@ public class Experiment_8_29 {
 							i = i-1;
 						}						
 					}
-					OwnMethods.WriteFile(resultpath, true, time_georeach/experiment_node_count+"\t"+georeach.neo4j_time/experiment_node_count+"\t"+georeach.judge_time/experiment_node_count+"\t"+accessnodecount/experiment_node_count+"\t"+georeach.Neo4jAccessCount/experiment_node_count+"\t"+georeach.false_inside+"\t"+georeach.false_outside+"\t"+georeach.false_all+"\t");
+					OwnMethods.WriteFile(resultpath, true, time_georeach/experiment_node_count+"\t"+georeach.query_neo4j_time/experiment_node_count+"\t"+georeach.query_judge_time/experiment_node_count+"\t"+accessnodecount/experiment_node_count+"\t"+georeach.Neo4jAccessCount/experiment_node_count+"\t"+georeach.false_inside+"\t"+georeach.false_outside+"\t"+georeach.false_all+"\t");
 				}
 				if(selectivity<=0.01)
 					selectivity/=10;

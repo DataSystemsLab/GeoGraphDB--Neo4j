@@ -127,7 +127,7 @@ public class Experiment_7_27 {
 					
 					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/spatialreachindex_time_composition.txt", true, (j/100.0)+"\t"+time_reachindex/experiment_node_count+"\t"+spareach.neo4j_time/experiment_node_count+"\t"+spareach.postgresql_time/experiment_node_count+"\t"+spareach.judge_time/experiment_node_count+"\t"+true_result_count+"\n");
 
-					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, (j/100.0)+"\t"+time_georeach/experiment_node_count+"\t"+georeach.neo4j_time/experiment_node_count+"\t"+georeach.judge_time/experiment_node_count+"\t"+true_result_count+"\n");
+					OwnMethods.WriteFile("/home/yuhansun/Documents/Real_data/"+datasource+"/georeach_time_composition.txt", true, (j/100.0)+"\t"+time_georeach/experiment_node_count+"\t"+georeach.query_neo4j_time/experiment_node_count+"\t"+georeach.query_judge_time/experiment_node_count+"\t"+true_result_count+"\n");
 					
 					spareach.Disconnect();
 					spa.Disconnect();

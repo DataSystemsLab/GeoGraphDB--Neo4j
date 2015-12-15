@@ -71,9 +71,52 @@ public class GeoReach_test
 		}	
 	}
 	
+	public static void UpdateAdd_Test()
+	{
+		String datasource = "Patents";
+		String filepath = "/home/yuhansun/Documents/share/Real_data/Patents/topology_sort.txt";
+		ArrayList<Integer> seq = OwnMethods.ReadTopoSequence(filepath);
+		long graph_size = OwnMethods.GetNodeCount(datasource);
+		int node_count = 1000;
+		HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, node_count);
+		Iterator<String> iter = hs.iterator();
+		while(iter.hasNext())
+		{
+			int start_id = Integer.parseInt(iter.next());
+			int end_id = Integer.parseInt(iter.next());
+			int start_index = seq.get(start_id);
+			int end_index = seq.get(end_id);
+			if(start_index>end_index)
+			{
+				int x = start_index;
+				start_index = end_index;
+				end_index = x;
+			}
+			long real_start_id = start_id+graph_size;
+			long real_end_id = end_id+graph_size;
+			boolean result = p_georeach.UpdateAddEdge(real_start_id, real_end_id);
+			OwnMethods.Println(result);
+			if(result)
+			{
+				
+			}
+			if(p_georeach.CheckRMBR(real_start_id))
+			{
+				OwnMethods.Println(real_start_id);
+				OwnMethods.Println(real_end_id);
+				
+			}
+				
+		}
+	}
+	
 	public static void main(String[] args)
 	{
-		Reconstruct_test();
+		long graph_size = 3774768;
+		long start_id = 11+graph_size;
+		long end_id = 3+graph_size;
+		p_georeach.UpdateAddEdge(start_id, end_id);
+//		Reconstruct_test();
 		/*Rectangle rect = p_georeach.GetRMBR(17585);
 		System.out.println(rect.min_x);
 		System.out.println(rect.min_y);
