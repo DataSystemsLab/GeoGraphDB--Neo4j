@@ -2,118 +2,89 @@ package def;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-import java.util.Vector;
 
 import org.neo4j.unsafe.batchinsert.BatchInserter;
-import org.roaringbitmap.RoaringBitmap;
-import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
-
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 public class Arbitary_usage {
+	
+	public static void GenerateScript()
+	{
+		String datasource = "Patents";
+		for(int ratio = 20;ratio<=80;ratio+=20)
+		{
+			for(int merge = 2;merge<4;merge++)
+			{
+				System.out.println(String.format("java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.GeoReach_Integrated_test %s %d %d",datasource, ratio,merge));
+			}
+		}	
+	}
+	
+	public static void SetNull(String datasource, String removename)
+	{
+		BatchInserter inserter = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "4096M");
+		String db_path = "/home/yuhansun/Documents/Real_data/" + datasource + "/neo4j-community-2.2.3/data/graph.db";
+		int node_count = OwnMethods.GetNodeCount(datasource);
+		int id = 0;
+		try
+		{
+			inserter = BatchInserters.inserter(new File(db_path).getAbsolutePath(),config);
+			Map<String, Object> properties = null;
+			for(id = node_count;id<2*node_count;id++)
+			{
+				properties = inserter.getNodeProperties(id);
+				if(properties.containsKey(removename))
+				{
+					inserter.removeNodeProperty(id, removename);
+				}
+			}
+		}
+		catch(Exception e)
+		{
+			if(inserter!=null)
+				inserter.shutdown();
+			
+			e.printStackTrace();
+		}
+		finally
+		{
+			if(inserter!=null)
+				inserter.shutdown();
+		}
+	}
 
 	public static void main(String[] args) {
+	
+		String datasource = args[0];
+		String name = args[1];
+		SetNull(datasource, name);
+		for(int i = 0;i<args.length;i++)
+			System.out.println(args[0]+"\t");
+		System.out.println("\n");
 		
-		RoaringBitmap rb = new RoaringBitmap();
-		rb.add(0);
-		rb.add(1);
-		System.out.println(rb.checkedAdd(1));
-		System.out.println(rb.checkedAdd(2));
-		System.out.println(rb);
-		
-//		String filepath = "/home/yuhansun/Documents/share/Real_data/Patents/topology_sort.txt";
-//		ArrayList<Integer> al = OwnMethods.ReadTopoSequence(filepath);
-//		System.out.println(al.get(0));
-//		String query = null;
-//		String result = null;
-//		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-//		query = String.format("match (a)-->(b) where id(b) = %d return id(a)",4040605);
-//		result = p_neo.Execute(query);
-//		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
-//		
-//		for(int j_index = 0;j_index<jsonArr.size();j_index++)
-//		{
-//			long id = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray().get(0).getAsLong();
-//			OwnMethods.Println(id);
-//		}
-//		MyRectangle rec = null;
-//		if(rec == null)
-//			OwnMethods.Println(true);
-		
-//		Config p_con = new Config();
-//		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-//		GeoReach p_geo = new GeoReach();
-//		long graph_size = OwnMethods.GetNodeCount("Patents");
-//		HashSet<String> hs = OwnMethods.GenerateRandomInteger(graph_size, 500);
-//		Iterator<String> iter = hs.iterator();
-//		while(iter.hasNext())
-//		{
-//			long id = 4*graph_size+Long.parseLong(iter.next());
-//			System.out.println(id);
-//			String query = String.format("match (n) where id(n) =%d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", id, p_con.GetLongitudePropertyName(), p_con.GetLatitudePropertyName(), p_con.GetRMBR_minx_name(), p_con.GetRMBR_miny_name(), p_con.GetRMBR_maxx_name(), p_con.GetRMBR_maxy_name());
-//			String result = p_neo.Execute(query);
-//			JsonArray jarr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
-//			jarr = jarr.get(0).getAsJsonObject().get("row").getAsJsonArray();
-//			p_geo.UpdateTraverse(id, jarr);
-//		}
-		
-		
-//		Config p_con = new Config();
-//		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-//		String query = null;
-//		String result = null;
-//		query = String.format("match (n)-->(b) where id(b) = %d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", 5000000, p_con.GetLongitudePropertyName(), p_con.GetLatitudePropertyName(), p_con.GetRMBR_minx_name(), p_con.GetRMBR_miny_name(), p_con.GetRMBR_maxx_name(), p_con.GetRMBR_maxy_name());
-//		result = p_neo.Execute(query);
-//		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
-//		
-//		for(int j_index = 0;j_index<jsonArr.size();j_index++)
-//		{
-//			JsonArray jArr_start = jsonArr.get(j_index).getAsJsonObject().get("row").getAsJsonArray();
-//			System.out.println(jArr_start.toString());
-//		}
-		
-//		GeoReach p_geo = new GeoReach();
-//		p_geo.UpdateDeleteEdge(4000000, 5000000);
-//		double x = 1.000/3;
-//		double y = 1.00/3;
-//		System.out.println(x-y);
-//		if(x-y == 0)
-//			OwnMethods.Println(true);
-//		else
-//			OwnMethods.Println(false);
-//		System.out.println(x);
-//		String str = String.format("%.8f", x);
-//		System.out.println(str);
-		
-//		String str = "OjAAAAEAAAAAAI0AEAAAABQAIQAkAC4ANAA8AD8AQABMAE8AWgBhAGUAZwBoAG8AcgB3AHoA/AA8AUQBtQHgAesB+wF7ArMCEwM2A8oDdASgBKQEvgXIBi0HjwiICQwKiQoYDIAMggySDOIMEQ01DWANlA2cDasNGw4FDwwPig+QD4MQlxCFEZsRARIcEoIShxKIEpASABMzFJQVkxcAGDMZABphGpYagBuAHAsdxB2AHgAfCx9ZHwAggyC6IAIjkCOAJAAmACiAKb8pACoALBcsgC3HLgYvgC8DMA42ADgCOIA6iTsAPAA9gD4APwtAEUATQBZAG0AjQCVAL0AxQDVASkJAQ8BDAERARkBHQEjASEBMgEzATcBOBFAKUAxQDlAVUANUIFRQVABV";
-////		RoaringBitmap r = new RoaringBitmap();
-////		r.add(2);
-////		r.add(3);
-//		ImmutableRoaringBitmap r = OwnMethods.Deserialize_String_ToRoarBitmap(str);
-//		System.out.println(r);
-//		System.out.println(r.getCardinality());
-		
-		//OwnMethods.RestartNeo4jClearCache("Patents");
-		
-//		ArrayList<String> datasource_a = new ArrayList<String>();
-//		datasource_a.add("citeseerx");
-//		datasource_a.add("go_uniprot");
-//		datasource_a.add("Patents");
-//		datasource_a.add("uniprotenc_22m");
-//		datasource_a.add("uniprotenc_100m");
-//		datasource_a.add("uniprotenc_150m");
-//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
-//		{
-//			String datasource = datasource_a.get(name_index);
-//			SpatialIndex.DropTable(datasource, "_zipf");
-//		}
+//		GenerateScript();
+		/*File file = null;
+		BufferedReader reader  = null;
+		try
+		{
+			file = new File("/home/yuhansun/Documents/share/Patents/Clustered_distributed/20/entity.txt");
+			reader = new BufferedReader(new FileReader(file));
+			String str = null;
+			while( (str = reader.readLine())!=null)
+				System.out.println(str);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}*/
 		
 //		String datasource = "Patents";
 //		BatchInserter inserter = null;
@@ -126,10 +97,10 @@ public class Arbitary_usage {
 //		int ratio = 60;
 //		//{
 //			long offset = ratio / 20 * node_count;
-//			try
-//			{
-//				
-//			}
+////			try
+////			{
+////				
+////			}
 //		String datasource = "Patents";
 //		int graph_size = OwnMethods.GetNodeCount(datasource);
 //		double experiment_node_count = 500;

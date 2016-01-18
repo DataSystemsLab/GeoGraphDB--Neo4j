@@ -29,11 +29,11 @@ public class Traversal_test {
 		}
 		System.out.println(time);*/
 		
-		double x = 310.1307859935054;
-		double y = 742.2341675537004;
-		Traversal tra = new Traversal();
-		MyRectangle rect = new MyRectangle(x,y,x+100, y+100);
-		System.out.println(tra.ReachabilityQuery(6704480, rect));
+//		double x = 310.1307859935054;
+//		double y = 742.2341675537004;
+//		Traversal tra = new Traversal();
+//		MyRectangle rect = new MyRectangle(x,y,x+100, y+100);
+//		System.out.println(tra.ReachabilityQuery(6704480, rect));
 
 		
 	}

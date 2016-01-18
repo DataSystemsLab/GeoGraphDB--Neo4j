@@ -3,15 +3,11 @@ package def;
 import java.util.*;
 
 import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response.Status;
-
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.WebResource;
 
 import java.io.*;
-import java.net.URI;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -318,9 +314,9 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 	
 	//get all attributes as json format string by a given id
-	public JsonObject GetVertexAllAttributes(long start_id)
+	public JsonObject GetVertexAllAttributes(long id)
 	{		
-		String query = "match (a) where id(a) = " +Long.toString(start_id) +" return a";
+		String query = "match (a) where id(a) = " +Long.toString(id) +" return a";
 		
 		String result = Execute(resource, query);
 		
@@ -348,40 +344,22 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 		return jsonObject;
 	}
 	
-	//get all attributes as json format string by a given id
-	public static JsonObject GetVertexAllAttributes(WebResource resource, long start_id)
-	{		
-		String query = "match (a) where id(a) = " +Long.toString(start_id) +" return a";
-		
-		String result = Execute(resource, query);
-		
-		JsonParser jsonParser = new JsonParser();
-		
-		JsonObject jsonObject = null;
-		try
-		{
-			jsonObject = (JsonObject) jsonParser.parse(result);
-			JsonArray jsonArr = (JsonArray) jsonObject.get("results");
-			jsonObject = (JsonObject) jsonArr.get(0);
-			jsonArr = (JsonArray) jsonObject.get("data");
-			
-			jsonObject = (JsonObject)jsonArr.get(0);
-			jsonArr = (JsonArray)jsonObject.get("row");
-			
-			jsonObject = (JsonObject)jsonArr.get(0);
-		}
-		catch(Exception e)
-		{
-			e.printStackTrace();
-			System.out.println("\n"+result);
-		}	
-		
-		return jsonObject;
-	}
-	
-	public JsonArray GetVertexIDandAllAttributes(int id)
+	public JsonArray GetVertexAttributes(long id, ArrayList<String> property_name_array)
 	{
-		String query = "match (a) where id(a) = " +Integer.toString(id) +" return id(a), a";
+		String query = "match (n) where id(n) = "+id+" return ";
+		int i = 0;
+		for(;i<property_name_array.size()-1;i++)
+			query+=("n."+property_name_array.get(i)+",");
+		query+=("n."+property_name_array.get(i));
+		String result = Execute(query);
+		JsonArray jsonArr = GetExecuteResultDataASJsonArray(result);
+		jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
+		return jsonArr;
+	}
+	
+	public JsonArray GetVertexIDandAllAttributes(long id)
+	{
+		String query = "match (a) where id(a) = " +Long.toString(id) +" return id(a), a";
 		
 		String result = Execute(resource, query);
 		
@@ -453,9 +431,9 @@ public class Neo4j_Graph_Store implements Graph_Store_Operation{
 	}
 	
 	//given a vertex id and name of its attribute, return the attribute value
-	public String GetVertexAttributeValue(int id, String attributename)
+	public String GetVertexAttributeValue(long id, String attributename)
 	{
-		String query = "match (a) where id(a) = " +Integer.toString(id) +" return a."+attributename;
+		String query = "match (a) where id(a) = " +Long.toString(id) +" return a."+attributename;
 		
 		String result = Execute(resource, query);
 		

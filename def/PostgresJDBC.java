@@ -15,11 +15,10 @@ public class PostgresJDBC {
 			String url = "jdbc:postgresql://localhost:5432/postgres" ;
 			con = DriverManager.getConnection(url, "postgres" , "postgres" );   
 		}
-		catch (Exception ee)
+		catch (Exception e)
 		{
-			System.out.println("here");
-			System.out.println(ee.getMessage());
-			System.out.println(ee.getCause());
+			System.out.println(e.getMessage());
+			System.out.println(e.getCause());
 			
         }
 		return con;

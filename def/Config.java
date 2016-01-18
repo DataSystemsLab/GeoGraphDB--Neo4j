@@ -3,7 +3,6 @@ package def;
 public class Config	{
 	private String SERVER_ROOT_URI = "http://localhost:7474/db/data";
 	
-	private String suffix = "_zipf";
 	private String longitude_property_name = "longitude";
 	private String latitude_property_name = "latitude";
 	
@@ -12,40 +11,42 @@ public class Config	{
 	private String RMBR_maxx_name = "RMBR_maxx";
 	private String RMBR_maxy_name = "RMBR_maxy";
 	
+	private int merge_ratio;
+	
 	public String GetServerRoot() {
 		return SERVER_ROOT_URI;
 	}
 	
 	public String GetLongitudePropertyName() {
-		return longitude_property_name + suffix;
+		return longitude_property_name;
 	}
 	
 	public String GetLatitudePropertyName() {
-		return latitude_property_name + suffix;
+		return latitude_property_name;
 	}
 	
 	public String GetRMBR_minx_name()
 	{
-		return RMBR_minx_name + suffix;
+		return RMBR_minx_name;
 	}
 	
 	public String GetRMBR_miny_name()
 	{
-		return RMBR_miny_name + suffix;
+		return RMBR_miny_name;
 	}
 	
 	public String GetRMBR_maxx_name()
 	{
-		return RMBR_maxx_name + suffix;
+		return RMBR_maxx_name;
 	}
 	
 	public String GetRMBR_maxy_name()
 	{
-		return RMBR_maxy_name + suffix;
+		return RMBR_maxy_name;
 	}
 	
-	public String GetSuffix()
+	public int Get_MergeRatio()
 	{
-		return suffix;
+		return merge_ratio;
 	}
 }

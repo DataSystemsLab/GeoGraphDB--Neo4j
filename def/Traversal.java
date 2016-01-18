@@ -6,12 +6,12 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-public class Traversal implements ReachabilityQuerySolver	{
+public class Traversal {
 	
 	//used in query procedure in order to record visited vertices
 	public Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
-	static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
+	public Neo4j_Graph_Store p_neo4j_graph_store;
 	
 	private String longitude_property_name;
 	private String latitude_property_name;
@@ -26,6 +26,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 		latitude_property_name = config.GetLatitudePropertyName();
 		Neo4jTime = 0;
 		JudgeTime = 0;
+		p_neo4j_graph_store = new Neo4j_Graph_Store();
 	}
 	
 	public void Preprocess()
@@ -33,7 +34,7 @@ public class Traversal implements ReachabilityQuerySolver	{
 		
 	}
 	
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect)
+	public boolean ReachabilityQuery(int start_id, MyRectangle rect, int ratio)
 	{
 		Queue<Integer> queue = new LinkedList<Integer>();
 		VisitedVertices.clear();
@@ -62,10 +63,10 @@ public class Traversal implements ReachabilityQuerySolver	{
 			int id = row.get(0).getAsInt();
 			
 			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name))
+			if(jsonObject.has(longitude_property_name+"_"+ratio))
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+				double lat = Double.parseDouble(jsonObject.get(latitude_property_name+"_"+ratio).toString());
+				double lon = Double.parseDouble(jsonObject.get(longitude_property_name+"_"+ratio).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					JudgeTime+=System.currentTimeMillis() - start;
@@ -110,10 +111,10 @@ public class Traversal implements ReachabilityQuerySolver	{
 				int neighbor_id = row.get(0).getAsInt();
 				
 				jsonObject = (JsonObject)row.get(1);
-				if(jsonObject.has(longitude_property_name))
+				if(jsonObject.has(longitude_property_name+"_"+ratio))
 				{
-					double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
-					double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
+					double lat = Double.parseDouble(jsonObject.get(latitude_property_name+"_"+ratio).toString());
+					double lon = Double.parseDouble(jsonObject.get(longitude_property_name+"_"+ratio).toString());
 					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 					{
 						JudgeTime+=System.currentTimeMillis() - start;

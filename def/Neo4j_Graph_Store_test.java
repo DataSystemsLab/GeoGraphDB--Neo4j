@@ -3,54 +3,60 @@ package def;
 import java.util.*;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.sun.jersey.api.client.WebResource;
+
 
 public class Neo4j_Graph_Store_test {
 
 //	public static Set<Integer> VisitedVertices = new HashSet();
 	public static HashSet<Long> VisitedVertices = new HashSet<Long>();
-	
-	public static Neo4j_Graph_Store p_neo4j_graph_store = new Neo4j_Graph_Store();
-	
+		
 	public static void main(String[] args) 
 	{
-		ArrayList<String> datasource_a = new ArrayList<String>();
-//		datasource_a.add("citeseerx");
-		datasource_a.add("go_uniprot");
-		datasource_a.add("Patents");
-		datasource_a.add("uniprotenc_22m");
-		datasource_a.add("uniprotenc_100m");
-		datasource_a.add("uniprotenc_150m");
-		for(int name_index = 0;name_index<datasource_a.size();name_index++)
-		{
-			String datasource = datasource_a.get(name_index);
-			System.out.println(datasource+"\n");
-			System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
-			Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
-			int bulksize = 10;
-			int node_count = OwnMethods.GetNodeCount(datasource);
-			int total_count = 5*node_count;
-			int id = node_count;
-			while(id<total_count - bulksize)
-			{
-				String query = String.format("match (n) where id(n)>=%d and id(n)<%d and (has(n.longitude_zipf) or has(n.RMBR_minx_zipf)) remove n.longitude_zipf,n.latitude_zipf, n.RMBR_minx_zipf,n.RMBR_miny.zipf, n.RMBR_maxx_zipf, n.RMBR_maxy_zipf return count(n)", id,id+bulksize);
-				System.out.println(query);
-				long start = System.currentTimeMillis();
-				System.out.println(p_neo.Execute(query));
-				System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
-				id+=bulksize;
-			}
-			String query = String.format("match (n) where id(n)>=%d and id(n)<%d and (has(n.longitude_zipf) or has(n.RMBR_minx_zipf)) remove n.longitude_zipf,n.latitude_zipf, n.RMBR_minx_zipf,n.RMBR_miny.zipf, n.RMBR_maxx_zipf, n.RMBR_maxy_zipf return count(n)", id,total_count);
-			long start = System.currentTimeMillis();
-			System.out.println(p_neo.Execute(query));
-			System.out.println(System.currentTimeMillis() - start);
-//			String result = p_neo.Execute("match (n) where has(n.longitude_zipf) or has(n.RMBR_minx_zipf) remove n.longitude_zipf,n.latitude_zipf, n.RMBR_minx_zipf,n.RMBR_miny.zipf, n.RMBR_maxx_zipf, n.RMBR_maxy_zipf return count(n)");
-//			System.out.println(datasource+"\t"+result);
-			System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
-		}
+		Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+		ArrayList<String> al = new ArrayList<String>();
+		al.add("RMBR_minx_random_20");
+		al.add("RMBR_miny_random_20");
+		al.add("RMBR_maxx_random_20");
+		al.add("RMBR_maxy_random_20");
+		al.add("bitmap");
+		JsonArray jsonArr = p_neo.GetVertexAttributes(6540573, al);
+		System.out.println(jsonArr.get(4).isJsonNull());
+		
+		
+//		ArrayList<String> datasource_a = new ArrayList<String>();
+////		datasource_a.add("citeseerx");
+//		datasource_a.add("go_uniprot");
+//		datasource_a.add("Patents");
+//		datasource_a.add("uniprotenc_22m");
+//		datasource_a.add("uniprotenc_100m");
+//		datasource_a.add("uniprotenc_150m");
+//		for(int name_index = 0;name_index<datasource_a.size();name_index++)
+//		{
+//			String datasource = datasource_a.get(name_index);
+//			System.out.println(datasource+"\n");
+//			System.out.println(Neo4j_Graph_Store.StartMyServer(datasource));
+//			Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store("");
+//			int bulksize = 10;
+//			int node_count = OwnMethods.GetNodeCount(datasource);
+//			int total_count = 5*node_count;
+//			int id = node_count;
+//			while(id<total_count - bulksize)
+//			{
+//				String query = String.format("match (n) where id(n)>=%d and id(n)<%d and (has(n.longitude_zipf) or has(n.RMBR_minx_zipf)) remove n.longitude_zipf,n.latitude_zipf, n.RMBR_minx_zipf,n.RMBR_miny.zipf, n.RMBR_maxx_zipf, n.RMBR_maxy_zipf return count(n)", id,id+bulksize);
+//				System.out.println(query);
+//				long start = System.currentTimeMillis();
+//				System.out.println(p_neo.Execute(query));
+//				System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
+//				id+=bulksize;
+//			}
+//			String query = String.format("match (n) where id(n)>=%d and id(n)<%d and (has(n.longitude_zipf) or has(n.RMBR_minx_zipf)) remove n.longitude_zipf,n.latitude_zipf, n.RMBR_minx_zipf,n.RMBR_miny.zipf, n.RMBR_maxx_zipf, n.RMBR_maxy_zipf return count(n)", id,total_count);
+//			long start = System.currentTimeMillis();
+//			System.out.println(p_neo.Execute(query));
+//			System.out.println(System.currentTimeMillis() - start);
+////			String result = p_neo.Execute("match (n) where has(n.longitude_zipf) or has(n.RMBR_minx_zipf) remove n.longitude_zipf,n.latitude_zipf, n.RMBR_minx_zipf,n.RMBR_miny.zipf, n.RMBR_maxx_zipf, n.RMBR_maxy_zipf return count(n)");
+////			System.out.println(datasource+"\t"+result);
+//			System.out.println(Neo4j_Graph_Store.StopMyServer(datasource));
+//		}
 		
 		/*Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
 		String result = p_neo.Execute("match (n) where id(n) = 100 return n");

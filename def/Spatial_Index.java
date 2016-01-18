@@ -14,9 +14,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.WebResource;
 
-public class SpatialIndex implements ReachabilityQuerySolver{
+public class Spatial_Index implements ReachabilityQuerySolver{
 	
-	private Neo4j_Graph_Store p_neo = new Neo4j_Graph_Store();
+	private Neo4j_Graph_Store p_neo;
 	Config p_config;
 	private String RTreeName;
 	
@@ -35,7 +35,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 	//used in query procedure in order to record visited vertices
 	public Set<Integer> VisitedVertices = new HashSet<Integer>();
 	
-	public SpatialIndex(String p_RTreeName)
+	public Spatial_Index(String p_RTreeName)
 	{
 		p_neo = new Neo4j_Graph_Store();
 		resource = p_neo.GetCypherResource();
@@ -53,71 +53,8 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		PostgresTime = 0;
 		JudgeTime = 0;
 	}
-	
-	
-//	public void Construct_RTree_Index()
-//	{
-//		for(int ratio = 20;ratio<100;ratio+=20)
-//		{
-//			long database_size = p_own.getDirSize(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db"));
-//			
-//			String label = "RTree_Random_" + ratio;
-//			String tree_name = "RTree_Random_" + ratio;
-//			
-//			p_index.CreatePointLayer(tree_name);
-//			
-//			String query = "match (a:"+label+") return id(a)";
-//			String result = p_neo.Execute(query);
-//			JsonArray jsonArr = p_neo.GetExecuteResultDataASJsonArray(result);
-//			for(int j = 0;j<jsonArr.size();j++)
-//			{
-//				JsonObject jsonOb = (JsonObject) jsonArr.get(j);
-//				JsonArray arr = jsonOb.get("row").getAsJsonArray();
-//				long id = arr.get(0).getAsLong();
-//				p_index.AddOneNodeToPointLayer(tree_name, id);
-//			}
-//			long rtree_size = p_own.getDirSize(new File("/home/yuhansun/Documents/Real_data/Patents/neo4j-community-2.2.3/data/graph.db")) - database_size;
-//			System.out.println(tree_name + ": " + rtree_size);
-//		}
-//	}
-	
-	public static void DropTable(String datasource)
-	{
-		Connection con = null;
-		try
-		{
-			con = PostgresJDBC.GetConnection();
-			for(int ratio = 20;ratio<100;ratio+=20)
-			{
-				Statement st = null;
-				try
-				{
-					st = con.createStatement();
-					String query = "drop table "+ datasource + "_Random_"+ratio;
-					st.executeUpdate(query);
-				}
-				catch(Exception e)
-				{
-					System.out.println(e.getMessage());
-				}
-				finally
-				{
-					PostgresJDBC.Close(st);
-				}	
-			}
-			
-		}
-		catch(Exception e)
-		{
-			System.out.println(e.getMessage());
-		}
-		finally
-		{
-			PostgresJDBC.Close(con);
-		}		
-	}
 		
-	public static void CreateTable(String datasource, String suffix)
+	public static void CreateTable(String datasource)
 	{
 		Connection con = null;
 		try
@@ -129,7 +66,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 				try
 				{
 					st = con.createStatement();
-					String query = "create table "+datasource+"_Random_" + ratio + suffix + " (id bigint,";
+					String query = "create table "+datasource + " (id bigint,";
 					query+=("location point)");
 					System.out.println(query);
 					st.executeUpdate(query);
@@ -154,7 +91,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		}	
 	}
 	
-	public static void DropTable(String datasource, String suffix)
+	public static void DropTable(String datasource)
 	{
 		Connection con = null;
 		try
@@ -166,7 +103,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 				try
 				{
 					st = con.createStatement();
-					String query = "drop table "+datasource+"_Random_" + ratio + suffix;
+					String query = "drop table "+datasource;
 					System.out.println(query);
 					st.executeUpdate(query);
 				}
@@ -260,7 +197,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 			//int ratio = 20;
 			{
 				System.out.println("load "+datasource+"_Random_" + ratio + suffix);
-				String filename = "/home/yuhansun/Documents/Real_data/"+datasource+"/"+filesuffix+"/" + ratio + "/entity.txt";
+				String filename = "/home/yuhansun/Documents/share/"+datasource+"/"+filesuffix+"/" + ratio + "/entity.txt";
 				file = new File(filename);
 				reader = new BufferedReader(new FileReader(file));
 				reader.readLine();
@@ -338,7 +275,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 		//Construct_RTree_Index();
 	}
 
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect) 
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect) 
 	{
 		try
 		{
@@ -367,7 +304,7 @@ public class SpatialIndex implements ReachabilityQuerySolver{
 						
 			start = System.currentTimeMillis();
 			
-			query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b),b";
+			query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b),b";
 			NeighborOperationCount+=1;
 			
 			String result = Neo4j_Graph_Store.Execute(resource, query);

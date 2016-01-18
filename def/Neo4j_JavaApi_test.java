@@ -63,7 +63,7 @@ public class Neo4j_JavaApi_test {
 		
 		
 //		OwnMethods.ClearCache();
-		String str = "uniprotenc_150m";
+		String str = "Patents";
 		String dbpath = ("/home/yuhansun/Documents/Real_data/"+str+"/neo4j-community-2.2.3/data/graph.db");
 		Neo4j_JavaApi p_neo = new Neo4j_JavaApi(dbpath);
 		Transaction tx = p_neo.graphDb.beginTx();

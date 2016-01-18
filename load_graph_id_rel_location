@@ -1,9 +1,0 @@
-#!/bin/bash
-
-datasource="citeseerx"
-filesuffix="Zipf_distributed"
-
-java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter LoadGraph $datasource 20 $filesuffix
-java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter LoadGraph $datasource 40 $filesuffix
-java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter LoadGraph $datasource 60 $filesuffix
-java -cp workspace/def/target/def-0.0.1-SNAPSHOT.jar  def.Batch_Inserter LoadGraph $datasource 80 $filesuffix
