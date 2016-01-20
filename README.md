@@ -34,4 +34,4 @@ Spatial location file<br />
 ###Project website
 
 ### DataSys Lab
-GeoGraphDB is one of the projects under DataSys Lab at Arizona State University. The mission of DataSys Lab is designing and developing experimental data management systems (e.g., database systems).
+GeoSpark is one of the projects under [DataSys Lab](http://www.datasyslab.org/) at Arizona State University. The mission of DataSys Lab is designing and developing experimental data management systems (e.g., database systems).
