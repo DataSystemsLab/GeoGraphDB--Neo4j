@@ -34,13 +34,13 @@ public class Traversal {
 		
 	}
 	
-	public boolean ReachabilityQuery(int start_id, MyRectangle rect, int ratio)
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect)
 	{
 		Queue<Integer> queue = new LinkedList<Integer>();
 		VisitedVertices.clear();
 		
 		long start = System.currentTimeMillis();
-		String query = "match (a)-->(b) where id(a) = " +Integer.toString(start_id) +" return id(b), b";
+		String query = "match (a)-->(b) where id(a) = " +Long.toString(start_id) +" return id(b), b";
 		
 		String result = p_neo4j_graph_store.Execute(query);
 		
@@ -63,14 +63,14 @@ public class Traversal {
 			int id = row.get(0).getAsInt();
 			
 			jsonObject = (JsonObject)row.get(1);
-			if(jsonObject.has(longitude_property_name+"_"+ratio))
+			if(jsonObject.has(longitude_property_name))
 			{
-				double lat = Double.parseDouble(jsonObject.get(latitude_property_name+"_"+ratio).toString());
-				double lon = Double.parseDouble(jsonObject.get(longitude_property_name+"_"+ratio).toString());
+				double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
+				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
 					JudgeTime+=System.currentTimeMillis() - start;
-					System.out.println(id);
+//					System.out.println(id);
 					return true;
 				}
 			}
@@ -111,14 +111,14 @@ public class Traversal {
 				int neighbor_id = row.get(0).getAsInt();
 				
 				jsonObject = (JsonObject)row.get(1);
-				if(jsonObject.has(longitude_property_name+"_"+ratio))
+				if(jsonObject.has(longitude_property_name))
 				{
-					double lat = Double.parseDouble(jsonObject.get(latitude_property_name+"_"+ratio).toString());
-					double lon = Double.parseDouble(jsonObject.get(longitude_property_name+"_"+ratio).toString());
+					double lat = Double.parseDouble(jsonObject.get(latitude_property_name).toString());
+					double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 					{
 						JudgeTime+=System.currentTimeMillis() - start;
-						System.out.println(neighbor_id);
+//						System.out.println(neighbor_id);
 						return true;
 					}
 				}				
@@ -165,7 +165,7 @@ public class Traversal {
 				double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 				{
-					System.out.println(id);
+//					System.out.println(id);
 					return true;
 				}
 			}
@@ -205,7 +205,7 @@ public class Traversal {
 					double lon = Double.parseDouble(jsonObject.get(longitude_property_name).toString());
 					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
 					{
-						System.out.println(neighbor_id);
+//						System.out.println(neighbor_id);
 						return true;
 					}
 				}				

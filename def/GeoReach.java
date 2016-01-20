@@ -7,7 +7,6 @@ import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import com.sun.jersey.api.client.WebResource;
 
 public class GeoReach implements ReachabilityQuerySolver	{
@@ -28,7 +27,6 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	
 	private String GeoB_name;
 	private String bitmap_name;
-	private String multi_bitmap_name;
 	
 	public MyRectangle total_range;
 	public int split_pieces;
@@ -50,7 +48,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		RMBR_miny_name = config.GetRMBR_miny_name();
 		RMBR_maxx_name = config.GetRMBR_maxx_name();
 		RMBR_maxy_name = config.GetRMBR_maxy_name();
-		merge_ratio = config.Get_MergeRatio();
+		merge_ratio = config.GetMergeRatio();
 			
 		total_range = new MyRectangle();
 		total_range.min_x = rect.min_x;
@@ -59,9 +57,8 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		total_range.max_y = rect.max_y;
 		
 		split_pieces = p_split_pieces;
-		GeoB_name = "GeoB";
-		bitmap_name = "Bitmap_"+split_pieces;
-		multi_bitmap_name = String.format("MultilevelBitmap_%d", split_pieces);
+		GeoB_name = config.GetGeoB_name();
+		bitmap_name = config.GetBitmap_name();
 		
 		resolution_x = (total_range.max_x - total_range.min_x)/split_pieces;
 		resolution_y = (total_range.max_y - total_range.min_y)/split_pieces;
@@ -259,92 +256,9 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		}
 	}
 	
-	private boolean TraversalQuery(int start_id, MyRectangle rect)
-	{		
-		String query = String.format("match (a)-->(b) where id(a) = %d return b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, id(b)", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name, longitude_property_name, latitude_property_name);
-		
-		String result = p_neo4j_graph_store.Execute(query);
-		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
-		
-		int false_count = 0;
-		for(int i = 0;i<jsonArr.size();i++)
-		{			
-			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
-			JsonArray row = (JsonArray)jsonObject.get("row");
-			
-			int id = row.get(6).getAsInt();
-			if(VisitedVertices.contains(id))
-			{
-				false_count+=1;
-				continue;
-			}
-			
-			if(!row.get(4).isJsonNull())
-			{
-				double lon = row.get(4).getAsDouble();
-				double lat = row.get(5).getAsDouble();
-				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
-				{
-					System.out.println(id);
-					return true;
-				}
-			}
-			if(!row.get(0).isJsonNull())
-			{
-				MyRectangle RMBR = new MyRectangle();
-				RMBR.min_x = row.get(0).getAsDouble();
-				RMBR.min_y = row.get(1).getAsDouble();
-				RMBR.max_x = row.get(2).getAsDouble();
-				RMBR.max_y = row.get(3).getAsDouble();
-				
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
-				{
-					return true;
-				}
-				
-				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-				{
-					false_count+=1;
-					VisitedVertices.add(id);
-				}
-			}
-			else
-			{
-				false_count+=1;
-				VisitedVertices.add(id);
-			}
-		}
-	
-		if(false_count == jsonArr.size())
-		{
-			return false;
-		}
-		
-		for(int i = 0;i<jsonArr.size();i++)
-		{
-			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
-			JsonArray row = (JsonArray)jsonObject.get("row");
-			
-			int id = row.get(6).getAsInt();
-			if(VisitedVertices.contains(id))
-			{
-				continue;
-			}
-			VisitedVertices.add(id);
-			boolean reachable = TraversalQuery(id, rect);
-			
-			if(reachable)
-				return true;		
-		}
-		
-		return false;	
-	}
-	
 	private boolean TraverseQuery_MT0(long start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
 	{		
-		String hasbitmap_name = "GeoB";
-		
-		String query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s",  start_id,  hasbitmap_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name, longitude_property_name, latitude_property_name);
+		String query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s",  start_id,  GeoB_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name, longitude_property_name, latitude_property_name);
 		String result = Neo4j_Graph_Store.Execute(resource, query);
 		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		
@@ -355,118 +269,133 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
+			//already visited
 			if(VisitedVertices.contains(id))
 			{
 				false_count+=1;
 				continue;
 			}
 
-			if(!row.get(7).isJsonNull())
+			else
 			{
-				double lon = row.get(7).getAsDouble();
-				double lat = row.get(8).getAsDouble();
-				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
+				if(!row.get(7).isJsonNull())
 				{
-					return true;
+					double lon = row.get(7).getAsDouble();
+					double lat = row.get(8).getAsDouble();
+					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
+					{
+						//spatial vertex and located in query rectangle
+						return true;
+					}
 				}
-			}
-			if(!row.get(3).isJsonNull())
-			{
-				MyRectangle RMBR = new MyRectangle(row.get(3).getAsDouble(), row.get(4).getAsDouble(), row.get(5).getAsDouble(), row.get(6).getAsDouble());
-				
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
-				{
-					return true;
-				}
-				
-				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+				//cannot reach any spatial vertex
+				if(!row.get(1).isJsonNull()&&!row.get(2).isJsonNull()&&!row.get(3).isJsonNull())
 				{
 					false_count+=1;
 					VisitedVertices.add(id);
 					continue;
 				}
-				
-				if(!row.get(1).isJsonNull())
+				else
 				{
-					String ser = row.get(2).getAsString();
-					ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
-				    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
-
-					
-					//ReachGrid totally Lie In query rectangle
-					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+					//G-vertex
+					if(!row.get(2).isJsonNull())
 					{
-						for(int k = lb_x+1;k<rt_x;k++)
+						String ser = row.get(2).getAsString();
+						ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+					    ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
+
+						//ReachGrid totally Lie In query rectangle
+						if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 						{
-							for(int j = lb_y+1;j<rt_y;j++)
+							for(int k = lb_x+1;k<rt_x;k++)
 							{
-								int grid_id = k*split_pieces+j;
-								if(reachgrid.contains(grid_id))
+								for(int j = lb_y+1;j<rt_y;j++)
 								{
-									return true;
+									int grid_id = k*split_pieces+j;
+									if(reachgrid.contains(grid_id))
+									{
+										return true;
+									}
 								}
 							}
 						}
-					}
 
-					//ReachGrid No overlap with query rectangle
-					boolean flag = false;
-					for(int j = lb_y;j<=rt_y;j++)
-					{
-						int grid_id = lb_x*split_pieces+j;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-						grid_id = rt_x*split_pieces+j;
-						if(reachgrid.contains(grid_id))
-							flag = true;
+						//ReachGrid No overlap with query rectangle
+						boolean flag = false;
+						for(int j = lb_y;j<=rt_y;j++)
+						{
+							int grid_id = lb_x*split_pieces+j;
+							if(reachgrid.contains(grid_id))
+								flag = true;
+							grid_id = rt_x*split_pieces+j;
+							if(reachgrid.contains(grid_id))
+								flag = true;
+						}
+						for(int j = lb_x+1;j<rt_x;j++)
+						{
+							int grid_id = j*split_pieces+lb_y;
+							if(reachgrid.contains(grid_id))
+								flag = true;
+							grid_id = j*split_pieces+rt_y;
+							if(reachgrid.contains(grid_id))
+								flag = true;
+						}
+						if(flag == false)
+						{
+							false_count+=1;
+							VisitedVertices.add(id);
+						}
 					}
-					for(int j = lb_x+1;j<rt_x;j++)
+					else
 					{
-						int grid_id = j*split_pieces+lb_y;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-						grid_id = j*split_pieces+rt_y;
-						if(reachgrid.contains(grid_id))
-							flag = true;
+						//R-vertex
+						if(!row.get(3).isJsonNull())
+						{
+							MyRectangle RMBR = new MyRectangle(row.get(3).getAsDouble(), row.get(4).getAsDouble(), row.get(5).getAsDouble(), row.get(6).getAsDouble());
+							
+							if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
+							{
+								return true;
+							}
+							
+							if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+							{
+								false_count+=1;
+								VisitedVertices.add(id);
+								continue;
+							}	
+						}
 					}
-					if(flag == false)
-					{
-						false_count+=1;
-						VisitedVertices.add(id);
-					}	
-				}		
 				
-			}
-			else
-			{
-				false_count+=1;
-				VisitedVertices.add(id);
+				}	
 			}
 		}
 	
-		if(false_count == jsonArr.size())
+		//all out-neighbors are impossible to reach query rectangle
+		if(false_count == jsonArr.size()) 
 		{
 			return false;
 		}
-		
-		for(int i = 0;i<jsonArr.size();i++)
+		else
 		{
-			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
-			JsonArray row = (JsonArray)jsonObject.get("row");
-			
-			int id = row.get(0).getAsInt();
-			if(VisitedVertices.contains(id))
+			for(int i = 0;i<jsonArr.size();i++)
 			{
-				continue;
+				JsonObject jsonObject = (JsonObject)jsonArr.get(i);
+				JsonArray row = (JsonArray)jsonObject.get("row");
+				
+				int id = row.get(0).getAsInt();
+				if(VisitedVertices.contains(id))
+				{
+					continue;
+				}
+				VisitedVertices.add(id);
+				boolean reachable = TraverseQuery_MT0(id, rect, lb_x, lb_y, rt_x, rt_y);
+				
+				if(reachable)
+					return true;		
 			}
-			VisitedVertices.add(id);
-			boolean reachable = TraverseQuery_MT0(id, rect, lb_x, lb_y, rt_x, rt_y);
-			
-			if(reachable)
-				return true;		
+			return false;	
 		}
-		
-		return false;	
 	}
 	
 	public boolean ReachabilityQuery_MT0(long start_id, MyRectangle rect)
@@ -489,29 +418,6 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			int lb_y = (int) ((rect.min_y - total_range.min_y)/resolution_y);
 			int rt_x = (int) ((rect.max_x - total_range.min_x)/resolution_x);
 			int rt_y = (int) ((rect.max_y - total_range.min_y)/resolution_y);
-			//B-vertex
-			if(!jsonArr.get(0).isJsonNull())
-				return TraverseQuery_MT0(start_id, rect, lb_x, lb_y, rt_x, rt_y);
-			
-			//R-vertex
-			if(!jsonArr.get(2).isJsonNull())
-			{
-				MyRectangle RMBR = new MyRectangle(jsonArr.get(2).getAsDouble(), jsonArr.get(3).getAsDouble(), jsonArr.get(4).getAsDouble(), jsonArr.get(5).getAsDouble());
-				
-				//RMBR No overlap case
-				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-				{
-					return false;
-				}
-				
-				//RMBR Contain case
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
-				{
-					return true;
-				}
-				
-				return TraverseQuery_MT0(start_id, rect, lb_x, lb_y, rt_x, rt_y);
-			}
 			
 			//G-vertex
 			if(!jsonArr.get(1).isJsonNull())
@@ -521,62 +427,87 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				ImmutableRoaringBitmap reachgrid = null;
 				
 				boolean flag = false;
+				ser = jsonArr.get(1).getAsString();
+				newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+			    reachgrid = new ImmutableRoaringBitmap(newbb);
 				
-				//Grid Section
-				if(!jsonArr.get(0).isJsonNull())
+				//ReachGrid totally Lie In query rectangle
+				if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
 				{
-					ser = jsonArr.get(1).getAsString();
-					newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
-				    reachgrid = new ImmutableRoaringBitmap(newbb);
-					
-					//ReachGrid totally Lie In query rectangle
-					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+					for(int i = lb_x+1;i<rt_x;i++)
 					{
-						for(int i = lb_x+1;i<rt_x;i++)
+						for(int j = lb_y+1;j<rt_y;j++)
 						{
-							for(int j = lb_y+1;j<rt_y;j++)
+							int grid_id = i*split_pieces+j;
+							if(reachgrid.contains(grid_id))
 							{
-								int grid_id = i*split_pieces+j;
-								if(reachgrid.contains(grid_id))
-								{
-									return true;
-								}
+								return true;
 							}
 						}
 					}
+				}
 
-					//ReachGrid No overlap with query rectangle
-					flag = false;
-					for(int i = lb_y;i<=rt_y;i++)
-					{
-						int grid_id = lb_x*split_pieces+i;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-						grid_id = rt_x*split_pieces+i;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-					}
-					for(int i = lb_x+1;i<rt_x;i++)
-					{
-						int grid_id = i*split_pieces+lb_y;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-						grid_id = i*split_pieces+rt_y;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-					}
-					if(flag == false)
+				//ReachGrid No overlap with query rectangle
+				for(int i = lb_y;i<=rt_y;i++)
+				{
+					int grid_id = lb_x*split_pieces+i;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+					grid_id = rt_x*split_pieces+i;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+				}
+				for(int i = lb_x+1;i<rt_x;i++)
+				{
+					int grid_id = i*split_pieces+lb_y;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+					grid_id = i*split_pieces+rt_y;
+					if(reachgrid.contains(grid_id))
+						flag = true;
+				}
+				if(flag == false)
+				{
+					return false;
+				}
+				return TraverseQuery_MT0(start_id, rect, lb_x, lb_y, rt_x, rt_y);
+			}
+			else
+			{
+				//R-vertex
+				if(!jsonArr.get(2).isJsonNull())
+				{
+					MyRectangle RMBR = new MyRectangle(jsonArr.get(2).getAsDouble(), jsonArr.get(3).getAsDouble(), jsonArr.get(4).getAsDouble(), jsonArr.get(5).getAsDouble());
+					
+					//RMBR No overlap case
+					if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
 					{
 						return false;
 					}
+					
+					//RMBR Contain case
+					if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
+					{
+						return true;
+					}
+					
+					return TraverseQuery_MT0(start_id, rect, lb_x, lb_y, rt_x, rt_y);
+				}
+				
+				else
+				{
+					//B-vertex
+					return TraverseQuery_MT0(start_id, rect, lb_x, lb_y, rt_x, rt_y);
 				}
 			}
 		}
-				
-		
-		query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s",  start_id,  hasbitmap_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name, longitude_property_name, latitude_property_name);
-		result = Neo4j_Graph_Store.Execute(resource, query);
-		jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+	}
+	
+	private boolean TraverseQuery(long start_id, MyRectangle rect, HashMap<Integer,Integer> lb_x_hash, HashMap<Integer,Integer> lb_y_hash, HashMap<Integer,Integer> rt_x_hash, HashMap<Integer,Integer> rt_y_hash)
+	{		
+		String query = String.format("match (a)-->(b) where id(a) = %d return id(b), b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, b.%s",  start_id,  GeoB_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name, longitude_property_name, latitude_property_name);
+		String result = Neo4j_Graph_Store.Execute(resource, query);
+		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
 		
 		int false_count = 0;
 		for(int i = 0;i<jsonArr.size();i++)
@@ -585,236 +516,263 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			JsonArray row = (JsonArray)jsonObject.get("row");
 			
 			int id = row.get(0).getAsInt();
+			//already visited
 			if(VisitedVertices.contains(id))
 			{
 				false_count+=1;
 				continue;
 			}
-			
-			if(!row.get(7).isJsonNull())
+
+			else
 			{
-				double lon = row.get(7).getAsDouble();
-				double lat = row.get(8).getAsDouble();
-				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
+				if(!row.get(7).isJsonNull())
 				{
-					return true;
+					double lon = row.get(7).getAsDouble();
+					double lat = row.get(8).getAsDouble();
+					if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
+					{
+						//spatial vertex and located in query rectangle
+						return true;
+					}
 				}
-			}
-			
-			if(!row.get(3).isJsonNull())
-			{
-				RMBR = new MyRectangle(row.get(3).getAsDouble(), row.get(4).getAsDouble(), row.get(5).getAsDouble(), row.get(6).getAsDouble());
-				
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
-				{
-					return true;
-				}
-				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+				//cannot reach any spatial vertex
+				if(!row.get(1).isJsonNull()&&!row.get(2).isJsonNull()&&!row.get(3).isJsonNull())
 				{
 					false_count+=1;
 					VisitedVertices.add(id);
 					continue;
 				}
-				
-				if(!row.get(1).isJsonNull())
+				else
 				{
-					ser = row.get(2).getAsString();
-					newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
-					reachgrid = new ImmutableRoaringBitmap(newbb);
-					
-					//ReachGrid totally Lie In query rectangle
-					if((rt_x-lb_x>1)&&(rt_y-lb_y)>1)
+					//G-vertex
+					if(!row.get(2).isJsonNull())
 					{
-						for(int k = lb_x+1;k<rt_x;k++)
+						String ser = row.get(2).getAsString();
+						ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+						ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
+						
+						int outside_count = 0;
+						for(int level_pieces = split_pieces;level_pieces >=2;level_pieces/=2)
 						{
-							for(int j = lb_y+1;j<rt_y;j++)
+							int lb_x = lb_x_hash.get(level_pieces);
+							int lb_y = lb_y_hash.get(level_pieces);
+							int rt_x = rt_x_hash.get(level_pieces);
+							int rt_y = rt_y_hash.get(level_pieces);
+							
+							int offset = multi_offset.get(level_pieces);
+							Iterator<Integer> iter = reachgrid.iterator();
+							boolean flag = false;
+							while(iter.hasNext())
 							{
-								int grid_id = k*split_pieces+j;
-								if(reachgrid.contains(grid_id))
+								int grid_id = iter.next() - offset;
+								int row_index = (int) (grid_id/level_pieces);
+								int col_index = (grid_id - row_index*level_pieces);
+								//ReachGrid totally Lie In query rectangle
+								if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
 								{
 									return true;
 								}
+								
+								//ReachGrid No overlap with query rectangle
+								if(row_index>rt_x||row_index<lb_x||col_index>rt_y||col_index<lb_y)
+								{
+									flag = false;
+								}
+								else
+								{
+									flag = true;
+									break;
+								}
 							}
+							if(flag == false)
+							{
+								outside_count++;
+							}
+							else
+								break;
+						}
+						if(outside_count == level_count)
+						{
+							false_count+=1;
+							VisitedVertices.add(id);
 						}
 					}
-
-					//ReachGrid No overlap with query rectangle
-					flag = false;
-					for(int j = lb_y;j<=rt_y;j++)
+					else
 					{
-						int grid_id = lb_x*split_pieces+j;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-						grid_id = rt_x*split_pieces+j;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-					}
-					for(int j = lb_x+1;j<rt_x;j++)
-					{
-						int grid_id = j*split_pieces+lb_y;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-						grid_id = j*split_pieces+rt_y;
-						if(reachgrid.contains(grid_id))
-							flag = true;
-					}
-					if(flag == false)
-					{
-						false_count+=1;
-						VisitedVertices.add(id);
-					}	
-				}	
+						//R-vertex
+						if(!row.get(3).isJsonNull())
+						{
+							MyRectangle RMBR = new MyRectangle(row.get(3).getAsDouble(), row.get(4).getAsDouble(), row.get(5).getAsDouble(), row.get(6).getAsDouble());
 							
+							if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
+							{
+								return true;
+							}
+							
+							if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+							{
+								false_count+=1;
+								VisitedVertices.add(id);
+								continue;
+							}	
+						}
+					}
+				
+				}	
 			}
-			else
-			{
-				false_count+=1;
-				VisitedVertices.add(id);
-			}
-
 		}
-		
-		if(false_count == jsonArr.size())
+	
+		//all out-neighbors are impossible to reach query rectangle
+		if(false_count == jsonArr.size()) 
 		{
 			return false;
 		}
-		
-		for(int i = 0;i<jsonArr.size();i++)
+		else
 		{
-			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
-			JsonArray row = (JsonArray)jsonObject.get("row");
-			
-			int id = row.get(0).getAsInt();
-			if(VisitedVertices.contains(id))
+			for(int i = 0;i<jsonArr.size();i++)
 			{
-				continue;
-			}
-			VisitedVertices.add(id);
-			boolean reachable = TraversalQuery_MT0(id, rect, lb_x, lb_y, rt_x, rt_y);
-			
-			if(reachable)
-				return true;
-			
-		}
-		return false;
+				JsonObject jsonObject = (JsonObject)jsonArr.get(i);
+				JsonArray row = (JsonArray)jsonObject.get("row");
 				
+				int id = row.get(0).getAsInt();
+				if(VisitedVertices.contains(id))
+				{
+					continue;
+				}
+				VisitedVertices.add(id);
+				boolean reachable = TraverseQuery(id, rect, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
+				
+				if(reachable)
+					return true;		
+			}
+			return false;	
+		}
 	}
 	
 	public boolean ReachabilityQuery(long start_id, MyRectangle rect)
 	{
 		VisitedVertices.clear();
+		//no merge and only one layer
 		if(merge_ratio == 0)
-			ReachabilityQuery_MT0(start_id, rect);
-		String query = String.format("match (n) where id(n) = %d return n.%s, n.%s, n.%s, n.%s", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name);
-		String result = Neo4j_Graph_Store.Execute(resource, query);
-		JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
-		jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
-		
-		if(jsonArr.get(0).isJsonNull())
+			return ReachabilityQuery_MT0(start_id, rect);
+		//merge and multi-layer
+		else
 		{
-			return false;
-		}
-		
-		String minx_s = (jsonArr.get(0).getAsString());
-		String miny_s = (jsonArr.get(1).getAsString());
-		String maxx_s = (jsonArr.get(2).getAsString());
-		String maxy_s = (jsonArr.get(3).getAsString());
-				
-		MyRectangle RMBR = new MyRectangle();
-										
-		RMBR.min_x = Double.parseDouble(minx_s);
-		RMBR.min_y = Double.parseDouble(miny_s);
-		RMBR.max_x = Double.parseDouble(maxx_s);
-		RMBR.max_y = Double.parseDouble(maxy_s);
-		
-		if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-		{
-			return false;
-		}
-		
-		if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
-		{
-			return true;
-		}
-		
-		
-		query = String.format("match (a)-->(b) where id(a) = %d return b.%s, b.%s, b.%s, b.%s, b.%s, b.%s, id(b)", start_id, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name, RMBR_maxy_name, longitude_property_name, latitude_property_name);
-		result = Neo4j_Graph_Store.Execute(resource, query);
-		jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
-		
-		int false_count = 0;
-		for(int i = 0;i<jsonArr.size();i++)
-		{			
-			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
-			JsonArray row = (JsonArray)jsonObject.get("row");
+			String query = String.format("match (n) where id(n) = %d return n.%s, n.%s, n.%s, n.%s, n.%s, n.%s", start_id,  GeoB_name, bitmap_name, RMBR_minx_name, RMBR_miny_name, RMBR_maxx_name,RMBR_maxy_name);
+			String result = Neo4j_Graph_Store.Execute(resource, query);
+			JsonArray jsonArr = Neo4j_Graph_Store.GetExecuteResultDataASJsonArray(result);
+			jsonArr = jsonArr.get(0).getAsJsonObject().get("row").getAsJsonArray();
 			
-			int id = row.get(6).getAsInt();
-			if(VisitedVertices.contains(id))
+			//start_id vertex cannot reach any spatial vertices
+			if(jsonArr.get(0).isJsonNull()&&jsonArr.get(1).isJsonNull()&&jsonArr.get(2).isJsonNull())
 			{
-				false_count+=1;
-				continue;
+				return false;
 			}
-		
-			if(!row.get(4).isJsonNull())
-			{
-				double lon = row.get(4).getAsDouble();
-				double lat = row.get(5).getAsDouble();
-
-				if(Neo4j_Graph_Store.Location_In_Rect(lat, lon, rect))
-				{
-					System.out.println(id);
-					return true;
-				}
-			}
-			if(!row.get(0).isJsonNull())
-			{
-				RMBR = new MyRectangle();
-				RMBR.min_x = row.get(0).getAsDouble();
-				RMBR.min_y = row.get(1).getAsDouble();
-				RMBR.max_x = row.get(2).getAsDouble();
-				RMBR.max_y = row.get(3).getAsDouble();
-				
-				if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
-				{
-					return true;
-				}
-				if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
-				{
-					false_count+=1;
-					VisitedVertices.add(id);
-				}
-			}
+			
 			else
 			{
-				false_count+=1;
-				VisitedVertices.add(id);
+				HashMap<Integer,Integer> lb_x_hash = new HashMap<Integer,Integer>();
+				HashMap<Integer,Integer> lb_y_hash = new HashMap<Integer,Integer>();
+				HashMap<Integer,Integer> rt_x_hash = new HashMap<Integer,Integer>();
+				HashMap<Integer,Integer> rt_y_hash = new HashMap<Integer,Integer>();
+				
+				for(int level_pieces = 2;level_pieces<=128;level_pieces*=2)
+			    {
+					int lb_x = (int) ((rect.min_x - total_range.min_x)/multi_resolution_x.get(level_pieces));
+					int lb_y = (int) ((rect.min_y - total_range.min_y)/multi_resolution_y.get(level_pieces));
+					int rt_x = (int) ((rect.max_x - total_range.min_x)/multi_resolution_x.get(level_pieces));
+					int rt_y = (int) ((rect.max_y - total_range.min_y)/multi_resolution_y.get(level_pieces));
+					
+					lb_x_hash.put(level_pieces, lb_x);
+					lb_y_hash.put(level_pieces, lb_y);
+					rt_x_hash.put(level_pieces, rt_x);
+					rt_y_hash.put(level_pieces, rt_y);
+					
+			    }		
+				
+				//G-vertex
+				if(!jsonArr.get(1).isJsonNull())
+				{
+					String ser = jsonArr.get(1).getAsString();
+					ByteBuffer newbb = ByteBuffer.wrap(Base64.getDecoder().decode(ser));
+					ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
+					
+					int	outside_count = 0;
+				    for(int level_pieces = split_pieces;level_pieces >=2;level_pieces/=2)
+				    {
+				    	int lb_x = lb_x_hash.get(level_pieces);
+						int lb_y = lb_y_hash.get(level_pieces);
+						int rt_x = rt_x_hash.get(level_pieces);
+						int rt_y = rt_y_hash.get(level_pieces);
+						
+						int offset = multi_offset.get(level_pieces);
+						
+						Iterator<Integer> iter = reachgrid.iterator();
+						boolean flag = false;
+						while(iter.hasNext())
+						{
+							int grid_id = iter.next() - offset;
+							int row_index = (int) (grid_id/level_pieces);
+							int col_index = (grid_id - row_index*level_pieces);
+							//ReachGrid totally Lie In query rectangle
+							if(row_index<rt_x&&row_index>lb_x&&col_index<rt_y&&col_index>lb_y)
+							{
+								return true;
+							}
+							
+							//ReachGrid No overlap with query rectangle
+							
+							if(row_index>rt_x||row_index<lb_x||col_index>rt_y||col_index<lb_y)
+							{
+								flag = false;
+							}
+							else
+							{
+								flag = true;
+								break;
+							}
+						}
+						if(flag == false)
+						{
+							outside_count++;
+						}
+						else
+							break;
+				    }
+				    if(outside_count == level_count)
+				    {
+						return false;
+				    }
+				    else
+				    	return TraverseQuery(start_id, rect, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
+				}
+				else
+				{
+					//R-vertex
+					if(!jsonArr.get(2).isJsonNull())
+					{
+						MyRectangle RMBR = new MyRectangle(jsonArr.get(2).getAsDouble(), jsonArr.get(3).getAsDouble(), jsonArr.get(4).getAsDouble(), jsonArr.get(5).getAsDouble());
+						
+						//RMBR No overlap case
+						if(RMBR.min_x > rect.max_x || RMBR.max_x < rect.min_x || RMBR.min_y > rect.max_y || RMBR.max_y < rect.min_y)
+						{
+							return false;
+						}
+						
+						//RMBR Contain case
+						if(RMBR.min_x > rect.min_x && RMBR.max_x < rect.max_x && RMBR.min_y > rect.min_y && RMBR.max_y < rect.max_y)
+						{
+							return true;
+						}
+						
+						return TraverseQuery(start_id, rect, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
+					}
+					else
+					{
+						return TraverseQuery(start_id, rect, lb_x_hash, lb_y_hash, rt_x_hash, rt_y_hash);
+					}
+				}
 			}
-
 		}
-		
-		if(false_count == jsonArr.size())
-		{
-			return false;
-		}
-		
-		for(int i = 0;i<jsonArr.size();i++)
-		{
-			JsonObject jsonObject = (JsonObject)jsonArr.get(i);
-			JsonArray row = (JsonArray)jsonObject.get("row");
-			
-			int id = row.get(6).getAsInt();
-			if(VisitedVertices.contains(id))
-			{
-				continue;
-			}
-			VisitedVertices.add(id);
- 			boolean reachable = TraversalQuery(id, rect);
-			
-			if(reachable)
-				return true;
-			
-		}
-		
-		return false;
 	}
 }

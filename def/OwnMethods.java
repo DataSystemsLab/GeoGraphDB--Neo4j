@@ -60,15 +60,15 @@ public class OwnMethods {
 	}
 	
 	//Generate Random node_count vertices in the range(0, graph_size) which is attribute id
-	public static HashSet<String> GenerateRandomInteger(long graph_size, int node_count)
+	public static HashSet<Long> GenerateRandomInteger(long graph_size, int node_count)
 	{
-		HashSet<String> ids = new HashSet();
+		HashSet<Long> ids = new HashSet();
 		
 		Random random = new Random();
 		while(ids.size()<node_count)
 		{
-			Integer id = (int) (random.nextDouble()*graph_size);
-			ids.add(id.toString());
+			Long id = (long) (random.nextDouble()*graph_size);
+			ids.add(id);
 		}
 		
 		return ids;

@@ -1788,5 +1788,10 @@ public class GeoReach_Integrate implements ReachabilityQuerySolver
 		false_inside+=1;
 		return false;
 	}
+
+	public boolean ReachabilityQuery(long start_id, MyRectangle rect) {
+		// TODO Auto-generated method stub
+		return false;
+	}
 	
 }
