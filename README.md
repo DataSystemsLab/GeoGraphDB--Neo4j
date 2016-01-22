@@ -5,7 +5,7 @@ Spindra--GeoGraphDB(denoted as GeoGraphDB in the rest part) provides support for
 ## How to get started
 1.  Download Neo4j graph database from http://neo4j.com/. If you are a linux/unix user, download the corresponding version and extract the compressed file to the where you want to locate your database. If you are a windows user, you need to download the windows version and install the software.
 2.  Download GeoGraphDB source code.
-3.  Construct GeoReach index and load the index and graph data into neo4j database. This step requires file concluding graph structure and spatial location. First line in the file to store graph structure is total number of vertices in the graph. The rest lines should be in the format of 'id, number_of_nodes_in_adacentlist, node1_id, node2_id,...'. The spatial location file should have the format of 'id, spatial_or_not, longtitude, latitude'. The following gives an example for the two files.
+3.  Construct GeoReach index and load the index and graph data into neo4j database. This step requires file concluding graph structure and spatial location. First line in the file to store graph structure is total number of vertices in the graph. The rest lines should be in the format of 'id, number_of_nodes_in_adacentlist, node1_id, node2_id,...'. First of spatial location file is also the number of vertices. The rest lines should have the format of 'id, spatial_or_not, longtitude, latitude'. The following gives an example for the two files.
 
 <br />Graph file<br />
 5<br />
@@ -16,6 +16,7 @@ Spindra--GeoGraphDB(denoted as GeoGraphDB in the rest part) provides support for
 4,0<br />
 
 Spatial location file<br />
+5<br />
 0,1,23.334,55.2442<br />
 1,0,0,0<br />
 2,0,0,0<br />
