@@ -25,7 +25,14 @@ Spatial location file<br />
 
 Function Construct(graph_file_path, location_file_path, neo4j_db_path) is used for such step. Parameters are file paths of all required files and database. 
 
-
+4.  Query processing. Following is an example to use query funtion in the package.
+```java
+        //...
+        GeoReach p_geo = new GeoReach();
+        int id = 356;
+        MyRectangle query_rect = new MyRectangle(-30,10,60,40);
+        boolean result = p_geo.ReachabilityQuery(id,query_rect);
+```
 
 ## Contact
 
