@@ -1,4 +1,4 @@
-package def;
+package GeoReach;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;

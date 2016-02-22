@@ -1,4 +1,4 @@
-package def;
+package GeoReach;
 
 public class Config	{
 	private String SERVER_ROOT_URI = "http://localhost:7474/db/data";
@@ -14,6 +14,8 @@ public class Config	{
 	private String GeoB_name = "GeoB";
 	private String bitmap_name = "MultilevelBitmap_128_2_20";
 	private int merge_ratio = 2;
+	private double RT_ratio = 1;
+	private int GT = 200;
 	
 	public String GetServerRoot() {
 		return SERVER_ROOT_URI;
@@ -60,5 +62,15 @@ public class Config	{
 	public int GetMergeRatio()
 	{
 		return merge_ratio;
+	}
+	
+	public double GetRT()
+	{
+		return RT_ratio;
+	}
+	
+	public int GetGT()
+	{
+		return GT;
 	}
 }

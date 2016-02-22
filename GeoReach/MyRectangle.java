@@ -1,4 +1,4 @@
-package def;
+package GeoReach;
 
 public class MyRectangle {
 	

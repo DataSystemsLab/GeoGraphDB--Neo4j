@@ -1,8 +1,13 @@
-package def;
+package GeoReach;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.nio.ByteBuffer;
 import java.util.*;
 
+import org.apache.lucene.index.RebuildSegmentInfo;
+import org.roaringbitmap.RoaringBitmap;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import com.google.gson.JsonArray;
@@ -38,8 +43,11 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	public int level_count;
 	
 	private int merge_ratio;
+	private double RT_ratio;
+	private int GT;
+	private double RT_area;
 	
-	public GeoReach(MyRectangle rect, int p_split_pieces)
+	public GeoReach(MyRectangle p_total_range, int p_split_pieces)
 	{
 		Config config = new Config();
 		longitude_property_name = config.GetLongitudePropertyName();
@@ -51,10 +59,14 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		merge_ratio = config.GetMergeRatio();
 			
 		total_range = new MyRectangle();
-		total_range.min_x = rect.min_x;
-		total_range.min_y = rect.min_y;
-		total_range.max_x = rect.max_x;
-		total_range.max_y = rect.max_y;
+		total_range.min_x = p_total_range.min_x;
+		total_range.min_y = p_total_range.min_y;
+		total_range.max_x = p_total_range.max_x;
+		total_range.max_y = p_total_range.max_y;
+		
+		RT_ratio = config.GetRT();
+		RT_area = (total_range.max_y - total_range.min_y)*(total_range.max_x - total_range.min_x)*RT_ratio;
+		GT = config.GetGT();
 		
 		split_pieces = p_split_pieces;
 		GeoB_name = config.GetGeoB_name();
@@ -79,181 +91,6 @@ public class GeoReach implements ReachabilityQuerySolver	{
 			
 		p_neo4j_graph_store = new Neo4j_Graph_Store();
 		resource = p_neo4j_graph_store.GetCypherResource();	
-	}
-	
-	// give a vertex id return a boolean value indicating whether it has RMBR
-	public boolean HasRMBR(int id)
-	{
-		return p_neo4j_graph_store.HasProperty(id, RMBR_minx_name);
-	}
-	
-	public MyRectangle GetRMBR(int id)
-	{
-		MyRectangle RMBR = new MyRectangle();
-		
-		String query = "match (a) where id(a) = " + id + " return a."+RMBR_minx_name+", a."+RMBR_miny_name+", a."+RMBR_maxx_name+", a."+RMBR_maxy_name;		
-		ArrayList<String> result = Neo4j_Graph_Store.GetExecuteResultData(Neo4j_Graph_Store.Execute(resource, query));
-		
-		String data = result.get(0);
-		String[] l = data.split(",");
-		
-		RMBR.min_x = Double.parseDouble(l[0]);
-		RMBR.min_y = Double.parseDouble(l[1]);
-		RMBR.max_x = Double.parseDouble(l[2]);
-		RMBR.max_y = Double.parseDouble(l[3]);
-		return RMBR;
-	}
-	
-	//MBR operation of a given id vertex's current RMBR and another rectangle return a new rectangle, if no change happens it will return null
-	public MyRectangle MBR(int id,String minx2_s, String miny2_s, String maxx2_s, String maxy2_s)
-	{	
-		MyRectangle rec;				
-			
-		if(!HasRMBR(id))
-		{	
-			rec = new MyRectangle();
-			rec.min_x = Double.parseDouble(minx2_s);
-			rec.min_y = Double.parseDouble(miny2_s);
-			rec.max_x = Double.parseDouble(maxx2_s);
-			rec.max_y = Double.parseDouble(maxy2_s);
-			return rec;
-		}
-
-		rec = GetRMBR(id);	
-		
-		double minx2 = Double.parseDouble(minx2_s);
-		double miny2 = Double.parseDouble(miny2_s);
-		double maxx2 = Double.parseDouble(maxx2_s);
-		double maxy2 = Double.parseDouble(maxy2_s);
-		
-		boolean flag = false;
-		if(minx2 < rec.min_x)
-		{
-			rec.min_x = minx2;
-			flag = true;
-		}
-		
-		if(miny2 < rec.min_y)
-		{
-			rec.min_y = miny2;
-			flag = true;
-		}
-		
-		if(maxx2 > rec.max_x)
-		{
-			rec.max_x = maxx2;
-			flag = true;
-		}
-		
-		if(maxy2 > rec.max_y)
-		{
-			rec.max_y = maxy2;
-			flag = true;
-		}
-		
-		if(flag)
-			return rec;
-		else
-			return null;
-	}	
-	
-	public void Preprocess()
-	{	
-		ArrayList<Integer> spatial_vertices = p_neo4j_graph_store.GetSpatialVertices();
-		Queue<Integer> queue = new LinkedList<Integer>();
-		HashSet<Integer> hs = new HashSet<Integer>();
-		for(int i = 0;i<spatial_vertices.size();i++)
-		{
-			int id = spatial_vertices.get(i);
-			queue.add(id);
-			hs.add(id);
-		}
-		
-		while(!queue.isEmpty())
-		{
-			System.out.println(hs.size());
-			int current_id = queue.poll();
-			hs.remove(current_id);
-			
-			ArrayList<Integer> neighbors = p_neo4j_graph_store.GetInNeighbors(current_id);
-			
-			String latitude = null, longitude = null;
-			
-			String minx_s = null, miny_s = null, maxx_s = null, maxy_s = null;
-			
-			boolean isspatial = false;
-			
-			if(p_neo4j_graph_store.IsSpatial(current_id))
-			{
-				isspatial = true;
-				
-				double[] location = p_neo4j_graph_store.GetVerticeLocation(current_id);
-				longitude = String.valueOf(location[0]);
-				latitude = String.valueOf(location[1]);
-			}
-			
-			boolean hasRMBR = false;
-			
-			if(HasRMBR(current_id))
-			{
-				hasRMBR = true;
-				
-				MyRectangle p_rec = GetRMBR(current_id);
-				minx_s = String.valueOf(p_rec.min_x);
-				miny_s = String.valueOf(p_rec.min_y);
-				maxx_s = String.valueOf(p_rec.max_x);
-				maxy_s = String.valueOf(p_rec.max_y);
-			}
-			
-			
-			for(int i = 0;i<neighbors.size();i++)
-			{
-				int neighbor = neighbors.get(i);
-				boolean changed = false;
-				
-				if(isspatial)
-				{
-				
-					MyRectangle new_RMBR = MBR(neighbor, longitude, latitude, longitude, latitude);
-					if(new_RMBR != null)
-					{
-						changed = true;
-						
-						String minx = Double.toString(new_RMBR.min_x);
-						String miny = Double.toString(new_RMBR.min_y);
-						String maxx = Double.toString(new_RMBR.max_x);
-						String maxy = Double.toString(new_RMBR.max_y);
-						
-						String query = "match (a) where id(a) = " + neighbor + " set a."+RMBR_minx_name+" = " + minx + ", a."+RMBR_miny_name+" = " + miny + ", a."+RMBR_maxx_name+" = " + maxx + ", a."+RMBR_maxy_name+" = " + maxy;
-						Neo4j_Graph_Store.Execute(resource, query);
-					}
-				}
-				
-				if(hasRMBR)
-				{
-					MyRectangle new_RMBR = MBR(neighbor, minx_s, miny_s, maxx_s, maxy_s);
-					if(new_RMBR != null)
-					{
-						changed = true;
-						
-						String minx = Double.toString(new_RMBR.min_x);
-						String miny = Double.toString(new_RMBR.min_y);
-						String maxx = Double.toString(new_RMBR.max_x);
-						String maxy = Double.toString(new_RMBR.max_y);
-						
-						String query = "match (a) where id(a) = " + neighbor + " set a."+RMBR_minx_name+" = " + minx + ", a."+RMBR_miny_name+" = " + miny + ", a."+RMBR_maxx_name+" = " + maxx + ", a."+RMBR_maxy_name+" = " + maxy;
-						Neo4j_Graph_Store.Execute(resource, query);
-					}
-				}
-					
-				if(changed&&!hs.contains(neighbor))
-				{
-					queue.add(neighbor);
-					hs.add(neighbor);
-				}
-				
-			}	
-		}
 	}
 	
 	private boolean TraverseQuery_MT0(long start_id, MyRectangle rect, int lb_x, int lb_y, int rt_x, int rt_y)
@@ -774,5 +611,10 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				}
 			}
 		}
+	}
+
+	public void Preprocess() {
+		// TODO Auto-generated method stub
+		
 	}
 }
