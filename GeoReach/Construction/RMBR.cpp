@@ -100,9 +100,9 @@ void RMBR_To_Disk(vector<MyRect> &RMBR, string filename)
 	printf("%d\n", RMBR.size());
 	for (int i = 0; i < RMBR.size(); i++)
 	{
-		printf("%d\t%d", i, RMBR[i].HasRec);
+		printf("%d %d ", i, RMBR[i].HasRec);
 		if (RMBR[i].HasRec)
-			printf("\t%f\t%f\t%f\t%f",RMBR[i].left_bottom.x, RMBR[i].left_bottom.y, RMBR[i].right_top.x, RMBR[i].right_top.y);
+			printf("%f %f %f %f",RMBR[i].left_bottom.x, RMBR[i].left_bottom.y, RMBR[i].right_top.x, RMBR[i].right_top.y);
 		printf("\n");
 	}
 	fclose(stdout);
@@ -124,14 +124,14 @@ void ReadRMBR(vector<MyRect> &RMBR, string filename)
 	int HasRMBR;
 	for (int i = 0; i < node_count; i++)
 	{
-		scanf("%d\t%d\t", &id, &HasRMBR);
+		scanf("%d %d ", &id, &HasRMBR);
 		if (HasRMBR == 0)
 		{
 			RMBR[id] ;
 			continue;
 		}
 		else
-		scanf("%lf %lf %lf %lf", &(RMBR[id].left_bottom.x), &(RMBR[id].left_bottom.y), &(RMBR[id].right_top.x), &(RMBR[id].right_top.y));
+			scanf("%lf %lf %lf %lf", &(RMBR[id].left_bottom.x), &(RMBR[id].left_bottom.y), &(RMBR[id].right_top.x), &(RMBR[id].right_top.y));
 	}
 	fclose(stdin);
 }

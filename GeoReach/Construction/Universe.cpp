@@ -177,11 +177,11 @@ void ReadGraph(vector<vector<int>> &graph, int &node_count, string graph_filepat
 	for (int i = 0; i < node_count; i++)
 	{
 		int id, count, outid;
-		scanf("%d %d ", &id, &count);
+		scanf("%d\t%d\t", &id, &count);
 		graph[i].resize(count);
 		for (int j = 0; j < count; j++)
 		{
-			scanf("%d ", &outid);
+			scanf("%d\t", &outid);
 			graph[i][j] = outid;
 		}
 	}

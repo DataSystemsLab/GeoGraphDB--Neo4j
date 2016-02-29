@@ -130,6 +130,14 @@ struct MyRect
 				right_top.y = point.y;
 		}
 	}
+
+	double Area()
+	{
+		if (!HasRec)
+			return 0;
+		else
+			return (right_top.x - left_bottom.x)*(right_top.y - left_bottom.y);
+	}
 };
 
 /*Vertex Entity*/
