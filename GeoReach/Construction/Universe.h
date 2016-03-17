@@ -151,11 +151,11 @@ struct Entity
 	int scc_id;
 };
 
-//Check whether a location is in a specific rectangle
-bool Location_In_Rect(Location m_location, MyRect m_rect);
-
 //Read entity from disk storage
 void ReadEntityInSCCFromDisk(int &node_count, vector<Entity> &entity_vector, int &range, string filename);
+
+//Read entity
+void ReadEntity(int &node_count, vector<Entity> &entity_vector, string filename);
 
 /*Graph related functions*/
 //Topological sort of dag

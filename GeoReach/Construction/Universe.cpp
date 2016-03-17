@@ -9,88 +9,6 @@ bool Location_In_Rect(Location m_location, MyRect m_rect)
 		return true;
 }
 
-void OutFile(Entity Entity_Matrix[], int node_count, string filename)
-{
-	ofstream file;
-	file.open("data/" + filename);
-	for (int i = 0; i < node_count; i++)
-	{
-		file << i << "    " << Entity_Matrix[i].IsSpatial << "    " << Entity_Matrix[i].location.x << "  " << Entity_Matrix[i].location.y << "    " << Entity_Matrix[i].type;
-		file << endl;
-	}
-	file.close();
-}
-
-void OutFile(vector<Entity> &entity_vector, string filename)
-{
-	ofstream file;
-	file.open("data/" + filename);
-	for (int i = 0; i < entity_vector.size(); i++)
-	{
-		file << i << "    " << entity_vector[i].IsSpatial << "    " << entity_vector[i].location.x << "  " << entity_vector[i].location.y << "    " << entity_vector[i].type;
-		file << endl;
-	}
-	file.close();
-}
-
-void EntityToDisk(Entity Entity_Matrix[], int node_count, int range, string filename)
-{
-	string root = "data/";
-	root += filename;
-	char *ch = (char *)root.data();
-	freopen(ch, "w", stdout);
-	
-	printf("%d %d\n", node_count,range);
-	for (int i = 0; i < node_count; i++)
-	{
-		printf("%d %d %f %f %d\n", i, Entity_Matrix[i].IsSpatial, Entity_Matrix[i].location.x, Entity_Matrix[i].location.y, Entity_Matrix[i].type);
-	}
-	fclose(stdout);
-}
-
-void EntityToDisk(vector<Entity> entity_vector, int range, string filename)
-{
-	string root = "data/";
-	root += filename;
-	char *ch = (char *)root.data();
-	freopen(ch, "w", stdout);
-
-	printf("%d %d\n", entity_vector.size(), range);
-	for (int i = 0; i < entity_vector.size(); i++)
-	{
-		printf("%d %d %f %f %d\n", i, entity_vector[i].IsSpatial, entity_vector[i].location.x, entity_vector[i].location.y, entity_vector[i].type);
-	}
-	fclose(stdout);
-}
-
-void ReadEntityFromDisk(int &node_count, Entity Entity_Matrix[], int &range, string filename)
-{
-	string root = "data/";
-	root += filename;
-	char *ch = (char *)root.data();
-	freopen(ch, "r", stdin);
-
-	scanf("%d %d", &node_count, &range);
-	for (int i = 0; i < node_count; i++)
-	{
-		scanf("%d %d %lf %lf %d", &(Entity_Matrix[i].id), &(Entity_Matrix[i].IsSpatial), &(Entity_Matrix[i].location.x), &(Entity_Matrix[i].location.y), &(Entity_Matrix[i].type));
-	}
-	fclose(stdin);
-}
-
-void ReadEntityFromDisk(int &node_count, vector<Entity> &entity_vector, int &range, string filename)
-{
-	char *ch = (char *)filename.data();
-	freopen(ch, "r", stdin);
-
-	scanf("%d %d", &node_count, &range);
-	entity_vector.resize(node_count);
-	for (int i = 0; i < node_count; i++)
-	{
-		scanf("%d %d %lf %lf %d", &(entity_vector[i].id), &(entity_vector[i].IsSpatial), &(entity_vector[i].location.x), &(entity_vector[i].location.y), &(entity_vector[i].type));
-	}
-	fclose(stdin);
-}
 
 void ReadEntityInSCCFromDisk(int &node_count, vector<Entity> &entity_vector, int &range, string filename)
 {
@@ -104,6 +22,23 @@ void ReadEntityInSCCFromDisk(int &node_count, vector<Entity> &entity_vector, int
 		scanf("%d %d %lf %lf %d %d %lf %lf %lf %lf", &(entity_vector[i].id), &(entity_vector[i].IsSpatial), &(entity_vector[i].location.x), &(entity_vector[i].location.y), &(entity_vector[i].type), &(entity_vector[i].scc_id), &(entity_vector[i].RMBR.left_bottom.x), &(entity_vector[i].RMBR.left_bottom.y), &(entity_vector[i].RMBR.right_top.x), &(entity_vector[i].RMBR.right_top.y));
 	}
 	fclose(stdin);
+}
+
+void ReadEntity(int &node_count, vector<Entity> &entity_vector, string filename)
+{
+	char *ch = (char *)filename.data();
+	freopen(ch, "r", stdin);
+
+	scanf("%d\n", &node_count);
+	entity_vector.resize(node_count);
+	for (int i = 0; i < node_count; i++)
+	{
+		int id, IsSpatial;
+		scanf("%d,%d", &id, &IsSpatial);
+		entity_vector[id].IsSpatial = IsSpatial;
+		if (IsSpatial)
+			scanf(",%lf,%lf\n", &(entity_vector[id].location.x), &(entity_vector[id].location.y));
+	}
 }
 
 string getstring(const int i)
@@ -177,11 +112,11 @@ void ReadGraph(vector<vector<int>> &graph, int &node_count, string graph_filepat
 	for (int i = 0; i < node_count; i++)
 	{
 		int id, count, outid;
-		scanf("%d\t%d\t", &id, &count);
+		scanf("%d,%d", &id, &count);
 		graph[i].resize(count);
 		for (int j = 0; j < count; j++)
 		{
-			scanf("%d\t", &outid);
+			scanf(",%d", &outid);
 			graph[i][j] = outid;
 		}
 	}

@@ -127,7 +127,8 @@ void GenerateGeoReach(string graph_path, string entity_path, string GeoReach_pat
 
 	vector<Entity> entity;
 	int range;
-	ReadEntityInSCCFromDisk(node_count, entity, range, entity_path);
+	//ReadEntityInSCCFromDisk(node_count, entity, range, entity_path);
+	ReadEntity(node_count, entity, entity_path);
 
 	vector<int> Types = vector<int>(node_count);
 	vector<vector<bool>> ReachGrid = vector<vector<bool>>(node_count);
@@ -184,7 +185,7 @@ void GenerateGeoReach(string graph_path, string entity_path, string GeoReach_pat
 		Merge(ReachGrid, Types, MT, pieces_x, pieces_y);
 	ofile << "merge time\t" << clock() - start << endl << endl;
 	ofile.close();
-	//GeoReachToDisk(GeoReach_path, Types, ReachGrid, RMBR, GeoB);
+	GeoReachToDisk(GeoReach_path, Types, ReachGrid, RMBR, GeoB);
 }
 
 void GenerateGeoReachFromInedgeGraph(string graph_path, string entity_path, string GeoReach_path, int MG, double MR, int MT, Location left_bottom, Location right_top, int pieces_x, int pieces_y)
