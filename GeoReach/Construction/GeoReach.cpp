@@ -188,6 +188,121 @@ void GenerateGeoReach(string graph_path, string entity_path, string GeoReach_pat
 	GeoReachToDisk(GeoReach_path, Types, ReachGrid, RMBR, GeoB);
 }
 
+void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<set<int>> &ReachGrid, vector<int> &Types, vector<Entity> &entity, Location &left_bottom, int pieces_x, double resolution_x, double resolution_y, int MG)
+{
+	boolean Flag = false;
+
+	for (int i = 0; i < graph[start_id].size(); i++)
+	{
+		int end_id = graph[start_id][i];
+		//B-vertex with false value
+		if (Types[end_id] == 2 && !entity[end_id].IsSpatial)
+			continue;
+		//G-vertex
+		else
+		{
+			Flag = true;
+			if (entity[end_id].IsSpatial)
+			{
+				int index_x = (entity[end_id].location.x - left_bottom.x) / resolution_x;
+				int index_y = (entity[end_id].location.y - left_bottom.y) / resolution_y;
+				int grid_id = index_x * pieces_x + index_y;
+				if (ReachGrid[start_id].find(grid_id) == ReachGrid[start_id].end())
+					ReachGrid[start_id].insert(grid_id);
+			}
+			int start = clock();
+			if (Types[end_id] == 0)
+			{
+				counter++;
+				set<int>::iterator end = ReachGrid[end_id].end();
+				for (set<int>::iterator iter = ReachGrid[end_id].begin(); iter != end; iter++)
+				{
+					if (ReachGrid[start_id].find(*iter) == ReachGrid[start_id].end())
+					{
+						ReachGrid[start_id].insert(*iter);
+						if (ReachGrid[start_id].size() > MG)
+						{
+							Types[start_id] = 1;
+							break;
+						}
+					}
+				}
+			}
+			time_ReachGrid += clock() - start;
+		}
+	}
+	if (!Flag)
+		Types[start_id] = 2;
+}
+
+void GenerateGeoReachInSet(string graph_path, string entity_path, string GeoReach_path, int MG, double MR, int MT, Location left_bottom, Location right_top, int pieces_x, int pieces_y)
+{
+	double resolution_x = (right_top.x - left_bottom.x) / pieces_x;
+	double resolution_y = (right_top.y - left_bottom.y) / pieces_y;
+	double total_area = (right_top.x - left_bottom.x) * (right_top.y - left_bottom.y);
+
+	vector<vector<int>> graph;
+	int node_count;
+	ReadGraph(graph, node_count, graph_path);
+	queue<int> Q;
+	TopologicalSort(graph, Q);
+
+	vector<Entity> entity;
+	int range;
+	ReadEntity(node_count, entity, entity_path);
+
+	vector<int> Types = vector<int>(node_count);
+	vector<set<int>> ReachGrid = vector<set<int>>(node_count);
+
+	int grid_layer_count = log2(pieces_x);
+
+	vector<MyRect> RMBR = vector<MyRect>(node_count);
+	vector<bool> GeoB = vector<bool>(node_count);
+
+	ofstream ofile("time.txt", ios::app);
+	int start = clock();
+	int time_ini_type = 0, time_update_gvertex = 0, time_update_rvertex = 0;
+	while (!Q.empty())
+	{
+		int id = Q.front();
+		Q.pop();
+		int start = clock();
+		Types[id] = InitializeType(graph, Types, id, GeoB);
+		time_ini_type += clock() - start;
+		if (Types[id] == 2)
+			GeoB[id] = true;
+		else
+		{
+			if (Types[id] == 0)
+			{
+				int start = clock();
+				UpdateGVertex(graph, id, ReachGrid, Types, entity, left_bottom, pieces_x, resolution_x, resolution_y, MG);
+				time_update_gvertex += clock() - start;
+			}
+
+			int start = clock();
+			UpdateRVertex(graph, id, RMBR, Types, entity);
+
+			if (Types[id] == 1)
+				if (RMBR[id].Area() >= total_area * MR)
+				{
+				Types[id] = 2;
+				GeoB[id] = true;
+				}
+			time_update_rvertex += clock() - start;
+		}
+	}
+	//ofile << "index time\t" << clock() - start << endl << "ini_type\t" << time_ini_type << endl << "update_G\t" << time_update_gvertex << endl << "update_R\t" << time_update_rvertex << endl;
+
+	ofile << "index time\t" << clock() - start << endl << "ini_type\t" << time_ini_type << endl << "update_G\t" << time_update_gvertex << endl << "update_R\t" << time_update_rvertex << endl << "counter\t" << counter << endl << "ReachGrid\t" << time_ReachGrid << endl;
+	start = clock();
+	if (MT != 0)
+		Merge(ReachGrid, Types, MT, pieces_x, pieces_y);
+	ofile << "merge time\t" << clock() - start << endl << endl;
+	ofile.close();
+	GeoReachToDisk(GeoReach_path, Types, ReachGrid, RMBR, GeoB);
+}
+
 void GenerateGeoReachFromInedgeGraph(string graph_path, string entity_path, string GeoReach_path, int MG, double MR, int MT, Location left_bottom, Location right_top, int pieces_x, int pieces_y)
 {
 	double resolution_x = (right_top.x - left_bottom.x) / pieces_x;
@@ -386,28 +501,64 @@ void GeoReachToDisk(string GeoReach_path, vector<int> &Types, vector<vector<bool
 	freopen(ch, "w", stdout);
 	for (int i = 0; i < Types.size(); i++)
 	{
-		printf("%d %d ", i, Types[i]);
+		printf("%d,%d", i, Types[i]);
 		switch (Types[i])
 		{
 		case(0) :
 		{
 			for (int j = 0; j < ReachGrid[i].size(); j++)
 				if (ReachGrid[i][j])
-					printf("%d ", j);
+					printf(",%d", j);
 			printf("\n");
 			break;
 		}
 		case(1) :
 		{
-			printf("%f %f %f %f\n", RMBR[i].left_bottom.x, RMBR[i].left_bottom.y, RMBR[i].right_top.x, RMBR[i].right_top.y);
+			printf(",%f,%f,%f,%f\n", RMBR[i].left_bottom.x, RMBR[i].left_bottom.y, RMBR[i].right_top.x, RMBR[i].right_top.y);
 			break;
 		}
 		case(2) :
 		{
 			if (GeoB[i])
-				printf("1\n");
+				printf(",1\n");
 			else
-				printf("0\n");
+				printf(",0\n");
+		}
+		default:
+			break;
+		}
+	}
+	fclose(stdout);
+}
+
+void GeoReachToDisk(string GeoReach_path, vector<int> &Types, vector<set<int>> &ReachGrid, vector<MyRect> &RMBR, vector<bool> &GeoB)
+{
+	char* ch = (char*)GeoReach_path.data();
+	freopen(ch, "w", stdout);
+	for (int i = 0; i < Types.size(); i++)
+	{
+		printf("%d,%d", i, Types[i]);
+		switch (Types[i])
+		{
+		case(0) :
+		{
+			set<int>::iterator end = ReachGrid[i].end();
+			for (set<int>::iterator iter = ReachGrid[i].begin(); iter != end; iter++)
+				printf(",%d", *iter);
+			printf("\n");
+			break;
+		}
+		case(1) :
+		{
+			printf(",%f,%f,%f,%f\n", RMBR[i].left_bottom.x, RMBR[i].left_bottom.y, RMBR[i].right_top.x, RMBR[i].right_top.y);
+			break;
+		}
+		case(2) :
+		{
+			if (GeoB[i])
+				printf(",1\n");
+			else
+				printf(",0\n");
 		}
 		default:
 			break;

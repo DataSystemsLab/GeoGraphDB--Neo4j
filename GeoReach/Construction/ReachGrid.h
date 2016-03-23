@@ -8,6 +8,7 @@ void Merge(vector<vector<bool>> &index, vector<bool> &IsStored, int merge_count,
 void Merge(vector<set<int>> &index, vector<bool> &IsStored, int merge_count, int pieces_x, int pieces_y);
 
 void Merge(vector<vector<bool>> &index, vector<int> &Types, int merge_count, int pieces_x, int pieces_y);
+void Merge(vector<set<int>> &index, vector<int> &Types, int merge_count, int pieces_x, int pieces_y);
 
 /*GeoF*/
 //using bool to store index 

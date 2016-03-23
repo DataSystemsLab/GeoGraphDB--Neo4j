@@ -11,16 +11,8 @@ void Merge(vector<vector<bool>> &index, vector<bool> &IsStored, int merge_count,
 	int level_count = log2(pieces_x);
 	vector<int> resolutions = vector<int>(level_count);
 	vector<int> offsets = vector<int>(level_count);
-	int base = 0;
 	int resolution = pieces_x;
-	for (int i = 0; i < level_count; i++)
-	{
-		resolutions[i] = resolution;
-		offsets[i] = base;
 
-		base += resolution*resolution;
-		resolution /= 2;
-	}
 
 	int offset = 0;
 	for (int i = pieces_x; i >= 2; i /= 2)
@@ -168,6 +160,68 @@ void Merge(vector<vector<bool>> &index, vector<int> &Types, int merge_count, int
 					}
 				}
 			}	
+		}
+	}
+}
+
+void Merge(vector<set<int>> &index, vector<int> &Types, int merge_count, int pieces_x, int pieces_y)
+{
+	int level_count = log2(pieces_x);
+	vector<int> resolutions = vector<int>(level_count);
+	vector<int> offsets = vector<int>(level_count);
+	int base = 0;
+	for (int i = 0; i < level_count; i++)
+	{
+		int resolution = pieces_x;
+
+		resolutions[i] = resolution;
+		offsets[i] = base;
+
+		base += resolution*resolution;
+		resolution /= 2;
+	}
+
+	for (int j = 0; j < index.size(); j++)
+	{
+		if (Types[j] == 0)
+		{
+			for (set<int>::iterator iter = index[j].begin(); iter != index[j].end();)
+			{
+				int reach_grid_id = *iter;
+				int offset;
+				int pieces = Return_resolution_offset(resolutions, offsets, reach_grid_id, offset);
+				int id = reach_grid_id - offset;
+				int m = id / pieces, n = id - m*pieces;
+				int mm = m / 2, nn = n / 2;
+				m = mm * 2, n = nn * 2;
+				int base = m*pieces + n + offset;
+
+				int true_count = 0;
+				set<int>::iterator end = index[j].end();
+				if (index[j].find(base) != end)
+					true_count++;
+				if (index[j].find(base + 1) != end)
+					true_count++;
+				if (index[j].find(base + pieces) != end)
+					true_count++;
+				if (index[j].find(base + pieces + 1) != end)
+					true_count++;
+				if (true_count >= merge_count)
+				{
+					while ((*iter == base || *iter == base + 1 || *iter == base + pieces + 1 || *iter == base + pieces) && iter != end)
+					{
+						iter++;
+					}
+					SetFalseRecursive(index, resolutions, offsets, j, base);
+					SetFalseRecursive(index, resolutions, offsets, j, base + 1);
+					SetFalseRecursive(index, resolutions, offsets, j, base + pieces);
+					SetFalseRecursive(index, resolutions, offsets, j, base + pieces + 1);
+
+					index[j].insert(offset + pieces*pieces + mm*pieces / 2 + nn);
+				}
+				else
+					iter++;
+			}
 		}
 	}
 }
