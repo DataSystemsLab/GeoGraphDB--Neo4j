@@ -1,12 +1,188 @@
 #include "stdafx.h"
 #include "GeoReach.h"
 
-int counter = 0;
-int time_ReachGrid = 0;
-
-void GenerateRMBR(string graph_path, string entity_path, string RMBR_path)
+int Return_resolution_offset(vector<int> &resolutions, vector<int> &offsets, int grid_id, int &offset)
 {
+	for (int i = 1; i < offsets.size(); i++)
+		if (grid_id < offsets[i])
+		{
+		offset = offsets[i - 1];
+		return resolutions[i - 1];
+		}
 
+	offset = offsets[offsets.size() - 1];
+	return resolutions[resolutions.size() - 1];
+}
+
+void SetFalseRecursive(vector<vector<bool>> &index, vector<int> &resolutions, vector<int> &offsets, int id, int grid_id)
+{
+	int offset;
+	int pieces = Return_resolution_offset(resolutions, offsets, grid_id, offset);
+	if (pieces == resolutions[0])
+	{
+		index[id][grid_id] = false;
+	}
+	else
+	{
+		if (index[id][grid_id])
+			index[id][grid_id] = false;
+		else
+		{
+			int off_id = grid_id - offset;
+			int m = off_id / pieces;
+			int n = off_id - m*pieces;
+			int mm = m * 2, nn = n * 2;
+			int base = mm*pieces * 2 + nn + offset - pieces*pieces * 4;
+			SetFalseRecursive(index, resolutions, offsets, id, base);
+			SetFalseRecursive(index, resolutions, offsets, id, base + 1);
+			SetFalseRecursive(index, resolutions, offsets, id, base + pieces * 2);
+			SetFalseRecursive(index, resolutions, offsets, id, base + pieces * 2 + 1);
+		}
+	}
+}
+
+void SetFalseRecursive(vector<set<int>> &index, vector<int> &resolutions, vector<int> &offsets, int id, int grid_id)
+{
+	int offset;
+	int pieces = Return_resolution_offset(resolutions, offsets, grid_id, offset);
+	if (pieces == 128)
+	{
+		index[id].erase(grid_id);
+	}
+	else
+	{
+		if (index[id].find(grid_id) != index[id].end())
+			index[id].erase(grid_id);
+		else
+		{
+			int off_id = grid_id - offset;
+			int m = off_id / pieces;
+			int n = off_id - m*pieces;
+			int mm = m * 2, nn = n * 2;
+			int base = mm*pieces * 2 + nn + offset - pieces*pieces * 4;
+			SetFalseRecursive(index, resolutions, offsets, id, base);
+			SetFalseRecursive(index, resolutions, offsets, id, base + 1);
+			SetFalseRecursive(index, resolutions, offsets, id, base + pieces * 2);
+			SetFalseRecursive(index, resolutions, offsets, id, base + pieces * 2 + 1);
+		}
+	}
+}
+
+void Merge(vector<vector<bool>> &index, vector<int> &Types, int merge_count, int pieces_x, int pieces_y)
+{
+	int level_count = log2(pieces_x);
+	vector<int> resolutions = vector<int>(level_count);
+	vector<int> offsets = vector<int>(level_count);
+	int base = 0;
+	int resolution = pieces_x;
+	for (int i = 0; i < level_count; i++)
+	{
+		resolutions[i] = resolution;
+		offsets[i] = base;
+
+		base += resolution*resolution;
+		resolution /= 2;
+	}
+
+	int offset = 0;
+	for (int i = pieces_x; i >= 2; i /= 2)
+	{
+		offset += i*i;
+		for (int id = 0; id < index.size(); id++)
+		{
+			if (Types[id] == 0)
+			{
+				for (int m = 0; m < i; m += 2)
+				{
+					for (int n = 0; n < i; n += 2)
+					{
+						int grid_id = m*i + n + offset - i*i;
+						int true_count = 0;
+						if (index[id][grid_id])
+							true_count++;
+						if (index[id][grid_id + 1])
+							true_count++;
+						if (index[id][grid_id + i])
+							true_count++;
+						if (index[id][grid_id + i + 1])
+							true_count++;
+						if (true_count >= merge_count)
+						{
+							int mm = m / 2, nn = n / 2;
+							int high_level_grid_id = mm*i / 2 + nn;
+							index[id][high_level_grid_id + offset] = true;
+							SetFalseRecursive(index, resolutions, offsets, id, grid_id);
+							SetFalseRecursive(index, resolutions, offsets, id, grid_id + 1);
+							SetFalseRecursive(index, resolutions, offsets, id, grid_id + i);
+							SetFalseRecursive(index, resolutions, offsets, id, grid_id + i + 1);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+void Merge(vector<set<int>> &index, vector<int> &Types, int merge_count, int pieces_x, int pieces_y)
+{
+	int level_count = log2(pieces_x);
+	vector<int> resolutions = vector<int>(level_count);
+	vector<int> offsets = vector<int>(level_count);
+	int base = 0;
+	for (int i = 0; i < level_count; i++)
+	{
+		int resolution = pieces_x;
+
+		resolutions[i] = resolution;
+		offsets[i] = base;
+
+		base += resolution*resolution;
+		resolution /= 2;
+	}
+
+	for (int j = 0; j < index.size(); j++)
+	{
+		if (Types[j] == 0)
+		{
+			for (set<int>::iterator iter = index[j].begin(); iter != index[j].end();)
+			{
+				int reach_grid_id = *iter;
+				int offset;
+				int pieces = Return_resolution_offset(resolutions, offsets, reach_grid_id, offset);
+				int id = reach_grid_id - offset;
+				int m = id / pieces, n = id - m*pieces;
+				int mm = m / 2, nn = n / 2;
+				m = mm * 2, n = nn * 2;
+				int base = m*pieces + n + offset;
+
+				int true_count = 0;
+				set<int>::iterator end = index[j].end();
+				if (index[j].find(base) != end)
+					true_count++;
+				if (index[j].find(base + 1) != end)
+					true_count++;
+				if (index[j].find(base + pieces) != end)
+					true_count++;
+				if (index[j].find(base + pieces + 1) != end)
+					true_count++;
+				if (true_count >= merge_count)
+				{
+					while ((*iter == base || *iter == base + 1 || *iter == base + pieces + 1 || *iter == base + pieces) && iter != end)
+					{
+						iter++;
+					}
+					SetFalseRecursive(index, resolutions, offsets, j, base);
+					SetFalseRecursive(index, resolutions, offsets, j, base + 1);
+					SetFalseRecursive(index, resolutions, offsets, j, base + pieces);
+					SetFalseRecursive(index, resolutions, offsets, j, base + pieces + 1);
+
+					index[j].insert(offset + pieces*pieces + mm*pieces / 2 + nn);
+				}
+				else
+					iter++;
+			}
+		}
+	}
 }
 
 int InitializeType(vector<vector<int>> &graph, vector<int> &Types, int start_id, vector<bool> &GeoB)
@@ -57,7 +233,6 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<vector<bool>
 			int start = clock();
 			if (Types[end_id] == 0)
 			{
-				counter++;
 				if (layer0_grid_count - reach_count[start_id] < reach_count[end_id])
 				{
 					for (int j = 0; j < layer0_grid_count; j++)
@@ -91,7 +266,6 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<vector<bool>
 					}
 				}		
 			}				
-			time_ReachGrid += clock() - start;
 		}
 	}
 	if (!Flag)
@@ -127,7 +301,6 @@ void GenerateGeoReach(string graph_path, string entity_path, string GeoReach_pat
 
 	vector<Entity> entity;
 	int range;
-	//ReadEntityInSCCFromDisk(node_count, entity, range, entity_path);
 	ReadEntity(node_count, entity, entity_path);
 
 	vector<int> Types = vector<int>(node_count);
@@ -144,28 +317,21 @@ void GenerateGeoReach(string graph_path, string entity_path, string GeoReach_pat
 	vector<MyRect> RMBR = vector<MyRect>(node_count);
 	vector<bool> GeoB = vector<bool>(node_count);
 
-	ofstream ofile("time.txt", ios::app);
-	int start = clock();
-	int time_ini_type = 0, time_update_gvertex = 0, time_update_rvertex = 0;
 	while (!Q.empty())
 	{
 		int id = Q.front();
 		Q.pop();
 		int start = clock();
 		Types[id] = InitializeType(graph, Types, id, GeoB);
-		time_ini_type += clock() - start;
 		if (Types[id] == 2)
 			GeoB[id] = true;
 		else
 		{
 			if (Types[id] == 0)
 			{
-				int start = clock();
 				UpdateGVertex(graph, id, ReachGrid, reach_count, Types, entity, left_bottom, pieces_x, layer0_grid_count, resolution_x, resolution_y, MG);
-				time_update_gvertex += clock() - start;
 			}
 
-			int start = clock();
 			UpdateRVertex(graph, id, RMBR, Types, entity);
 
 			if (Types[id] == 1)
@@ -174,17 +340,11 @@ void GenerateGeoReach(string graph_path, string entity_path, string GeoReach_pat
 					Types[id] = 2;
 					GeoB[id] = true;
 				}
-			time_update_rvertex += clock() - start;
 		}
 	}
-	//ofile << "index time\t" << clock() - start << endl << "ini_type\t" << time_ini_type << endl << "update_G\t" << time_update_gvertex << endl << "update_R\t" << time_update_rvertex << endl;
 	
-	ofile << "index time\t" << clock() - start << endl << "ini_type\t" << time_ini_type << endl << "update_G\t" << time_update_gvertex << endl << "update_R\t" << time_update_rvertex << endl << "counter\t" << counter << endl << "ReachGrid\t" << time_ReachGrid << endl;
-	start = clock();
 	if (MT != 0)
 		Merge(ReachGrid, Types, MT, pieces_x, pieces_y);
-	ofile << "merge time\t" << clock() - start << endl << endl;
-	ofile.close();
 	GeoReachToDisk(GeoReach_path, Types, ReachGrid, RMBR, GeoB);
 }
 
@@ -213,7 +373,6 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<set<int>> &R
 			int start = clock();
 			if (Types[end_id] == 0)
 			{
-				counter++;
 				set<int>::iterator end = ReachGrid[end_id].end();
 				for (set<int>::iterator iter = ReachGrid[end_id].begin(); iter != end; iter++)
 				{
@@ -228,7 +387,6 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<set<int>> &R
 					}
 				}
 			}
-			time_ReachGrid += clock() - start;
 		}
 	}
 	if (!Flag)
@@ -259,28 +417,21 @@ void GenerateGeoReachInSet(string graph_path, string entity_path, string GeoReac
 	vector<MyRect> RMBR = vector<MyRect>(node_count);
 	vector<bool> GeoB = vector<bool>(node_count);
 
-	ofstream ofile("time.txt", ios::app);
-	int start = clock();
-	int time_ini_type = 0, time_update_gvertex = 0, time_update_rvertex = 0;
 	while (!Q.empty())
 	{
 		int id = Q.front();
 		Q.pop();
 		int start = clock();
 		Types[id] = InitializeType(graph, Types, id, GeoB);
-		time_ini_type += clock() - start;
 		if (Types[id] == 2)
 			GeoB[id] = true;
 		else
 		{
 			if (Types[id] == 0)
 			{
-				int start = clock();
 				UpdateGVertex(graph, id, ReachGrid, Types, entity, left_bottom, pieces_x, resolution_x, resolution_y, MG);
-				time_update_gvertex += clock() - start;
 			}
 
-			int start = clock();
 			UpdateRVertex(graph, id, RMBR, Types, entity);
 
 			if (Types[id] == 1)
@@ -289,210 +440,12 @@ void GenerateGeoReachInSet(string graph_path, string entity_path, string GeoReac
 				Types[id] = 2;
 				GeoB[id] = true;
 				}
-			time_update_rvertex += clock() - start;
 		}
 	}
-	//ofile << "index time\t" << clock() - start << endl << "ini_type\t" << time_ini_type << endl << "update_G\t" << time_update_gvertex << endl << "update_R\t" << time_update_rvertex << endl;
 
-	ofile << "index time\t" << clock() - start << endl << "ini_type\t" << time_ini_type << endl << "update_G\t" << time_update_gvertex << endl << "update_R\t" << time_update_rvertex << endl << "counter\t" << counter << endl << "ReachGrid\t" << time_ReachGrid << endl;
-	start = clock();
 	if (MT != 0)
 		Merge(ReachGrid, Types, MT, pieces_x, pieces_y);
-	ofile << "merge time\t" << clock() - start << endl << endl;
-	ofile.close();
 	GeoReachToDisk(GeoReach_path, Types, ReachGrid, RMBR, GeoB);
-}
-
-void GenerateGeoReachFromInedgeGraph(string graph_path, string entity_path, string GeoReach_path, int MG, double MR, int MT, Location left_bottom, Location right_top, int pieces_x, int pieces_y)
-{
-	double resolution_x = (right_top.x - left_bottom.x) / pieces_x;
-	double resolution_y = (right_top.y - left_bottom.y) / pieces_y;
-	double total_area = (right_top.x - left_bottom.x) * (right_top.y - left_bottom.y);
-
-	vector<vector<int>> graph, in_edge_graph;
-	int node_count;
-	ReadGraph(graph, node_count, graph_path);
-	GenerateInedgeGraph(graph, in_edge_graph);
-	queue<int> Q;
-	TopologicalSort(graph, Q);
-
-	vector<Entity> entity;
-	int range;
-	ReadEntityInSCCFromDisk(node_count, entity, range, entity_path);
-
-	vector<int> Types = vector<int>(node_count);
-	vector<vector<bool>> ReachGrid = vector<vector<bool>>(node_count);
-
-	int layer0_grid_count = pieces_x * pieces_x;
-	int grid_layer_count = log2(pieces_x);
-	int sum_grid_count = 0;
-	for (int i = pieces_x; i >= 1; i /= 2)
-		sum_grid_count += i*i;
-	for (int i = 0; i < node_count; i++)
-		ReachGrid[i].resize(sum_grid_count);
-	vector<int> reach_count = vector<int>(node_count);
-	vector<MyRect> RMBR = vector<MyRect>(node_count);
-	vector<bool> GeoB = vector<bool>(node_count);
-
-	ofstream ofile("time.txt", ios::app);
-	int start = clock();
-	int time_ini_type = 0, time_update_gvertex = 0, time_update_rvertex = 0;
-
-	for (int i = 0; i < entity.size(); i++)
-	{
-		if (entity[i].IsSpatial)
-		{
-			int m = (entity[i].location.x - left_bottom.x) / resolution_x;
-			int n = (entity[i].location.y - left_bottom.y) / resolution_y;
-			int grid_id = m*pieces_x + n;
-			for (int j = 0; j < in_edge_graph[i].size(); j++)
-			{
-				int in_neighbor = in_edge_graph[i][j];
-				int type = Types[in_neighbor];
-				switch (type)
-				{
-				case(0) :
-					if (!ReachGrid[in_neighbor][grid_id])
-						ReachGrid[in_neighbor][grid_id] = true;
-					reach_count[in_neighbor] += 1;
-					if (reach_count[in_neighbor]>MG)
-						Types[in_neighbor] = 1;
-					type = 1;
-				case(1) :
-					RMBR[in_neighbor].MBR(entity[i].location);
-					if (RMBR[in_neighbor].Area() > MR*total_area)
-					{
-						Types[in_neighbor] = 2;
-						GeoB[in_neighbor] = true;
-					}
-					break;
-				case(2) :
-					break;
-				}
-			}
-		}
-	}
-	int main_time = 0;
-	int calculation_count = 0;
-	while (!Q.empty())
-	{
-		int id = Q.front();
-		Q.pop();
-
-		if (reach_count[id] == 0)
-		{
-			Types[id] = 2;
-			continue;
-		}
-
-		if (Types[id] == 2)
-		{
-			for (int i = 0; i < in_edge_graph[id].size(); i++)
-			{
-				int from_id = in_edge_graph[id][i];
-				Types[from_id] = 2;
-				GeoB[from_id] = true;
-			}
-		}
-		else
-		{ 
-			for (int i = 0; i < in_edge_graph[id].size(); i++)
-			{
-				int from_id = in_edge_graph[id][i];
-				if (Types[from_id] == 2)
-					continue;
-				else
-				{
-					if (Types[from_id] == 1)
-					{
-						RMBR[from_id].MBR(RMBR[id]);
-						if (RMBR[from_id].Area() >= MR*total_area)
-						{
-							RMBR[from_id].HasRec = false;
-							Types[from_id] = 2;
-							GeoB[from_id] = true;
-						}
-					}
-					else
-					{
-						int start_main = clock();
-						if (Types[id] == 0)
-						{
-							calculation_count++;
-							for (int j = 0; j < layer0_grid_count; j++)
-							{
-								if (ReachGrid[id][j] && (!ReachGrid[from_id][j]))
-								{
-									ReachGrid[from_id][j] = true;
-									reach_count[from_id]++;
-									if (reach_count[from_id] >= MG)
-									{
-										Types[from_id] = 1;
-										break;
-									}
-								}
-							}
-						}
-						main_time += clock() - start_main;
-						RMBR[from_id].MBR(RMBR[id]);
-						if (Types[from_id] == 1)
-						{
-							if (RMBR[from_id].Area() >= MR*total_area)
-							{
-								RMBR[from_id].HasRec = false;
-								Types[from_id] = 2;
-								GeoB[from_id] = true;
-							}
-						}
-					}
-				}
-			}
-		}
-
-		/*switch (Types[id])
-		{
-		case(0) :
-		{
-			for (int i = 0; i < in_edge_graph[id].size(); i++)
-			{
-				int from_id = in_edge_graph[id][i];
-				int type = Types[from_id];
-				switch (type)
-				{
-				case(0) :
-				{
-					for (int j = 0; j < layer0_grid_count; j++)
-					{
-						if (ReachGrid[id][j] && (!ReachGrid[from_id][j]))
-						{
-							ReachGrid[from_id][j] = true;
-							reach_count[from_id]++;
-							if (reach_count[from_id]>=MG)
-							{
-								Types[from_id] = 1;
-								type = 1;
-							}
-						}
-					}
-				}
-				case(1) :
-				{
-
-				}
-				}
-			}
-		}
-		}*/
-	}
-	//ofile << "index time\t" << clock() - start << endl << "ini_type\t" << time_ini_type << endl << "update_G\t" << time_update_gvertex << endl << "update_R\t" << time_update_rvertex << endl;
-	
-	ofile << "index time\t" << clock() - start << endl << "main time\t" << main_time << endl << "calculate_count\t" << calculation_count << endl;
-	start = clock();
-	if (MT != 0)
-		Merge(ReachGrid, Types, MT, pieces_x, pieces_y);
-	ofile << "merge time\t" << clock() - start << endl << endl;
-	ofile.close();
-	//GeoReachToDisk(GeoReach_path, Types, ReachGrid, RMBR, GeoB);
 }
 
 void GeoReachToDisk(string GeoReach_path, vector<int> &Types, vector<vector<bool>> &ReachGrid, vector<MyRect> &RMBR, vector<bool> &GeoB)
