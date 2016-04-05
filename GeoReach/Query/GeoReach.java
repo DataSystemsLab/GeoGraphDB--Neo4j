@@ -1,13 +1,8 @@
 package GeoReach;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.nio.ByteBuffer;
 import java.util.*;
 
-import org.apache.lucene.index.RebuildSegmentInfo;
-import org.roaringbitmap.RoaringBitmap;
 import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
 
 import com.google.gson.JsonArray;
@@ -43,9 +38,9 @@ public class GeoReach implements ReachabilityQuerySolver	{
 	public int level_count;
 	
 	private int merge_ratio;
-	private double RT_ratio;
-	private int GT;
-	private double RT_area;
+	private double Max_RMBR_ratio;
+	private int Max_ReachGrid;
+	private double Max_RMBR_area;
 	
 	public GeoReach(MyRectangle p_total_range, int p_split_pieces)
 	{
@@ -64,9 +59,9 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		total_range.max_x = p_total_range.max_x;
 		total_range.max_y = p_total_range.max_y;
 		
-		RT_ratio = config.GetRT();
-		RT_area = (total_range.max_y - total_range.min_y)*(total_range.max_x - total_range.min_x)*RT_ratio;
-		GT = config.GetGT();
+		Max_RMBR_ratio = config.GetMax_RMBR_Ratio();
+		Max_RMBR_area = (total_range.max_y - total_range.min_y)*(total_range.max_x - total_range.min_x)*Max_RMBR_ratio;
+		Max_ReachGrid = config.GetMax_ReachGrid();
 		
 		split_pieces = p_split_pieces;
 		GeoB_name = config.GetGeoB_name();
@@ -75,14 +70,14 @@ public class GeoReach implements ReachabilityQuerySolver	{
 		resolution_x = (total_range.max_x - total_range.min_x)/split_pieces;
 		resolution_y = (total_range.max_y - total_range.min_y)/split_pieces;
 	
-		for(int i = 2;i<=split_pieces;i*=2)
+		for(int i = 1;i<=split_pieces;i*=2)
 		{
 			multi_resolution_x.put(i,(total_range.max_x - total_range.min_x)/(i));
 			multi_resolution_y.put(i,(total_range.max_y - total_range.min_y)/(i));
 		}
 		
 		int sum = 0;
-		for(int i = split_pieces;i>=2;i/=2)
+		for(int i = split_pieces;i>=1;i/=2)
 		{
 			multi_offset.put(i, sum);
 			sum+=i*i;
@@ -389,7 +384,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 						ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
 						
 						int outside_count = 0;
-						for(int level_pieces = split_pieces;level_pieces >=2;level_pieces/=2)
+						for(int level_pieces = split_pieces;level_pieces >=1;level_pieces/=2)
 						{
 							int lb_x = lb_x_hash.get(level_pieces);
 							int lb_y = lb_y_hash.get(level_pieces);
@@ -513,7 +508,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 				HashMap<Integer,Integer> rt_x_hash = new HashMap<Integer,Integer>();
 				HashMap<Integer,Integer> rt_y_hash = new HashMap<Integer,Integer>();
 				
-				for(int level_pieces = 2;level_pieces<=128;level_pieces*=2)
+				for(int level_pieces = 1;level_pieces<=split_pieces;level_pieces*=2)
 			    {
 					int lb_x = (int) ((rect.min_x - total_range.min_x)/multi_resolution_x.get(level_pieces));
 					int lb_y = (int) ((rect.min_y - total_range.min_y)/multi_resolution_y.get(level_pieces));
@@ -535,7 +530,7 @@ public class GeoReach implements ReachabilityQuerySolver	{
 					ImmutableRoaringBitmap reachgrid = new ImmutableRoaringBitmap(newbb);
 					
 					int	outside_count = 0;
-				    for(int level_pieces = split_pieces;level_pieces >=2;level_pieces/=2)
+				    for(int level_pieces = split_pieces;level_pieces >=1;level_pieces/=2)
 				    {
 				    	int lb_x = lb_x_hash.get(level_pieces);
 						int lb_y = lb_y_hash.get(level_pieces);

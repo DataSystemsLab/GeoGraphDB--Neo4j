@@ -1,48 +1,204 @@
-//package def;
-//
-//import java.io.BufferedReader;
-//import java.io.File;
-//import java.io.FileNotFoundException;
-//import java.io.FileOutputStream;
-//import java.io.FileReader;
-//import java.io.IOException;
-//import java.io.PrintStream;
-//import java.util.ArrayList;
-//import java.util.HashMap;
-//import java.util.Iterator;
-//import java.util.Map;
-//
-//import org.neo4j.graphdb.DynamicLabel;
-//import org.neo4j.graphdb.DynamicRelationshipType;
-//import org.neo4j.graphdb.Label;
-//import org.neo4j.graphdb.RelationshipType;
-//import org.neo4j.unsafe.batchinsert.BatchInserter;
-//import org.neo4j.unsafe.batchinsert.BatchInserters;
-//import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
-//
-//import com.sun.jersey.api.client.WebResource;
-//
-//public class Batch_Inserter {
-//	
-//	public static int node_count = 0;
-//	private String longitude_property_name;
-//	private String latitude_property_name;
-//	private String RMBR_minx_name;
-//	private String RMBR_miny_name;
-//	private String RMBR_maxx_name;
-//	private String RMBR_maxy_name;
-//	
-//	public Batch_Inserter(String p_suffix)
-//	{
-//		Config config = new Config();
-//		longitude_property_name = config.GetLongitudePropertyName();
-//		latitude_property_name = config.GetLatitudePropertyName();
-//		RMBR_minx_name = config.GetRMBR_minx_name();
-//		RMBR_miny_name = config.GetRMBR_miny_name();
-//		RMBR_maxx_name = config.GetRMBR_maxx_name();
-//		RMBR_maxy_name = config.GetRMBR_maxy_name();
-//	}
-//	
+package GeoReach;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import org.neo4j.graphdb.DynamicLabel;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.unsafe.batchinsert.BatchInserter;
+import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.roaringbitmap.RoaringBitmap;
+import org.roaringbitmap.buffer.ImmutableRoaringBitmap;
+
+import com.sun.jersey.api.client.WebResource;
+
+public class Batch_Inserter {
+	
+	public static int node_count = 0;
+	private String longitude_property_name;
+	private String latitude_property_name;
+	private String RMBR_minx_name;
+	private String RMBR_miny_name;
+	private String RMBR_maxx_name;
+	private String RMBR_maxy_name;
+	
+	private String GeoB_name;
+	private String bitmap_name;
+	
+	private String graph_filepath, entity_filepath, GeoReach_filepath, db_filepath;
+	
+	public Batch_Inserter(String graph_filepath, String entity_filepath, String GeoReach_filepath, String db_filepath)
+	{
+		Config config = new Config();
+		longitude_property_name = config.GetLongitudePropertyName();
+		latitude_property_name = config.GetLatitudePropertyName();
+		
+		RMBR_minx_name = config.GetRMBR_minx_name();
+		RMBR_miny_name = config.GetRMBR_miny_name();
+		RMBR_maxx_name = config.GetRMBR_maxx_name();
+		RMBR_maxy_name = config.GetRMBR_maxy_name();
+		
+		GeoB_name = config.GetGeoB_name();
+		bitmap_name = config.GetBitmap_name();
+		
+		this.graph_filepath = graph_filepath;
+		this.entity_filepath = entity_filepath;
+		this.GeoReach_filepath = GeoReach_filepath;
+		this.db_filepath = db_filepath;
+		
+		LoadGeoReach();
+	}
+	
+	public void LoadGeoReach()
+	{
+		BatchInserter inserter = null;
+		BufferedReader reader_entity = null, reader_GeoReach = null, reader_graph = null;
+		File file_entity = null, file_GeoReach = null, file_graph = null;
+		Map<String, String> config = new HashMap<String, String>();
+		config.put("dbms.pagecache.memory", "10g");
+		
+		try
+		{
+			inserter = BatchInserters.inserter(new File(db_filepath).getAbsolutePath(),config);
+
+			file_entity = new File(entity_filepath);
+			file_GeoReach = new File(GeoReach_filepath);
+			
+			reader_entity = new BufferedReader(new FileReader(file_entity));
+			reader_GeoReach = new BufferedReader(new FileReader(file_GeoReach));
+			String tempString_entity = null, tempString_GeoReach = null;
+			tempString_entity = reader_entity.readLine();
+			int graph_count = Integer.parseInt(tempString_entity);
+			
+			Label graph_label = DynamicLabel.label("GRAPH");
+			RelationshipType graph_rel = DynamicRelationshipType.withName("LINK");
+			while(((tempString_entity = reader_entity.readLine())!=null) && ((tempString_GeoReach = reader_GeoReach.readLine())!= null))
+			{
+				Map<String, Object> properties = new HashMap<String, Object>();
+				String[] l_entity = tempString_entity.split(",");
+				String[] l_GeoReach = tempString_GeoReach.split(",");
+				
+				int id = Integer.parseInt(l_entity[0]);
+ 				int isspatial = Integer.parseInt(l_entity[1]);
+				if(isspatial == 1)
+				{
+					double lon = Double.parseDouble(l_entity[2]);
+					double lat = Double.parseDouble(l_entity[3]);
+					properties.put(longitude_property_name, lon);
+					properties.put(latitude_property_name, lat);
+				}
+				
+				int type = Integer.parseInt(l_GeoReach[1]);
+				switch (type)
+				{
+				case 0:
+					RoaringBitmap r = new RoaringBitmap();
+					for(int i = 2;i<l_GeoReach.length;i++)
+					{
+						int out_neighbor = Integer.parseInt(l_GeoReach[i]);
+						r.add(out_neighbor);
+					}
+					String bitmap_ser = OwnMethods.Serialize_RoarBitmap_ToString(r);
+					properties.put(bitmap_name, bitmap_ser);
+					break;
+				case 1:
+					properties.put(RMBR_minx_name, Double.parseDouble(l_GeoReach[2]));
+					properties.put(RMBR_miny_name, Double.parseDouble(l_GeoReach[3]));
+					properties.put(RMBR_maxx_name, Double.parseDouble(l_GeoReach[4]));
+					properties.put(RMBR_maxy_name, Double.parseDouble(l_GeoReach[5]));
+					break;
+				case 2:
+					boolean GeoB;
+					if(Integer.parseInt(l_GeoReach[2]) == 0)
+						GeoB = false;
+					else
+						GeoB = true;
+					properties.put(GeoB_name, GeoB);
+					break;
+				}
+				inserter.createNode(id, properties, graph_label);
+			}
+			reader_entity.close();
+			reader_GeoReach.close();
+			
+			file_graph = new File(graph_filepath);
+			reader_graph = new BufferedReader(new FileReader(file_graph));
+			String tempString_graph = null;
+			
+			tempString_graph = reader_graph.readLine();
+			if(graph_count!= Integer.parseInt(tempString_graph))
+			{
+				System.out.println("Entity file and Graph file have different number of vertices!");
+				return;
+			}
+			while((tempString_graph = reader_graph.readLine()) != null)
+			{
+				String[] l_graph = tempString_graph.split(",");
+				int start_id = Integer.parseInt(l_graph[0]);
+				int count = Integer.parseInt(l_graph[1]);
+				for(int i = 0;i<count;i++)
+				{
+					int end_id = Integer.parseInt(l_graph[i+2]);
+					inserter.createRelationship(start_id, end_id, graph_rel, null);
+				}
+			}
+			reader_graph.close();
+		}
+		catch(IOException e)
+		{
+			e.printStackTrace();
+		}
+		finally
+		{
+			if(inserter!=null)
+				inserter.shutdown();
+			if(reader_entity!=null)
+			{
+				try
+				{
+					reader_entity.close();
+				}
+				catch(IOException e)
+				{	
+					e.printStackTrace();
+				}
+			}
+			if(reader_GeoReach!=null)
+			{
+				try
+				{
+					reader_GeoReach.close();
+				}
+				catch(IOException e)
+				{	
+					e.printStackTrace();
+				}
+			}
+			if(reader_graph!=null)
+			{
+				try
+				{
+					reader_graph.close();
+				}
+				catch(IOException e)
+				{	
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
 //	public void SetLocationRMBR(String type, String datasource, int ratio)
 //	{
 //		BatchInserter inserter = null;
@@ -1073,7 +1229,7 @@
 //			}
 //		}
 //	}
-//
+
 //	public static void main(String[] args) 
 //	{	
 //		String operation = args[0];
@@ -1107,60 +1263,60 @@
 //			Batch_Inserter bi = new Batch_Inserter(suffix);
 //			bi.SetLocationRMBR(filesuffix, datasource, ratio);
 //		}
-//		
-//		
-////		try
-////		{
-//////			String datasource = "Patents";
-//////			int ratio = 20;
-//////			Batch_Inserter.LoadReachabilityIndex(datasource);
-////			
-////			String datasource = args[0];
-////			int ratio = Integer.parseInt(args[1]);
-////						
-//////			String datasource = "uniprotenc_150m";
-//////			System.out.println(datasource+"\t"+ratio);
-////			Batch_Inserter bi = new Batch_Inserter();
-//////			bi.LoadGraph(datasource);
-////			//bi.SetUselessNull("Zipf_distributed", datasource, ratio);
-//////			bi.SetLocationRMBRNull("Zipf_distributed", datasource, ratio);
-////			bi.SetLocationRMBR("Random_spatial_distributed", datasource, ratio);
-////		}
-////		catch(Exception e)
-////		{
-////			e.printStackTrace();
-////		}
-//		
-////		ArrayList<String> properties = new ArrayList();
-////		properties.add(bi.longitude_property_name);
-////		properties.add(bi.latitude_property_name);
-////		properties.add(bi.RMBR_minx_name);
-////		properties.add(bi.RMBR_miny_name);
-////		properties.add(bi.RMBR_maxx_name);
-////		properties.add(bi.RMBR_maxy_name);
-////		
-////		for(int i = 0;i<properties.size();i++)
-////		{
-////			String str = properties.get(i);SetNull(datasource, str);
-////		}
-//
-//		
-//		
-////		
-////		CreateUniqueConstraint();
-//		//LoadRTreeNodes();
-//		//SetRMBR();
-//		//UpdateError();
-////		
-//		//String datasource = "uniprotenc_150m";
-//		//GetNodeCount(datasource);
+		
+		
+//		try
+//		{
+////			String datasource = "Patents";
+////			int ratio = 20;
+////			Batch_Inserter.LoadReachabilityIndex(datasource);
 //			
-//		//ReachabilityIndex insert
-//		//Batch_Inserter.LoadReachabilityIndex(datasource);
-//
-//		//load graph nodes and relationships
-//		//Batch_Inserter.LoadGraph(datasource);
+//			String datasource = args[0];
+//			int ratio = Integer.parseInt(args[1]);
+//						
+////			String datasource = "uniprotenc_150m";
+////			System.out.println(datasource+"\t"+ratio);
+//			Batch_Inserter bi = new Batch_Inserter();
+////			bi.LoadGraph(datasource);
+//			//bi.SetUselessNull("Zipf_distributed", datasource, ratio);
+////			bi.SetLocationRMBRNull("Zipf_distributed", datasource, ratio);
+//			bi.SetLocationRMBR("Random_spatial_distributed", datasource, ratio);
+//		}
+//		catch(Exception e)
+//		{
+//			e.printStackTrace();
+//		}
+		
+//		ArrayList<String> properties = new ArrayList();
+//		properties.add(bi.longitude_property_name);
+//		properties.add(bi.latitude_property_name);
+//		properties.add(bi.RMBR_minx_name);
+//		properties.add(bi.RMBR_miny_name);
+//		properties.add(bi.RMBR_maxx_name);
+//		properties.add(bi.RMBR_maxy_name);
 //		
-//		//SetRMBR(datasource);
+//		for(int i = 0;i<properties.size();i++)
+//		{
+//			String str = properties.get(i);SetNull(datasource, str);
+//		}
+
+		
+		
+//		
+//		CreateUniqueConstraint();
+		//LoadRTreeNodes();
+		//SetRMBR();
+		//UpdateError();
+//		
+		//String datasource = "uniprotenc_150m";
+		//GetNodeCount(datasource);
+			
+		//ReachabilityIndex insert
+		//Batch_Inserter.LoadReachabilityIndex(datasource);
+
+		//load graph nodes and relationships
+		//Batch_Inserter.LoadGraph(datasource);
+		
+		//SetRMBR(datasource);
 //	}
-//}
+}

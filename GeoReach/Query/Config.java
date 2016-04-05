@@ -3,19 +3,19 @@ package GeoReach;
 public class Config	{
 	private String SERVER_ROOT_URI = "http://localhost:7474/db/data";
 	
-	private String longitude_property_name = "longitude_20";
-	private String latitude_property_name = "latitude_20";
+	private String longitude_property_name = "longitude";
+	private String latitude_property_name = "latitude";
 	
-	private String RMBR_minx_name = "test1";
-	private String RMBR_miny_name = "test2";
-	private String RMBR_maxx_name = "test3";
-	private String RMBR_maxy_name = "test4";
+	private String RMBR_minx_name = "RMBR_minx";
+	private String RMBR_miny_name = "RMBR_miny";
+	private String RMBR_maxx_name = "RMBR_maxx";
+	private String RMBR_maxy_name = "RMBR_maxy";
 	
 	private String GeoB_name = "GeoB";
-	private String bitmap_name = "MultilevelBitmap_128_2_20";
+	private String bitmap_name = "Bitmap";
 	private int merge_ratio = 2;
-	private double RT_ratio = 1;
-	private int GT = 200;
+	private double Max_RMBR_ratio = 0.4;
+	private int Max_ReachGrid = 200;
 	
 	public String GetServerRoot() {
 		return SERVER_ROOT_URI;
@@ -64,13 +64,13 @@ public class Config	{
 		return merge_ratio;
 	}
 	
-	public double GetRT()
+	public double GetMax_RMBR_Ratio()
 	{
-		return RT_ratio;
+		return Max_RMBR_ratio;
 	}
 	
-	public int GetGT()
+	public int GetMax_ReachGrid()
 	{
-		return GT;
+		return Max_ReachGrid;
 	}
 }
