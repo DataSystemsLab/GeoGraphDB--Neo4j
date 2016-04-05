@@ -28,14 +28,13 @@ GenerateGeoReach(string graph_path, string entity_path, string GeoReach_path, in
         
 
 4. Load data into neo4j database. This section is implemented by using java. The function is in LoadData folder. Paremeters of construction function of Batch_Inserter include three data source file paths and a neo4j database file path where the algorithm is going to load all the graph data and GeoReach index data.
-
-'''java
+```java
         String graph_path = "Documents/GeoReach/graph.txt";
         String entity_path = "Documents/GeoReach/entity.txt";
         String GeoReach_path = "DOcuments/GeoReach/GeoReach.txt";
         String db_path = "Documents/GeoReach/neo4j-community-2.2.3/data/graph.db";
         Batch_Inserter batch_inserter = new Batch_Inserter(graph_path, entity_path, GeoReach_path, db_path);
-'''
+```
 5. Query processing. Following is an example to use query funtion in the package.
 ```java
         //...
