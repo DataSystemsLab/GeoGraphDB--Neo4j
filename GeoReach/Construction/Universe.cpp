@@ -9,21 +9,6 @@ bool Location_In_Rect(Location m_location, MyRect m_rect)
 		return true;
 }
 
-
-void ReadEntityInSCCFromDisk(int &node_count, vector<Entity> &entity_vector, int &range, string filename)
-{
-	char *ch = (char *)filename.data();
-	freopen(ch, "r", stdin);
-
-	scanf("%d %d", &node_count, &range);
-	entity_vector.resize(node_count);
-	for (int i = 0; i < node_count; i++)
-	{
-		scanf("%d %d %lf %lf %d %d %lf %lf %lf %lf", &(entity_vector[i].id), &(entity_vector[i].IsSpatial), &(entity_vector[i].location.x), &(entity_vector[i].location.y), &(entity_vector[i].type), &(entity_vector[i].scc_id), &(entity_vector[i].RMBR.left_bottom.x), &(entity_vector[i].RMBR.left_bottom.y), &(entity_vector[i].RMBR.right_top.x), &(entity_vector[i].RMBR.right_top.y));
-	}
-	fclose(stdin);
-}
-
 void ReadEntity(int &node_count, vector<Entity> &entity_vector, string filename)
 {
 	char *ch = (char *)filename.data();

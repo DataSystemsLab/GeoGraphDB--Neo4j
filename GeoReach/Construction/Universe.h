@@ -151,9 +151,6 @@ struct Entity
 	int scc_id;
 };
 
-//Read entity from disk storage
-void ReadEntityInSCCFromDisk(int &node_count, vector<Entity> &entity_vector, int &range, string filename);//
-
 //Read entity
 void ReadEntity(int &node_count, vector<Entity> &entity_vector, string filename);
 
