@@ -45,7 +45,7 @@ void SetFalseRecursive(vector<set<int>> &index, vector<int> &resolutions, vector
 {
 	int offset;
 	int pieces = Return_resolution_offset(resolutions, offsets, grid_id, offset);
-	if (pieces == 128)
+	if (pieces == resolutions[0])
 	{
 		index[id].erase(grid_id);
 	}
@@ -70,7 +70,7 @@ void SetFalseRecursive(vector<set<int>> &index, vector<int> &resolutions, vector
 
 void Merge(vector<vector<bool>> &index, vector<int> &Types, int merge_count, int pieces_x, int pieces_y)
 {
-	int level_count = log2(pieces_x);
+	int level_count = log2(pieces_x) + 1;
 	vector<int> resolutions = vector<int>(level_count);
 	vector<int> offsets = vector<int>(level_count);
 	int base = 0;
@@ -125,14 +125,13 @@ void Merge(vector<vector<bool>> &index, vector<int> &Types, int merge_count, int
 
 void Merge(vector<set<int>> &index, vector<int> &Types, int merge_count, int pieces_x, int pieces_y)
 {
-	int level_count = log2(pieces_x);
+	int level_count = log2(pieces_x) + 1;
 	vector<int> resolutions = vector<int>(level_count);
 	vector<int> offsets = vector<int>(level_count);
 	int base = 0;
+	int resolution = pieces_x;
 	for (int i = 0; i < level_count; i++)
 	{
-		int resolution = pieces_x;
-
 		resolutions[i] = resolution;
 		offsets[i] = base;
 
@@ -167,16 +166,18 @@ void Merge(vector<set<int>> &index, vector<int> &Types, int merge_count, int pie
 					true_count++;
 				if (true_count >= merge_count)
 				{
-					while ((*iter == base || *iter == base + 1 || *iter == base + pieces + 1 || *iter == base + pieces) && iter != end)
+					index[j].insert(offset + pieces*pieces + mm*pieces / 2 + nn);
+					while (iter != end)
 					{
-						iter++;
+						if (*iter == base || *iter == base + 1 || *iter == base + pieces + 1 || *iter == base + pieces)
+							iter++;
+						else
+							break;
 					}
 					SetFalseRecursive(index, resolutions, offsets, j, base);
 					SetFalseRecursive(index, resolutions, offsets, j, base + 1);
 					SetFalseRecursive(index, resolutions, offsets, j, base + pieces);
 					SetFalseRecursive(index, resolutions, offsets, j, base + pieces + 1);
-
-					index[j].insert(offset + pieces*pieces + mm*pieces / 2 + nn);
 				}
 				else
 					iter++;
@@ -207,6 +208,7 @@ int InitializeType(vector<vector<int>> &graph, vector<int> &Types, int start_id,
 
 void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<vector<bool>> &ReachGrid, vector<int> &reach_count, vector<int> &Types, vector<Entity> &entity, Location &left_bottom, int pieces_x, int layer0_grid_count, double resolution_x, double resolution_y, int MG)
 {
+	//whether ReachGrid[start_id] has any reachable grid
 	boolean Flag = false;
 
 	for (int i = 0; i < graph[start_id].size(); i++)
@@ -228,6 +230,11 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<vector<bool>
 				{
 					reach_count[start_id]++;
 					ReachGrid[start_id][grid_id] = true;
+					if (reach_count[start_id] > MG)
+					{
+						Types[start_id] = 1;
+						return;
+					}
 				}
 			}
 			int start = clock();
@@ -244,7 +251,7 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<vector<bool>
 							if (reach_count[start_id] > MG)
 							{
 								Types[start_id] = 1;
-								break;
+								return;
 							}
 						}
 					}
@@ -260,7 +267,7 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<vector<bool>
 							if (reach_count[start_id] > MG)
 							{
 								Types[start_id] = 1;
-								break;
+								return;
 							}
 						}
 					}
@@ -369,6 +376,12 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<set<int>> &R
 				int grid_id = index_x * pieces_x + index_y;
 				if (ReachGrid[start_id].find(grid_id) == ReachGrid[start_id].end())
 					ReachGrid[start_id].insert(grid_id);
+				if (ReachGrid[start_id].size() > MG)
+				{
+					Types[start_id] = 1;
+					return;
+				}
+				
 			}
 			int start = clock();
 			if (Types[end_id] == 0)
@@ -382,7 +395,7 @@ void UpdateGVertex(vector<vector<int>> &graph, int start_id, vector<set<int>> &R
 						if (ReachGrid[start_id].size() > MG)
 						{
 							Types[start_id] = 1;
-							break;
+							return;
 						}
 					}
 				}
@@ -437,8 +450,8 @@ void GenerateGeoReachInSet(string graph_path, string entity_path, string GeoReac
 			if (Types[id] == 1)
 				if (RMBR[id].Area() >= total_area * MR)
 				{
-				Types[id] = 2;
-				GeoB[id] = true;
+					Types[id] = 2;
+					GeoB[id] = true;
 				}
 		}
 	}
