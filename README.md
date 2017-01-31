@@ -32,7 +32,7 @@ GenerateGeoReach(string graph_path, string entity_path, string GeoReach_path, in
         String graph_path = "Documents/GeoReach/graph.txt";
         String entity_path = "Documents/GeoReach/entity.txt";
         String GeoReach_path = "DOcuments/GeoReach/GeoReach.txt";
-        String db_path = "Documents/GeoReach/neo4j-community-2.2.3/data/graph.db";
+        String db_path = "Documents/GeoReach/neo4j-community-2.3.3/data/graph.db";
         Batch_Inserter batch_inserter = new Batch_Inserter(graph_path, entity_path, GeoReach_path, db_path);
 ```
 5. Query processing. Following is an example to use query funtion in the package.
